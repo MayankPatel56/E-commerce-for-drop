@@ -454,3 +454,107 @@ Stage Summary:
 - Sample data: 8 products, 4 categories, 7 tags, 6 FAQs, 4 reviews
 - All Phase 1 and Phase 2 functionality preserved
 - Zero lint errors
+
+---
+Task ID: 4-a
+Agent: Main Agent
+Task: Phase 4 — Checkout & Order Creation Backend API Routes
+
+Work Log:
+- Created 3 API route files for checkout and order management
+- GET /api/checkout/settings — Returns COD min/max from Settings table (cod_min_order, cod_max_order keys)
+- POST /api/orders/validate — Validates cart: checks COD range, stock availability, variant existence, published status
+- POST /api/orders — Full order creation: Zod validation (email, name, phone 10-digit, address with state, pincode 6-digit, consent optional), customer upsert (reuse by email), guest customer creation (creates User+Customer with placeholder password for 1:1 relation), order number generation (ORD-timestamp-RANDOM), transactional order+items creation with inventory deduction
+- Fixed issue: Customer model has required 1:1 relation to User — guest checkouts create minimal User record with placeholder bcrypt hash
+- All routes use try/catch with proper HTTP status codes (200, 400, 500)
+
+Stage Summary:
+- 3 backend API routes verified working via curl
+- Order creation handles: guest customers, customer reuse, consent snapshot, COD enforcement, inventory deduction
+- Transaction ensures atomicity of order + items + stock update
+
+---
+Task ID: 4-b
+Agent: Frontend Styling Expert
+Task: Phase 4 — Checkout Page Component
+
+Work Log:
+- Created /src/components/store/checkout-page.tsx (788 lines)
+- Single-step checkout form with all required fields (name, phone, street, city, state, pincode, email)
+- Optional consent checkbox (default unchecked per Resolution #7)
+- COD min/max enforcement: fetches /api/checkout/settings on mount, disables Place Order when out of range
+- Order summary section: cart items with thumbnails, line totals, subtotal
+- Two-column layout on desktop (order summary sticky left, form right), single column mobile
+- Client-side validation matching server Zod schemas
+- On success: clearCart() before onOrderSuccess (Resolution #10)
+- Field-level error mapping from API 400 responses
+
+Stage Summary:
+- Professional mobile-first checkout form
+- COD range enforcement with Alert messages
+- Empty cart state, loading skeleton, error handling
+
+---
+Task ID: 4-c
+Agent: Frontend Styling Expert
+Task: Phase 4 — Order Confirmation Component
+
+Work Log:
+- Created /src/components/store/order-confirmation.tsx (113 lines)
+- Success icon (green CheckCircle2), heading, order number in monospace code format
+- COD payment method display
+- Info message about phone contact
+- Two buttons: Continue Shopping (primary) and Track Your Order (outline)
+- Entrance animation (opacity + translateY)
+- Centered layout (max-w-md mx-auto, py-16)
+
+Stage Summary:
+- Clean order confirmation page with order number display
+
+---
+Task ID: 4-d
+Agent: Main Agent
+Task: Phase 4 — Integration into page.tsx State Machine
+
+Work Log:
+- Added "checkout" and "order-confirmation" to AppView type
+- Imported CheckoutPage and OrderConfirmation components
+- Added orderNumber state and handleOrderSuccess callback
+- Added checkout navigation handler (resets orderNumber)
+- Rendered CheckoutPage and OrderConfirmation in storefront main area
+- Cart drawer's "Proceed to Checkout" navigates to checkout view (already wired in Phase 3)
+- All Phase 1-3 functionality preserved
+
+Stage Summary:
+- Complete checkout flow: Cart → Checkout → Order Confirmation
+- Zero lint errors
+
+---
+Task ID: 4-e
+Agent: Main Agent
+Task: Phase 4 — Testing & Verification
+
+Work Log:
+- Lint passes clean with zero errors
+- Verified all 3 API routes via curl:
+  - GET /api/checkout/settings → 200, {cod_min: 0, cod_max: 50000}
+  - POST /api/orders/validate (empty cart) → 400, validation error
+  - POST /api/orders/validate (invalid variant) → 400, variant not found
+  - POST /api/orders/validate (valid cart) → 200, {valid: true, cartTotal: 599}
+  - POST /api/orders (missing fields) → 400, field-level validation details
+  - POST /api/orders (invalid pincode) → 400, pincode validation
+  - POST /api/orders (valid guest) → 200, {success: true, orderNumber: "ORD-..."}
+  - POST /api/orders (same email reuse) → 200, customer record updated
+  - POST /api/orders (with consent) → 200, consent stored
+- Homepage renders in browser with all 7 sections
+- Dev log shows clean transaction execution (BEGIN IMMEDIATE, INSERTs, UPDATE, COMMIT)
+- Total files created in Phase 4: 3 API routes + 2 UI components + 1 modified file (page.tsx) = 6 operations
+
+Stage Summary:
+- Phase 4 (Checkout & Order Creation) is fully complete
+- 3 backend API routes: settings, validate, order creation with inventory deduction
+- 2 frontend components: checkout form (single-step, COD enforcement, consent checkbox) + order confirmation
+- Full state machine integration: cart → checkout → order confirmation
+- Guest checkout supported with auto customer creation
+- All Phase 1, 2, and 3 functionality preserved
+- Zero lint errors

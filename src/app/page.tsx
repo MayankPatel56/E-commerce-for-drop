@@ -37,6 +37,8 @@ import StorefrontHomepage from "@/components/store/storefront-homepage";
 import { ProductListing } from "@/components/store/product-listing";
 import ProductDetail from "@/components/store/product-detail";
 import { CartDrawer } from "@/components/store/cart-drawer";
+import { CheckoutPage } from "@/components/store/checkout-page";
+import { OrderConfirmation } from "@/components/store/order-confirmation";
 import { useCart } from "@/context/cart-context";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -47,6 +49,8 @@ type AppView =
   | "product"
   | "search"
   | "track-order"
+  | "checkout"
+  | "order-confirmation"
   | "login"
   | "signup"
   | "admin";
@@ -93,6 +97,9 @@ export default function HomePage() {
   // Cart drawer state
   const [cartOpen, setCartOpen] = useState(false);
   const { totalItems } = useCart();
+
+  // Checkout state
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
   // Admin state
   const [adminPanel, setAdminPanel] = useState<AdminPanel>("products");
@@ -175,6 +182,11 @@ export default function HomePage() {
     }
     if (view === "track-order") {
       setAppView("track-order");
+      return;
+    }
+    if (view === "checkout") {
+      setOrderNumber(null);
+      setAppView("checkout");
       return;
     }
     // Default: home
@@ -342,6 +354,13 @@ export default function HomePage() {
     setRefreshKey((k) => k + 1);
   }, []);
 
+  // ─── Checkout Handlers ────────────────────────────────────────────────────
+
+  const handleOrderSuccess = useCallback((successOrderNumber: string) => {
+    setOrderNumber(successOrderNumber);
+    setAppView("order-confirmation");
+  }, []);
+
   // ─── Render: Login / Signup Modal ───────────────────────────────────────
 
   const renderLoginModal = () => {
@@ -492,6 +511,22 @@ export default function HomePage() {
         {appView === "search" && (
           <div className="pt-4">
             <ProductListing onNavigate={handleNavigate} />
+          </div>
+        )}
+        {appView === "checkout" && (
+          <div className="pt-4">
+            <CheckoutPage
+              onOrderSuccess={handleOrderSuccess}
+              onNavigate={handleNavigate}
+            />
+          </div>
+        )}
+        {appView === "order-confirmation" && orderNumber && (
+          <div className="pt-4">
+            <OrderConfirmation
+              orderNumber={orderNumber}
+              onNavigate={handleNavigate}
+            />
           </div>
         )}
         {appView === "track-order" && (
