@@ -1,0 +1,122 @@
+"use client";
+
+import { Separator } from "@/components/ui/separator";
+import { Store, Instagram, Facebook } from "lucide-react";
+
+interface StoreFooterProps {
+  footer: {
+    contact_text?: string;
+    social_links?: {
+      instagram?: string;
+      facebook?: string;
+    };
+    copyright_text?: string;
+  } | null;
+  onNavigate: (view: string, data?: Record<string, unknown>) => void;
+}
+
+const QUICK_LINKS = [
+  { id: "home", label: "Home" },
+  { id: "shop", label: "Shop" },
+  { id: "track-order", label: "Track Order" },
+  { id: "faq", label: "FAQ" },
+] as const;
+
+export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
+  const contactText = footer?.contact_text ?? "";
+  const copyrightText =
+    footer?.copyright_text ?? `\u00A9 ${new Date().getFullYear()} Indicore Originals. All rights reserved.`;
+  const instagramUrl = footer?.social_links?.instagram ?? "";
+  const facebookUrl = footer?.social_links?.facebook ?? "";
+
+  return (
+    <footer className="bg-neutral-900 text-neutral-300">
+      {/* Main footer content */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
+          {/* Column 1: Brand */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Store className="h-6 w-6 text-primary" />
+              <span className="text-lg font-bold tracking-tight text-white">
+                Indicore Originals
+              </span>
+            </div>
+            <p className="text-sm text-neutral-400 leading-relaxed max-w-xs">
+              Curated original products crafted with quality and care. Discover
+              unique items that stand out.
+            </p>
+          </div>
+
+          {/* Column 2: Quick Links */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+              Quick Links
+            </h3>
+            <nav aria-label="Footer navigation">
+              <ul className="space-y-2">
+                {QUICK_LINKS.map((link) => (
+                  <li key={link.id}>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate(link.id)}
+                      className="text-sm text-neutral-400 hover:text-white transition-colors min-h-[44px] flex items-center w-full text-left"
+                    >
+                      {link.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+
+          {/* Column 3: Contact & Social */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+              Contact
+            </h3>
+            {contactText && (
+              <p className="text-sm text-neutral-400 leading-relaxed whitespace-pre-line">
+                {contactText}
+              </p>
+            )}
+            {(instagramUrl || facebookUrl) && (
+              <div className="flex items-center gap-2 pt-1">
+                {instagramUrl && (
+                  <a
+                    href={instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+                    aria-label="Follow us on Instagram"
+                  >
+                    <Instagram className="h-5 w-5" />
+                  </a>
+                )}
+                {facebookUrl && (
+                  <a
+                    href={facebookUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+                    aria-label="Follow us on Facebook"
+                  >
+                    <Facebook className="h-5 w-5" />
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <Separator className="bg-neutral-800" />
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
+        <p className="text-xs text-neutral-500 text-center">
+          {copyrightText}
+        </p>
+      </div>
+    </footer>
+  );
+}

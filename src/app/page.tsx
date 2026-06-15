@@ -32,10 +32,32 @@ import { VariantManager } from "@/components/admin/variant-manager";
 import { CategoriesManager } from "@/components/admin/categories-manager";
 import { TagsManager } from "@/components/admin/tags-manager";
 
+import { StoreHeader } from "@/components/store/store-header";
+import StorefrontHomepage from "@/components/store/storefront-homepage";
+import { ProductListing } from "@/components/store/product-listing";
+import ProductDetail from "@/components/store/product-detail";
+import { CartDrawer } from "@/components/store/cart-drawer";
+import { useCart } from "@/context/cart-context";
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-type AppView = "login" | "signup" | "admin";
-type AdminPanel = "products" | "categories" | "tags" | "product-edit" | "product-new" | "product-variants";
+type AppView =
+  | "home"
+  | "shop"
+  | "product"
+  | "search"
+  | "track-order"
+  | "login"
+  | "signup"
+  | "admin";
+
+type AdminPanel =
+  | "products"
+  | "categories"
+  | "tags"
+  | "product-edit"
+  | "product-new"
+  | "product-variants";
 
 interface UserInfo {
   id: string;
@@ -59,9 +81,18 @@ export default function HomePage() {
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
 
+  // Navigation state
+  const [appView, setAppView] = useState<AppView>("home");
+  const [productSlug, setProductSlug] = useState<string | null>(null);
+  const [initialCategory, setInitialCategory] = useState<string | undefined>();
+
   // Auth state
-  const [appView, setAppView] = useState<AppView>("login");
   const [user, setUser] = useState<UserInfo | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Cart drawer state
+  const [cartOpen, setCartOpen] = useState(false);
+  const { totalItems } = useCart();
 
   // Admin state
   const [adminPanel, setAdminPanel] = useState<AdminPanel>("products");
@@ -83,10 +114,7 @@ export default function HomePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [lockoutInfo, setLockoutInfo] = useState<{
-    locked: boolean;
-    remainingMinutes: number;
-  } | null>(null);
+  const [lockoutInfo, setLockoutInfo] = useState<{ locked: boolean; remainingMinutes: number } | null>(null);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   // Check session on mount
@@ -105,14 +133,53 @@ export default function HomePage() {
         setUser(data.user as UserInfo);
         if (data.user.role === "admin") {
           setAppView("admin");
-        } else {
-          setAppView("login"); // Customer — no customer UI yet
         }
       }
     } catch {
-      // Not authenticated, stay on login
+      // Not authenticated
     }
   };
+
+  // ─── Navigation Handler ─────────────────────────────────────────────────
+
+  const handleNavigate = useCallback((view: string, data?: Record<string, unknown>) => {
+    window.scrollTo(0, 0);
+    if (view === "admin") {
+      // Only admin can go to admin
+      if (user?.role === "admin") {
+        setAppView("admin");
+      }
+      return;
+    }
+    if (view === "login") {
+      if (user) return; // Already logged in
+      setShowLoginModal(true);
+      return;
+    }
+    if (view === "product") {
+      const slug = data?.slug as string;
+      if (slug) {
+        setProductSlug(slug);
+        setAppView("product");
+      }
+      return;
+    }
+    if (view === "shop") {
+      setInitialCategory(data?.category as string | undefined);
+      setAppView("shop");
+      return;
+    }
+    if (view === "search") {
+      setAppView("search");
+      return;
+    }
+    if (view === "track-order") {
+      setAppView("track-order");
+      return;
+    }
+    // Default: home
+    setAppView(view as AppView);
+  }, [user]);
 
   // ─── Auth Handlers ──────────────────────────────────────────────────────
 
@@ -169,6 +236,7 @@ export default function HomePage() {
         const sessionData = await sessionRes.json();
         if (sessionData.authenticated && sessionData.user) {
           setUser(sessionData.user as UserInfo);
+          setShowLoginModal(false);
           if (sessionData.user.role === "admin") {
             setAppView("admin");
           }
@@ -215,7 +283,7 @@ export default function HomePage() {
           setUser(sessionData.user as UserInfo);
         }
       }
-      setAppView("login");
+      setShowLoginModal(false);
       setLoginEmail(signupEmail);
     } catch {
       setGeneralError("An unexpected error occurred. Please try again.");
@@ -227,12 +295,13 @@ export default function HomePage() {
   const handleLogout = async () => {
     await signOut({ redirect: false });
     setUser(null);
-    setAppView("login");
+    setAppView("home");
     setAdminPanel("products");
     setEditingProductId(null);
     setVariantProductId(null);
     setLoginEmail("");
     setLoginPassword("");
+    setShowLoginModal(false);
   };
 
   // ─── Admin Panel Handlers ────────────────────────────────────────────────
@@ -273,23 +342,20 @@ export default function HomePage() {
     setRefreshKey((k) => k + 1);
   }, []);
 
-  // ─── Render: Login / Signup ──────────────────────────────────────────────
+  // ─── Render: Login / Signup Modal ───────────────────────────────────────
 
-  const renderAuthView = () => (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="w-full border-b bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Store className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold tracking-tight">Indicore Originals</span>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {appView === "login" ? "Sign in to your account" : "Create a new account"}
-          </div>
-        </div>
-      </header>
-      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
-        <Card className="w-full max-w-md shadow-lg border-border/50">
+  const renderLoginModal = () => {
+    if (!showLoginModal) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/50"
+          onClick={() => { setShowLoginModal(false); setFormErrors({}); setGeneralError(null); setLockoutInfo(null); }}
+        />
+        {/* Modal */}
+        <Card className="relative w-full max-w-md shadow-xl z-10">
           <CardHeader className="text-center space-y-2 pb-4">
             <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
               <ShieldCheck className="h-6 w-6 text-primary" />
@@ -383,12 +449,84 @@ export default function HomePage() {
             </p>
           </CardFooter>
         </Card>
+      </div>
+    );
+  };
+
+  // ─── Render: Storefront Views ───────────────────────────────────────────
+
+  const renderStorefront = () => (
+    <div className="min-h-screen flex flex-col bg-background">
+      <StoreHeader
+        onNavigate={handleNavigate}
+        onOpenCart={() => setCartOpen(true)}
+        cartCount={totalItems}
+        onOpenLogin={() => { setAppView("login"); setShowLoginModal(true); setFormErrors({}); setGeneralError(null); setLockoutInfo(null); }}
+        isAuthenticated={!!user}
+        userName={user?.name}
+        onLogout={handleLogout}
+      />
+
+      <main className="flex-1">
+        {appView === "home" && (
+          <StorefrontHomepage onNavigate={handleNavigate} />
+        )}
+        {appView === "shop" && (
+          <div className="pt-4">
+            <ProductListing
+              key={`shop-${initialCategory || "all"}`}
+              initialCategory={initialCategory}
+              onNavigate={handleNavigate}
+            />
+          </div>
+        )}
+        {appView === "product" && productSlug && (
+          <div className="pt-4">
+            <ProductDetail
+              key={productSlug}
+              slug={productSlug}
+              onNavigate={handleNavigate}
+            />
+          </div>
+        )}
+        {appView === "search" && (
+          <div className="pt-4">
+            <ProductListing onNavigate={handleNavigate} />
+          </div>
+        )}
+        {appView === "track-order" && (
+          <div className="max-w-lg mx-auto px-4 py-16 text-center">
+            <Store className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Track Your Order</h2>
+            <p className="text-muted-foreground">
+              Order tracking will be available in a future update. Please contact us for order updates.
+            </p>
+            <Button
+              variant="outline"
+              className="mt-6"
+              onClick={() => handleNavigate("home")}
+            >
+              Back to Home
+            </Button>
+          </div>
+        )}
       </main>
-      <footer className="w-full border-t bg-white py-4 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Indicore Originals. All rights reserved.
-        </div>
-      </footer>
+
+      {/* Footer is rendered by StorefrontHomepage for the home view */}
+      {appView !== "home" && (
+        <footer className="w-full border-t bg-white py-4 mt-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
+            © {new Date().getFullYear()} Indicore Originals. All rights reserved.
+          </div>
+        </footer>
+      )}
+
+      {/* Cart Drawer */}
+      <CartDrawer
+        open={cartOpen}
+        onOpenChange={setCartOpen}
+        onNavigate={handleNavigate}
+      />
     </div>
   );
 
@@ -404,6 +542,14 @@ export default function HomePage() {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Top bar */}
           <header className="h-16 border-b bg-white flex items-center px-4 sm:px-6 gap-4">
+            <button
+              type="button"
+              onClick={() => handleNavigate("home")}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center gap-1"
+            >
+              <Store className="h-4 w-4" />
+              <span className="hidden sm:inline">Store</span>
+            </button>
             <h1 className="text-lg font-semibold capitalize hidden sm:block">
               {adminPanel === "product-edit" ? "Edit Product" :
                adminPanel === "product-new" ? "New Product" :
@@ -487,5 +633,10 @@ export default function HomePage() {
     return renderAdminPanel();
   }
 
-  return renderAuthView();
+  return (
+    <>
+      {renderStorefront()}
+      {renderLoginModal()}
+    </>
+  );
 }

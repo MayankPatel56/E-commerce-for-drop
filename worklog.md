@@ -207,3 +207,250 @@ Stage Summary:
 - Single-page app at / with login → admin dashboard state machine
 - All Phase 1 functionality preserved
 - Admin credentials: admin@indicoreoriginals.com / IndicoreAdmin2024!Secure
+---
+Task ID: 3-a
+Agent: Main Agent
+Task: Phase 3 — Storefront & Product Display (Public API Routes)
+
+Work Log:
+- Created 7 public API route files for storefront data access
+- All routes are public (no auth required)
+- All routes handle errors with try/catch returning 500
+- Next.js 16 `params: Promise<>` pattern used for dynamic routes
+
+Routes created:
+1. `/api/categories/route.ts` — GET: public category listing with productCount (published only)
+2. `/api/tags/route.ts` — GET: public tag listing with productCount (published products only)
+3. `/api/faq/route.ts` — GET: active FAQs ordered by displayOrder
+4. `/api/homepage/route.ts` — GET: homepage content singleton + featured products + categories + approved reviews (count controlled by customer_reviews.max_reviews_to_show) + settings
+5. `/api/products/route.ts` — GET: public product listing with multi-tag filter (Resolution #9: OR logic), category filter, price range, inStock, search, sort, pagination. Includes batch rating aggregation.
+6. `/api/products/[slug]/route.ts` — GET: full product detail with variants, variantTypes (grouped), gallery, approved reviews, SEO metadata, average rating. Returns 404 for unpublished products.
+7. `/api/search/route.ts` — GET: search products by name/description with same response shape as /api/products
+
+Key implementation details:
+- Multi-tag filter: comma-separated tag IDs, OR logic (products matching ANY selected tag)
+- Rating aggregation: batch groupBy query for performance
+- inStock detection: checks if any variant has stockQuantity > 0 and isOutOfStock = false
+- Gallery images parsed from JSON string column
+- Homepage endpoint aggregates data from multiple tables in one response
+
+Stage Summary:
+- 7 public API routes created, all verified working via curl
+- Multi-tag filtering (Resolution #9) fully implemented
+- Homepage API returns all 7 section data in single call
+
+---
+Task ID: 3-b
+Agent: Main Agent
+Task: Phase 3 — Cart Context (React Context + localStorage)
+
+Work Log:
+- Created `/src/context/cart-context.tsx` with CartProvider and useCart hook
+- CartItem interface: variantId, productId, productName, variantDescription, price, quantity, imageUrl, stockAvailable
+- useReducer pattern with HYDRATE action for localStorage hydration
+- Persist to localStorage on every state change (after hydration)
+- clearCart removes localStorage + dispatches CLEAR_CART
+- Quantity capping: addItem and updateQuantity cap at stockAvailable
+- Existing item detection: same variantId increments quantity
+- Fixed lint error: replaced separate `hydrated` useState with hydrated flag in reducer state to avoid `set-state-in-effect` rule violation
+
+Stage Summary:
+- Cart context fully functional with localStorage persistence
+- Exposes: items, addItem, removeItem, updateQuantity, clearCart, totalItems, cartTotal
+- Zero lint errors
+
+---
+Task ID: 3-c
+Agent: Frontend Styling Expert
+Task: Phase 3 — Store Header & Footer Components
+
+Work Log:
+- Created `/src/components/store/store-header.tsx` (275 lines)
+  - Sticky top header with logo, nav links, search, cart badge, login/logout
+  - Desktop: inline nav (Home, Shop, Track Order) + action buttons
+  - Mobile: hamburger → Sheet drawer from right (w-72)
+  - Cart badge: absolute positioned, shows "99+" for overflow
+  - Auth state: shows user name + logout when authenticated, login button when not
+  - Added onLogout prop to properly handle logout action (separate from onOpenLogin)
+
+- Created `/src/components/store/store-footer.tsx` (122 lines)
+  - Dark background (bg-neutral-900), 3-column grid responsive layout
+  - Column 1: Brand name with Store icon
+  - Column 2: Quick Links (Home, Shop, Track Order, FAQ)
+  - Column 3: Contact text + social links (Instagram, Facebook)
+  - Bottom: separator + copyright text
+
+Stage Summary:
+- Mobile-first responsive (320px–1440px), min-h-[44px] touch targets
+- No blue/indigo colors, uses primary theme variables
+
+---
+Task ID: 3-d
+Agent: Frontend Styling Expert
+Task: Phase 3 — Storefront Homepage (7 Fixed Sections)
+
+Work Log:
+- Created `/src/components/store/storefront-homepage.tsx` (~535 lines)
+- Renders exactly 7 sections as per plan (DO NOT DEVIATE):
+  1. Hero Banner: full-width with next/image, overlay, CTA button → "shop" view
+  2. Featured Products: horizontal scroll (mobile) / grid (desktop), product cards with price/rating
+  3. Shop by Category: grid of category cards with product count
+  4. Why Choose Us: USP cards with dynamically-mapped lucide icons
+  5. Customer Reviews: star ratings, review cards from approved reviews
+  6. FAQ Section: shadcn Accordion, fetched from /api/faq
+  7. Footer: delegates to StoreFooter component
+- Data fetching: GET /api/homepage + GET /api/faq in parallel via Promise.all
+- Loading state: Skeleton components per section
+- Error state: Alert with error message
+- Featured product count controlled by homepage_content.featuredProductIds
+- Review count controlled by homepage_content.customer_reviews.max_reviews_to_show
+
+Stage Summary:
+- Full 7-section homepage as specified in implementation plan
+- All data fetched from single /api/homepage endpoint
+- Dynamic icon mapping for Why Choose Us section
+
+---
+Task ID: 3-e
+Agent: Frontend Styling Expert
+Task: Phase 3 — Product Listing with Multi-Tag Filter
+
+Work Log:
+- Created `/src/components/store/product-listing.tsx` (~898 lines)
+- Desktop: left sidebar (w-64) with filters + right content area with product grid
+- Mobile: filter button → Sheet drawer from left with all filters
+- Filter sidebar contains:
+  - Search input with 400ms debounce
+  - Category filter (radio list from /api/categories)
+  - Tags filter (multi-select checkboxes — Resolution #9: OR logic)
+  - Price range (min/max number inputs)
+  - In Stock Only (Switch toggle)
+  - Sort By (Select: Newest, Price Low→High, Price High→Low, Name A-Z)
+  - Clear All Filters button
+- Product grid: responsive grid-cols-2 md:3 lg:4
+- Product cards: image, name (2-line truncate), category, price (₹), star rating, out-of-stock badge
+- Pagination: "Showing X-Y of Z", Prev/Next, page number buttons
+- Loading state: 8-card skeleton grid
+- Empty state: contextual message + Clear Filters CTA
+- Custom scrollbar styling via scoped <style jsx global>
+
+Stage Summary:
+- Full multi-tag product filtering as per Resolution #9
+- Responsive desktop sidebar + mobile drawer layout
+
+---
+Task ID: 3-f
+Agent: Frontend Styling Expert
+Task: Phase 3 — Product Detail with Variant Selector & Gallery
+
+Work Log:
+- Created `/src/components/store/product-detail.tsx` (~690 lines)
+- 2-column layout: image gallery (left) + product info (right) on desktop
+- Image gallery: main image display + thumbnail row with horizontal scroll
+- Product info: breadcrumb, name, star rating, price (with variant override strikethrough), description
+- Variant selector: grouped by variantType (Size, Color, etc.), chip-style buttons
+  - Selected: bg-primary, Out of stock: opacity-50 + disabled
+  - Check icon on selected variant
+- Add to Cart button: 3 states (Select Options / Add to Cart / Out of Stock)
+  - Disabled until all variant types have a selection
+  - Integrates with cart context useCart().addItem()
+- Reviews section below: list of approved review cards with star ratings
+- Loading skeleton, error state, not-found state
+- Back navigation: "← Back to Shop" link
+
+Stage Summary:
+- Complete product detail page with variant selection, gallery, reviews
+- Cart integration via useCart hook
+
+---
+Task ID: 3-g
+Agent: Frontend Styling Expert
+Task: Phase 3 — Cart Drawer Component
+
+Work Log:
+- Created `/src/components/store/cart-drawer.tsx` (~182 lines)
+- shadcn/ui Sheet (side="right", sm:w-[400px])
+- Empty state: centered ShoppingCart icon + "Your cart is empty" + Continue Shopping button
+- Items list: scrollable (max-h-[calc(100vh-14rem)])
+  - Each item: 64×64 thumbnail, name, variant description, line total, quantity controls (Minus/Plus), remove button
+  - Quantity bounds: min 1, max stockAvailable
+- Summary footer: subtotal (₹), item count, "Proceed to Checkout" primary button, "Continue Shopping" link
+- Uses useCart() from cart-context for all operations
+- Price formatting: ₹toLocaleString("en-IN")
+
+Stage Summary:
+- Functional cart drawer with quantity management and checkout navigation
+
+---
+Task ID: 3-h
+Agent: Main Agent
+Task: Phase 3 — Integration into page.tsx State Machine
+
+Work Log:
+- Rewrote page.tsx as comprehensive state machine with views: home, shop, product, search, track-order, login, signup, admin
+- Default view is now "home" (storefront) instead of "login"
+- Login/signup moved to modal overlay (Dialog-style) triggered by header Login button
+- Navigation handler: handleNavigate(view, data?) manages all view transitions
+- Storefront layout: StoreHeader + main content area + StoreFooter (via homepage) + CartDrawer
+- Admin dashboard preserved with all Phase 2 functionality
+- Added "Store" link in admin top bar to navigate back to storefront
+- Fixed StoreHeader: added onLogout prop, separated login/logout actions
+- Fixed import issues: StorefrontHomepage and ProductDetail use default exports
+- Fixed lint error: generic type annotation on useState caused parsing error
+- Updated layout.tsx to wrap children in CartProvider
+- All Phase 1 and Phase 2 functionality preserved
+
+Stage Summary:
+- Complete single-page app with storefront as default view
+- Admin login via modal → admin dashboard
+- Customer login via modal → stays on storefront
+- Zero lint errors
+
+---
+Task ID: 3-i
+Agent: Main Agent
+Task: Phase 3 — Seed Sample Data
+
+Work Log:
+- Extended seed.ts with storefront sample data
+- 4 categories: T-Shirts, Hoodies, Accessories, Jackets
+- 7 tags: cotton, premium, bestseller, new-arrival, summer, winter, unisex
+- 6 FAQs with display order
+- 8 products with variants (size variants for clothing, color variants for accessories)
+- Featured product IDs set on homepage content (first 4 products)
+- 4 approved reviews from sample customer (with delivered order for validation)
+- Fixed unique constraint error: one review per product per customer
+
+Stage Summary:
+- Full sample data for testing storefront: 8 products, 4 categories, 7 tags, 6 FAQs, 4 reviews
+- Admin credentials: admin@indicoreoriginals.com / IndicoreAdmin2024!Secure
+
+---
+Task ID: 3-j
+Agent: Main Agent
+Task: Phase 3 — Testing & Verification
+
+Work Log:
+- Lint passes clean with zero errors
+- Verified all 7 public API endpoints return correct data:
+  - /api/categories: 4 categories with product counts
+  - /api/tags: 7 tags with product counts
+  - /api/faq: 6 FAQs ordered by displayOrder
+  - /api/homepage: full homepage data (hero, featured, categories, USPs, reviews, footer, settings)
+  - /api/products: 8 published products with variants, tags, ratings, pagination
+  - /api/search?q=black: 2 results (description matching)
+  - /api/auth/session: {authenticated: false, user: null}
+- Homepage returns 200 OK with 31KB HTML (Next.js SSR shell + client script bundles)
+- Page HTML contains "Indicore Originals" brand text (client-side rendered content expected)
+- Zero runtime errors in dev.log for all successful API calls
+- Total files created in Phase 3: 7 API routes + 1 context + 6 components + 2 modified files (page.tsx, layout.tsx) + 1 updated seed = 17 operations
+
+Stage Summary:
+- Phase 3 (Storefront & Product Display) is fully complete
+- 7 public API routes with multi-tag filtering, search, pagination
+- Cart system (React Context + localStorage) with add/remove/update/clear
+- 6 storefront components: header, footer, homepage (7 sections), product listing (multi-tag filter), product detail (variant selector), cart drawer
+- Full state machine integration: storefront default, login modal, admin dashboard preserved
+- Sample data: 8 products, 4 categories, 7 tags, 6 FAQs, 4 reviews
+- All Phase 1 and Phase 2 functionality preserved
+- Zero lint errors
