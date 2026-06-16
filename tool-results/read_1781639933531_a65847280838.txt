@@ -1,0 +1,898 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useCallback, useRef } from "react";
+     4→import { Button } from "@/components/ui/button";
+     5→import { Input } from "@/components/ui/input";
+     6→import { Label } from "@/components/ui/label";
+     7→import { Badge } from "@/components/ui/badge";
+     8→import { Skeleton } from "@/components/ui/skeleton";
+     9→import { Switch } from "@/components/ui/switch";
+    10→import { Separator } from "@/components/ui/separator";
+    11→import { Checkbox } from "@/components/ui/checkbox";
+    12→import { Card, CardContent } from "@/components/ui/card";
+    13→import {
+    14→  Select,
+    15→  SelectContent,
+    16→  SelectItem,
+    17→  SelectTrigger,
+    18→  SelectValue,
+    19→} from "@/components/ui/select";
+    20→import {
+    21→  Sheet,
+    22→  SheetContent,
+    23→  SheetHeader,
+    24→  SheetTitle,
+    25→  SheetTrigger,
+    26→  SheetDescription,
+    27→} from "@/components/ui/sheet";
+    28→import {
+    29→  Search,
+    30→  SlidersHorizontal,
+    31→  X,
+    32→  Star,
+    33→  Package,
+    34→  ChevronLeft,
+    35→  ChevronRight,
+    36→  Filter,
+    37→} from "lucide-react";
+    38→
+    39→// --- Interfaces ---
+    40→
+    41→interface Category {
+    42→  id: number;
+    43→  name: string;
+    44→  slug: string;
+    45→  productCount: number;
+    46→}
+    47→
+    48→interface Tag {
+    49→  id: number;
+    50→  name: string;
+    51→  productCount: number;
+    52→}
+    53→
+    54→interface Product {
+    55→  id: number;
+    56→  name: string;
+    57→  slug: string;
+    58→  price: number;
+    59→  primaryImage: string | null;
+    60→  category: { name: string; slug: string } | null;
+    61→  inStock: boolean;
+    62→  reviewCount: number;
+    63→  averageRating: number;
+    64→  tags: { id: number; name: string }[];
+    65→}
+    66→
+    67→interface Pagination {
+    68→  page: number;
+    69→  limit: number;
+    70→  total: number;
+    71→  totalPages: number;
+    72→}
+    73→
+    74→interface ProductListingProps {
+    75→  initialCategory?: string;
+    76→  onNavigate: (view: string, data?: Record<string, unknown>) => void;
+    77→}
+    78→
+    79→// --- Sort option labels ---
+    80→const SORT_OPTIONS = [
+    81→  { value: "newest", label: "Newest" },
+    82→  { value: "price_asc", label: "Price: Low to High" },
+    83→  { value: "price_desc", label: "Price: High to Low" },
+    84→  { value: "name_asc", label: "Name: A-Z" },
+    85→] as const;
+    86→
+    87→// --- Component ---
+    88→
+    89→export function ProductListing({
+    90→  initialCategory,
+    91→  onNavigate,
+    92→}: ProductListingProps) {
+    93→  // Filter state
+    94→  const [search, setSearch] = useState("");
+    95→  const [searchInput, setSearchInput] = useState("");
+    96→  const [selectedCategory, setSelectedCategory] = useState<string>(
+    97→    initialCategory || ""
+    98→  );
+    99→  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+   100→  const [minPrice, setMinPrice] = useState("");
+   101→  const [maxPrice, setMaxPrice] = useState("");
+   102→  const [inStockOnly, setInStockOnly] = useState(false);
+   103→  const [sort, setSort] = useState("newest");
+   104→  const [page, setPage] = useState(1);
+   105→  const limit = 20;
+   106→
+   107→  // Data state
+   108→  const [products, setProducts] = useState<Product[]>([]);
+   109→  const [categories, setCategories] = useState<Category[]>([]);
+   110→  const [tags, setTags] = useState<Tag[]>([]);
+   111→  const [pagination, setPagination] = useState<Pagination>({
+   112→    page: 1,
+   113→    limit,
+   114→    total: 0,
+   115→    totalPages: 0,
+   116→  });
+   117→  const [isLoading, setIsLoading] = useState(true);
+   118→  const [isFiltersLoading, setIsFiltersLoading] = useState(true);
+   119→  const [error, setError] = useState<string | null>(null);
+   120→
+   121→  // Mobile sheet
+   122→  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+   123→
+   124→  // Ref for tracking if search debounce fired after initial mount
+   125→  const mountedRef = useRef(false);
+   126→
+   127→  // Sync initialCategory prop changes
+   128→  useEffect(() => {
+   129→    if (initialCategory !== undefined) {
+   130→      setSelectedCategory(initialCategory);
+   131→      setPage(1);
+   132→    }
+   133→  }, [initialCategory]);
+   134→
+   135→  // --- Fetch categories & tags ---
+   136→  useEffect(() => {
+   137→    const fetchFilters = async () => {
+   138→      setIsFiltersLoading(true);
+   139→      try {
+   140→        const [catRes, tagRes] = await Promise.all([
+   141→          fetch("/api/categories"),
+   142→          fetch("/api/tags"),
+   143→        ]);
+   144→        if (catRes.ok) {
+   145→          const catData = await catRes.json();
+   146→          setCategories(catData);
+   147→        }
+   148→        if (tagRes.ok) {
+   149→          const tagData = await tagRes.json();
+   150→          setTags(tagData);
+   151→        }
+   152→      } catch {
+   153→        // Silent — filters are non-critical
+   154→      } finally {
+   155→        setIsFiltersLoading(false);
+   156→      }
+   157→    };
+   158→    fetchFilters();
+   159→  }, []);
+   160→
+   161→  // --- Debounced search (400ms) ---
+   162→  useEffect(() => {
+   163→    if (!mountedRef.current) {
+   164→      mountedRef.current = true;
+   165→      return;
+   166→    }
+   167→    const timer = setTimeout(() => {
+   168→      setSearch(searchInput);
+   169→      setPage(1);
+   170→    }, 400);
+   171→    return () => clearTimeout(timer);
+   172→  }, [searchInput]);
+   173→
+   174→  // --- Fetch products ---
+   175→  const fetchProducts = useCallback(async () => {
+   176→    setIsLoading(true);
+   177→    setError(null);
+   178→
+   179→    try {
+   180→      const params = new URLSearchParams();
+   181→      if (search) params.set("search", search);
+   182→      if (selectedCategory) params.set("category", selectedCategory);
+   183→      if (selectedTags.length > 0)
+   184→        params.set("tags", selectedTags.join(","));
+   185→      if (inStockOnly) params.set("inStock", "true");
+   186→      if (minPrice) params.set("minPrice", minPrice);
+   187→      if (maxPrice) params.set("maxPrice", maxPrice);
+   188→      params.set("sort", sort);
+   189→      params.set("page", String(page));
+   190→      params.set("limit", String(limit));
+   191→
+   192→      const res = await fetch(`/api/products?${params.toString()}`);
+   193→      if (!res.ok) throw new Error("Failed to fetch products");
+   194→
+   195→      const data = await res.json();
+   196→      setProducts(data.products || []);
+   197→      setPagination(
+   198→        data.pagination || { page: 1, limit, total: 0, totalPages: 0 }
+   199→      );
+   200→    } catch (err) {
+   201→      setError(err instanceof Error ? err.message : "An error occurred");
+   202→    } finally {
+   203→      setIsLoading(false);
+   204→    }
+   205→  }, [search, selectedCategory, selectedTags, inStockOnly, minPrice, maxPrice, sort, page]);
+   206→
+   207→  useEffect(() => {
+   208→    fetchProducts();
+   209→  }, [fetchProducts]);
+   210→
+   211→  // --- Tag toggle (OR logic multi-select) ---
+   212→  const toggleTag = (tagId: number) => {
+   213→    setSelectedTags((prev) =>
+   214→      prev.includes(tagId)
+   215→        ? prev.filter((id) => id !== tagId)
+   216→        : [...prev, tagId]
+   217→    );
+   218→    setPage(1);
+   219→  };
+   220→
+   221→  // --- Clear all filters ---
+   222→  const clearAllFilters = () => {
+   223→    setSearch("");
+   224→    setSearchInput("");
+   225→    setSelectedCategory("");
+   226→    setSelectedTags([]);
+   227→    setMinPrice("");
+   228→    setMaxPrice("");
+   229→    setInStockOnly(false);
+   230→    setSort("newest");
+   231→    setPage(1);
+   232→  };
+   233→
+   234→  // --- Has active filters ---
+   235→  const hasActiveFilters =
+   236→    search !== "" ||
+   237→    selectedCategory !== "" ||
+   238→    selectedTags.length > 0 ||
+   239→    minPrice !== "" ||
+   240→    maxPrice !== "" ||
+   241→    inStockOnly;
+   242→
+   243→  // --- Price helpers ---
+   244→  const handleMinPriceChange = (val: string) => {
+   245→    setMinPrice(val);
+   246→    setPage(1);
+   247→  };
+   248→
+   249→  const handleMaxPriceChange = (val: string) => {
+   250→    setMaxPrice(val);
+   251→    setPage(1);
+   252→  };
+   253→
+   254→  // --- Pagination helpers ---
+   255→  const handlePageChange = (newPage: number) => {
+   256→    setPage(newPage);
+   257→    window.scrollTo({ top: 0, behavior: "smooth" });
+   258→  };
+   259→
+   260→  const getVisiblePageNumbers = (): number[] => {
+   261→    const { page: current, totalPages: total } = pagination;
+   262→    if (total <= 5) {
+   263→      return Array.from({ length: total }, (_, i) => i + 1);
+   264→    }
+   265→    const pages: number[] = [];
+   266→    let start = Math.max(1, current - 2);
+   267→    const end = Math.min(total, start + 4);
+   268→    if (end - start < 4) {
+   269→      start = Math.max(1, end - 4);
+   270→    }
+   271→    for (let i = start; i <= end; i++) {
+   272→      pages.push(i);
+   273→    }
+   274→    return pages;
+   275→  };
+   276→
+   277→  const showingFrom =
+   278→    pagination.total === 0
+   279→      ? 0
+   280→      : (pagination.page - 1) * pagination.limit + 1;
+   281→  const showingTo = Math.min(
+   282→    pagination.page * pagination.limit,
+   283→    pagination.total
+   284→  );
+   285→
+   286→  // --- Star rating component ---
+   287→  const StarRating = ({ rating, count }: { rating: number; count: number }) => {
+   288→    if (rating <= 0) return null;
+   289→    return (
+   290→      <div className="flex items-center gap-1">
+   291→        <div className="flex items-center">
+   292→          {[1, 2, 3, 4, 5].map((star) => (
+   293→            <Star
+   294→              key={star}
+   295→              className={`h-3 w-3 ${
+   296→                star <= Math.round(rating)
+   297→                  ? "fill-amber-400 text-amber-400"
+   298→                  : "text-muted-foreground/30"
+   299→              }`}
+   300→            />
+   301→          ))}
+   302→        </div>
+   303→        <span className="text-xs text-muted-foreground">({count})</span>
+   304→      </div>
+   305→    );
+   306→  };
+   307→
+   308→  // --- Skeleton grid ---
+   309→  const SkeletonGrid = () => (
+   310→    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+   311→      {Array.from({ length: 8 }).map((_, i) => (
+   312→        <div key={i} className="space-y-3">
+   313→          <Skeleton className="aspect-square w-full rounded-lg" />
+   314→          <Skeleton className="h-4 w-3/4" />
+   315→          <Skeleton className="h-3 w-1/2" />
+   316→          <Skeleton className="h-4 w-1/3" />
+   317→        </div>
+   318→      ))}
+   319→    </div>
+   320→  );
+   321→
+   322→  // --- Filter sidebar content (shared between desktop & mobile) ---
+   323→  const FilterSidebarContent = () => (
+   324→    <div className="space-y-6">
+   325→      {/* Search */}
+   326→      <div className="space-y-2">
+   327→        <Label className="text-sm font-medium">Search</Label>
+   328→        <div className="relative">
+   329→          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   330→          <Input
+   331→            placeholder="Search products..."
+   332→            value={searchInput}
+   333→            onChange={(e) => setSearchInput(e.target.value)}
+   334→            className="pl-9 min-h-[44px]"
+   335→          />
+   336→        </div>
+   337→      </div>
+   338→
+   339→      <Separator />
+   340→
+   341→      {/* Category Filter */}
+   342→      <div className="space-y-2">
+   343→        <Label className="text-sm font-medium">Category</Label>
+   344→        {isFiltersLoading ? (
+   345→          <div className="space-y-2">
+   346→            {Array.from({ length: 4 }).map((_, i) => (
+   347→              <Skeleton key={i} className="h-9 w-full" />
+   348→            ))}
+   349→          </div>
+   350→        ) : categories.length === 0 ? (
+   351→          <p className="text-sm text-muted-foreground">No categories</p>
+   352→        ) : (
+   353→          <div className="space-y-1 max-h-52 overflow-y-auto custom-scrollbar">
+   354→            <label
+   355→              className={`flex items-center gap-2 min-h-[36px] px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors ${
+   356→                selectedCategory === "" ? "bg-muted font-medium" : ""
+   357→              }`}
+   358→            >
+   359→              <input
+   360→                type="radio"
+   361→                name="category"
+   362→                checked={selectedCategory === ""}
+   363→                onChange={() => {
+   364→                  setSelectedCategory("");
+   365→                  setPage(1);
+   366→                }}
+   367→                className="accent-primary"
+   368→              />
+   369→              <span className="text-sm">All Categories</span>
+   370→            </label>
+   371→            {categories.map((cat) => (
+   372→              <label
+   373→                key={cat.id}
+   374→                className={`flex items-center justify-between gap-2 min-h-[36px] px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors ${
+   375→                  selectedCategory === cat.slug ? "bg-muted font-medium" : ""
+   376→                }`}
+   377→              >
+   378→                <div className="flex items-center gap-2">
+   379→                  <input
+   380→                    type="radio"
+   381→                    name="category"
+   382→                    checked={selectedCategory === cat.slug}
+   383→                    onChange={() => {
+   384→                      setSelectedCategory(cat.slug);
+   385→                      setPage(1);
+   386→                    }}
+   387→                    className="accent-primary"
+   388→                  />
+   389→                  <span className="text-sm truncate">{cat.name}</span>
+   390→                </div>
+   391→                <span className="text-xs text-muted-foreground">
+   392→                  {cat.productCount}
+   393→                </span>
+   394→              </label>
+   395→            ))}
+   396→          </div>
+   397→        )}
+   398→      </div>
+   399→
+   400→      <Separator />
+   401→
+   402→      {/* Tags Filter */}
+   403→      <div className="space-y-2">
+   404→        <div className="flex items-center justify-between">
+   405→          <Label className="text-sm font-medium">
+   406→            Tags{" "}
+   407→            {selectedTags.length > 0 && (
+   408→              <span className="text-muted-foreground">
+   409→                ({selectedTags.length} selected)
+   410→              </span>
+   411→            )}
+   412→          </Label>
+   413→          {selectedTags.length > 0 && (
+   414→            <button
+   415→              onClick={() => {
+   416→                setSelectedTags([]);
+   417→                setPage(1);
+   418→              }}
+   419→              className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline min-h-[28px]"
+   420→            >
+   421→              Clear tags
+   422→            </button>
+   423→          )}
+   424→        </div>
+   425→        {isFiltersLoading ? (
+   426→          <div className="space-y-2">
+   427→            {Array.from({ length: 5 }).map((_, i) => (
+   428→              <Skeleton key={i} className="h-8 w-full" />
+   429→            ))}
+   430→          </div>
+   431→        ) : tags.length === 0 ? (
+   432→          <p className="text-sm text-muted-foreground">No tags available</p>
+   433→        ) : (
+   434→          <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
+   435→            {tags.map((tag) => (
+   436→              <label
+   437→                key={tag.id}
+   438→                className="flex items-center justify-between gap-2 min-h-[36px] px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors"
+   439→              >
+   440→                <div className="flex items-center gap-2">
+   441→                  <Checkbox
+   442→                    checked={selectedTags.includes(tag.id)}
+   443→                    onCheckedChange={() => toggleTag(tag.id)}
+   444→                  />
+   445→                  <span className="text-sm truncate">{tag.name}</span>
+   446→                </div>
+   447→                <span className="text-xs text-muted-foreground">
+   448→                  {tag.productCount}
+   449→                </span>
+   450→              </label>
+   451→            ))}
+   452→          </div>
+   453→        )}
+   454→      </div>
+   455→
+   456→      <Separator />
+   457→
+   458→      {/* Price Range */}
+   459→      <div className="space-y-2">
+   460→        <Label className="text-sm font-medium">Price Range</Label>
+   461→        <div className="flex items-center gap-2">
+   462→          <Input
+   463→            type="number"
+   464→            placeholder="Min"
+   465→            value={minPrice}
+   466→            onChange={(e) => handleMinPriceChange(e.target.value)}
+   467→            className="min-h-[44px] w-full"
+   468→            min={0}
+   469→          />
+   470→          <span className="text-muted-foreground text-sm">-</span>
+   471→          <Input
+   472→            type="number"
+   473→            placeholder="Max"
+   474→            value={maxPrice}
+   475→            onChange={(e) => handleMaxPriceChange(e.target.value)}
+   476→            className="min-h-[44px] w-full"
+   477→            min={0}
+   478→          />
+   479→        </div>
+   480→      </div>
+   481→
+   482→      <Separator />
+   483→
+   484→      {/* In Stock Only */}
+   485→      <div className="flex items-center justify-between min-h-[44px]">
+   486→        <Label htmlFor="in-stock-switch" className="text-sm font-medium cursor-pointer">
+   487→          In Stock Only
+   488→        </Label>
+   489→        <Switch
+   490→          id="in-stock-switch"
+   491→          checked={inStockOnly}
+   492→          onCheckedChange={(checked) => {
+   493→            setInStockOnly(checked);
+   494→            setPage(1);
+   495→          }}
+   496→        />
+   497→      </div>
+   498→
+   499→      <Separator />
+   500→
+   501→      {/* Sort By */}
+   502→      <div className="space-y-2">
+   503→        <Label className="text-sm font-medium">Sort By</Label>
+   504→        <Select
+   505→          value={sort}
+   506→          onValueChange={(val) => {
+   507→            setSort(val);
+   508→            setPage(1);
+   509→          }}
+   510→        >
+   511→          <SelectTrigger className="min-h-[44px] w-full">
+   512→            <SelectValue placeholder="Sort by" />
+   513→          </SelectTrigger>
+   514→          <SelectContent>
+   515→            {SORT_OPTIONS.map((opt) => (
+   516→              <SelectItem key={opt.value} value={opt.value}>
+   517→                {opt.label}
+   518→              </SelectItem>
+   519→            ))}
+   520→          </SelectContent>
+   521→        </Select>
+   522→      </div>
+   523→
+   524→      <Separator />
+   525→
+   526→      {/* Clear All Filters */}
+   527→      {hasActiveFilters && (
+   528→        <Button
+   529→          variant="outline"
+   530→          className="w-full min-h-[44px]"
+   531→          onClick={clearAllFilters}
+   532→        >
+   533→          <X className="h-4 w-4 mr-2" />
+   534→          Clear All Filters
+   535→        </Button>
+   536→      )}
+   537→    </div>
+   538→  );
+   539→
+   540→  return (
+   541→    <div className="flex flex-col lg:flex-row gap-6">
+   542→      {/* --- Desktop Sidebar --- */}
+   543→      <aside className="hidden lg:block w-64 shrink-0">
+   544→        <div className="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar rounded-lg border bg-card p-4">
+   545→          <div className="flex items-center gap-2 mb-4">
+   546→            <SlidersHorizontal className="h-4 w-4" />
+   547→            <h2 className="font-semibold text-sm">Filters</h2>
+   548→            {hasActiveFilters && (
+   549→              <Badge variant="secondary" className="ml-auto text-xs">
+   550→                Active
+   551→              </Badge>
+   552→            )}
+   553→          </div>
+   554→          <FilterSidebarContent />
+   555→        </div>
+   556→      </aside>
+   557→
+   558→      {/* --- Mobile Filter Button + Sheet --- */}
+   559→      <div className="lg:hidden">
+   560→        <div className="flex items-center gap-2 mb-4">
+   561→          <Sheet
+   562→            open={mobileFiltersOpen}
+   563→            onOpenChange={setMobileFiltersOpen}
+   564→          >
+   565→            <SheetTrigger asChild>
+   566→              <Button variant="outline" className="min-h-[44px] min-w-[44px]">
+   567→                <Filter className="h-4 w-4 mr-2" />
+   568→                Filters
+   569→                {hasActiveFilters && (
+   570→                  <Badge variant="secondary" className="ml-2 text-xs">
+   571→                    Active
+   572→                  </Badge>
+   573→                )}
+   574→              </Button>
+   575→            </SheetTrigger>
+   576→            <SheetContent side="left" className="w-[300px] sm:w-[320px] overflow-y-auto">
+   577→              <SheetHeader>
+   578→                <SheetTitle>Filters</SheetTitle>
+   579→                <SheetDescription>
+   580→                  Narrow down products by applying filters
+   581→                </SheetDescription>
+   582→              </SheetHeader>
+   583→              <div className="mt-2">
+   584→                <FilterSidebarContent />
+   585→              </div>
+   586→            </SheetContent>
+   587→          </Sheet>
+   588→          {/* Mobile Sort */}
+   589→          <Select
+   590→            value={sort}
+   591→            onValueChange={(val) => {
+   592→              setSort(val);
+   593→              setPage(1);
+   594→            }}
+   595→          >
+   596→            <SelectTrigger className="min-h-[44px] flex-1">
+   597→              <SelectValue placeholder="Sort by" />
+   598→            </SelectTrigger>
+   599→            <SelectContent>
+   600→              {SORT_OPTIONS.map((opt) => (
+   601→                <SelectItem key={opt.value} value={opt.value}>
+   602→                  {opt.label}
+   603→                </SelectItem>
+   604→              ))}
+   605→            </SelectContent>
+   606→          </Select>
+   607→        </div>
+   608→      </div>
+   609→
+   610→      {/* --- Main Content Area --- */}
+   611→      <main className="flex-1 min-w-0">
+   612→        {/* Desktop sort */}
+   613→        <div className="hidden lg:flex items-center justify-between mb-6">
+   614→          <p className="text-sm text-muted-foreground">
+   615→            {isLoading
+   616→              ? "Loading products..."
+   617→              : pagination.total > 0
+   618→                ? `Showing ${showingFrom}–${showingTo} of ${pagination.total} products`
+   619→                : "No products found"}
+   620→          </p>
+   621→        </div>
+   622→
+   623→        {/* Mobile result count */}
+   624→        <p className="text-sm text-muted-foreground mb-4 lg:hidden">
+   625→          {isLoading
+   626→            ? "Loading products..."
+   627→            : pagination.total > 0
+   628→              ? `${pagination.total} product${pagination.total !== 1 ? "s" : ""}`
+   629→              : "No products found"}
+   630→        </p>
+   631→
+   632→        {/* Active filters chips */}
+   633→        {hasActiveFilters && (
+   634→          <div className="flex flex-wrap items-center gap-2 mb-4">
+   635→            {selectedCategory && (
+   636→              <Badge
+   637→                variant="secondary"
+   638→                className="min-h-[28px] cursor-pointer"
+   639→                onClick={() => {
+   640→                  setSelectedCategory("");
+   641→                  setPage(1);
+   642→                }}
+   643→              >
+   644→                {categories.find((c) => c.slug === selectedCategory)?.name ||
+   645→                  selectedCategory}
+   646→                <X className="h-3 w-3 ml-1" />
+   647→              </Badge>
+   648→            )}
+   649→            {selectedTags.map((tagId) => {
+   650→              const tag = tags.find((t) => t.id === tagId);
+   651→              return tag ? (
+   652→                <Badge
+   653→                  key={tagId}
+   654→                  variant="secondary"
+   655→                  className="min-h-[28px] cursor-pointer"
+   656→                  onClick={() => toggleTag(tagId)}
+   657→                >
+   658→                  {tag.name}
+   659→                  <X className="h-3 w-3 ml-1" />
+   660→                </Badge>
+   661→              ) : null;
+   662→            })}
+   663→            {minPrice && (
+   664→              <Badge
+   665→                variant="secondary"
+   666→                className="min-h-[28px] cursor-pointer"
+   667→                onClick={() => {
+   668→                  setMinPrice("");
+   669→                  setPage(1);
+   670→                }}
+   671→              >
+   672→                Min: ₹{parseInt(minPrice).toLocaleString("en-IN")}
+   673→                <X className="h-3 w-3 ml-1" />
+   674→              </Badge>
+   675→            )}
+   676→            {maxPrice && (
+   677→              <Badge
+   678→                variant="secondary"
+   679→                className="min-h-[28px] cursor-pointer"
+   680→                onClick={() => {
+   681→                  setMaxPrice("");
+   682→                  setPage(1);
+   683→                }}
+   684→              >
+   685→                Max: ₹{parseInt(maxPrice).toLocaleString("en-IN")}
+   686→                <X className="h-3 w-3 ml-1" />
+   687→              </Badge>
+   688→            )}
+   689→            {inStockOnly && (
+   690→              <Badge
+   691→                variant="secondary"
+   692→                className="min-h-[28px] cursor-pointer"
+   693→                onClick={() => {
+   694→                  setInStockOnly(false);
+   695→                  setPage(1);
+   696→                }}
+   697→              >
+   698→                In Stock Only
+   699→                <X className="h-3 w-3 ml-1" />
+   700→              </Badge>
+   701→            )}
+   702→            {search && (
+   703→              <Badge
+   704→                variant="secondary"
+   705→                className="min-h-[28px] cursor-pointer"
+   706→                onClick={() => {
+   707→                  setSearch("");
+   708→                  setSearchInput("");
+   709→                  setPage(1);
+   710→                }}
+   711→              >
+   712→                Search: &ldquo;{search}&rdquo;
+   713→                <X className="h-3 w-3 ml-1" />
+   714→              </Badge>
+   715→            )}
+   716→          </div>
+   717→        )}
+   718→
+   719→        {/* Error State */}
+   720→        {error && (
+   721→          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center">
+   722→            <p className="text-sm text-destructive">{error}</p>
+   723→            <Button
+   724→              variant="outline"
+   725→              size="sm"
+   726→              className="mt-2 min-h-[44px]"
+   727→              onClick={fetchProducts}
+   728→            >
+   729→              Try Again
+   730→            </Button>
+   731→          </div>
+   732→        )}
+   733→
+   734→        {/* Loading State */}
+   735→        {isLoading && !error && <SkeletonGrid />}
+   736→
+   737→        {/* Empty State */}
+   738→        {!isLoading && !error && products.length === 0 && (
+   739→          <div className="flex flex-col items-center justify-center py-16 text-center">
+   740→            <div className="rounded-full bg-muted p-6 mb-4">
+   741→              <Package className="h-10 w-10 text-muted-foreground/50" />
+   742→            </div>
+   743→            <h3 className="text-lg font-medium">No products found</h3>
+   744→            <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+   745→              {hasActiveFilters
+   746→                ? "Try adjusting your filters or search terms to find what you're looking for."
+   747→                : "There are no products available at the moment."}
+   748→            </p>
+   749→            {hasActiveFilters && (
+   750→              <Button
+   751→                className="mt-4 min-h-[44px]"
+   752→                onClick={clearAllFilters}
+   753→              >
+   754→                <X className="h-4 w-4 mr-2" />
+   755→                Clear Filters
+   756→              </Button>
+   757→            )}
+   758→          </div>
+   759→        )}
+   760→
+   761→        {/* Product Grid */}
+   762→        {!isLoading && !error && products.length > 0 && (
+   763→          <>
+   764→            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+   765→              {products.map((product) => (
+   766→                <Card
+   767→                  key={product.id}
+   768→                  className="group cursor-pointer overflow-hidden border hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
+   769→                  onClick={() =>
+   770→                    onNavigate("product", { slug: product.slug })
+   771→                  }
+   772→                >
+   773→                  <CardContent className="p-0">
+   774→                    {/* Image */}
+   775→                    <div className="relative aspect-square bg-muted overflow-hidden">
+   776→                      {product.primaryImage ? (
+   777→                        <img
+   778→                          src={product.primaryImage}
+   779→                          alt={product.name}
+   780→                          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+   781→                          loading="lazy"
+   782→                        />
+   783→                      ) : (
+   784→                        <div className="flex h-full w-full items-center justify-center bg-muted">
+   785→                          <Package className="h-10 w-10 text-muted-foreground/40" />
+   786→                        </div>
+   787→                      )}
+   788→                      {/* Out of Stock badge */}
+   789→                      {!product.inStock && (
+   790→                        <div className="absolute top-2 left-2">
+   791→                          <Badge variant="destructive" className="text-xs">
+   792→                            Out of Stock
+   793→                          </Badge>
+   794→                        </div>
+   795→                      )}
+   796→                    </div>
+   797→
+   798→                    {/* Info */}
+   799→                    <div className="p-3 space-y-1.5">
+   800→                      {/* Category */}
+   801→                      {product.category && (
+   802→                        <p className="text-xs text-muted-foreground truncate">
+   803→                          {product.category.name}
+   804→                        </p>
+   805→                      )}
+   806→
+   807→                      {/* Name */}
+   808→                      <h3 className="text-sm font-medium leading-tight line-clamp-2 min-h-[2.5rem]">
+   809→                        {product.name}
+   810→                      </h3>
+   811→
+   812→                      {/* Price */}
+   813→                      <p className="text-sm font-semibold">
+   814→                        ₹{product.price.toLocaleString("en-IN")}
+   815→                      </p>
+   816→
+   817→                      {/* Rating */}
+   818→                      <StarRating
+   819→                        rating={product.averageRating}
+   820→                        count={product.reviewCount}
+   821→                      />
+   822→                    </div>
+   823→                  </CardContent>
+   824→                </Card>
+   825→              ))}
+   826→            </div>
+   827→
+   828→            {/* Pagination */}
+   829→            {pagination.totalPages > 1 && (
+   830→              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+   831→                <p className="text-sm text-muted-foreground order-2 sm:order-1">
+   832→                  Showing {showingFrom}&ndash;{showingTo} of{" "}
+   833→                  {pagination.total.toLocaleString("en-IN")} products
+   834→                </p>
+   835→                <div className="flex items-center gap-1 order-1 sm:order-2">
+   836→                  {/* Previous */}
+   837→                  <Button
+   838→                    variant="outline"
+   839→                    size="sm"
+   840→                    onClick={() => handlePageChange(pagination.page - 1)}
+   841→                    disabled={pagination.page <= 1}
+   842→                    className="min-h-[44px] min-w-[44px]"
+   843→                  >
+   844→                    <ChevronLeft className="h-4 w-4" />
+   845→                    <span className="sr-only">Previous</span>
+   846→                  </Button>
+   847→
+   848→                  {/* Page Numbers */}
+   849→                  {getVisiblePageNumbers().map((pageNum) => (
+   850→                    <Button
+   851→                      key={pageNum}
+   852→                      variant={pageNum === pagination.page ? "default" : "outline"}
+   853→                      size="sm"
+   854→                      onClick={() => handlePageChange(pageNum)}
+   855→                      className="min-h-[44px] min-w-[44px]"
+   856→                    >
+   857→                      {pageNum}
+   858→                    </Button>
+   859→                  ))}
+   860→
+   861→                  {/* Next */}
+   862→                  <Button
+   863→                    variant="outline"
+   864→                    size="sm"
+   865→                    onClick={() => handlePageChange(pagination.page + 1)}
+   866→                    disabled={pagination.page >= pagination.totalPages}
+   867→                    className="min-h-[44px] min-w-[44px]"
+   868→                  >
+   869→                    <ChevronRight className="h-4 w-4" />
+   870→                    <span className="sr-only">Next</span>
+   871→                  </Button>
+   872→                </div>
+   873→              </div>
+   874→            )}
+   875→          </>
+   876→        )}
+   877→      </main>
+   878→
+   879→      {/* --- Custom Scrollbar Styles --- */}
+   880→      <style jsx global>{`
+   881→        .custom-scrollbar::-webkit-scrollbar {
+   882→          width: 4px;
+   883→        }
+   884→        .custom-scrollbar::-webkit-scrollbar-track {
+   885→          background: transparent;
+   886→        }
+   887→        .custom-scrollbar::-webkit-scrollbar-thumb {
+   888→          background-color: var(--border);
+   889→          border-radius: 9999px;
+   890→        }
+   891→        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+   892→          background-color: var(--muted-foreground);
+   893→        }
+   894→      `}</style>
+   895→    </div>
+   896→  );
+   897→}
+   898→

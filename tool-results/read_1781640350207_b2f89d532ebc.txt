@@ -1,0 +1,788 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import React, { useState, useEffect, useMemo, useCallback } from "react";
+     4→     4→import {
+     5→     5→  ArrowLeft,
+     6→     6→  Loader2,
+     7→     7→  ShieldCheck,
+     8→     8→  Package,
+     9→     9→  MapPin,
+    10→    10→  AlertCircle,
+    11→    11→} from "lucide-react";
+    12→    12→
+    13→    13→import { Button } from "@/components/ui/button";
+    14→    14→import { Input } from "@/components/ui/input";
+    15→    15→import { Label } from "@/components/ui/label";
+    16→    16→import { Checkbox } from "@/components/ui/checkbox";
+    17→    17→import { Separator } from "@/components/ui/separator";
+    18→    18→import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+    19→    19→import { Skeleton } from "@/components/ui/skeleton";
+    20→    20→import {
+    21→    21→  Card,
+    22→    22→  CardHeader,
+    23→    23→  CardTitle,
+    24→    24→  CardDescription,
+    25→    25→  CardContent,
+    26→    26→} from "@/components/ui/card";
+    27→    27→
+    28→    28→import { useCart } from "@/context/cart-context";
+    29→    29→
+    30→    30→// ─── Types ──────────────────────────────────────────────────────────────────
+    31→    31→
+    32→    32→interface CheckoutPageProps {
+    33→    33→  onOrderSuccess: (orderNumber: string) => void;
+    34→    34→  onNavigate: (view: string, data?: Record<string, unknown>) => void;
+    35→    35→}
+    36→    36→
+    37→    37→interface FormData {
+    38→    38→  name: string;
+    39→    39→  phone: string;
+    40→    40→  street: string;
+    41→    41→  city: string;
+    42→    42→  state: string;
+    43→    43→  pincode: string;
+    44→    44→  email: string;
+    45→    45→  consent: boolean;
+    46→    46→}
+    47→    47→
+    48→    48→interface FieldErrors {
+    49→    49→  name?: string;
+    50→    50→  phone?: string;
+    51→    51→  street?: string;
+    52→    52→  city?: string;
+    53→    53→  state?: string;
+    54→    54→  pincode?: string;
+    55→    55→  email?: string;
+    56→    56→}
+    57→    57→
+    58→    58→interface CodSettings {
+    59→    59→  cod_min: number;
+    60→    60→  cod_max: number;
+    61→    61→}
+    62→    62→
+    63→    63→// ─── Helpers ────────────────────────────────────────────────────────────────
+    64→    64→
+    65→    65→function formatPrice(price: number): string {
+    66→    66→  return `₹${price.toLocaleString("en-IN")}`;
+    67→    67→}
+    68→    68→
+    69→    69→const PHONE_REGEX = /^[0-9]{10}$/;
+    70→    70→const PINCODE_REGEX = /^[0-9]{6}$/;
+    71→    71→const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    72→    72→
+    73→    73→function validateField(name: keyof FieldErrors, value: string): string | undefined {
+    74→    74→  switch (name) {
+    75→    75→    case "name":
+    76→    76→      if (!value.trim()) return "Full name is required";
+    77→    77→      if (value.trim().length < 2) return "Name must be at least 2 characters";
+    78→    78→      return undefined;
+    79→    79→    case "phone":
+    80→    80→      if (!value.trim()) return "Phone number is required";
+    81→    81→      if (!PHONE_REGEX.test(value.trim()))
+    82→    82→        return "Enter a valid 10-digit phone number";
+    83→    83→      return undefined;
+    84→    84→    case "street":
+    85→    85→      if (!value.trim()) return "Street address is required";
+    86→    86→      return undefined;
+    87→    87→    case "city":
+    88→    88→      if (!value.trim()) return "City is required";
+    89→    89→      return undefined;
+    90→    90→    case "state":
+    91→    91→      if (!value.trim()) return "State is required";
+    92→    92→      return undefined;
+    93→    93→    case "pincode":
+    94→    94→      if (!value.trim()) return "Pincode is required";
+    95→    95→      if (!PINCODE_REGEX.test(value.trim()))
+    96→    96→        return "Pincode must be a 6-digit number";
+    97→    97→      return undefined;
+    98→    98→    case "email":
+    99→    99→      if (!value.trim()) return "Email is required";
+   100→   100→      if (!EMAIL_REGEX.test(value.trim())) return "Enter a valid email address";
+   101→   101→      return undefined;
+   102→   102→    default:
+   103→   103→      return undefined;
+   104→   104→  }
+   105→   105→}
+   106→   106→
+   107→   107→function validateForm(formData: FormData): FieldErrors {
+   108→   108→  const errors: FieldErrors = {};
+   109→   109→  const fields: (keyof FieldErrors)[] = [
+   110→   110→    "name",
+   111→   111→    "phone",
+   112→   112→    "street",
+   113→   113→    "city",
+   114→   114→    "state",
+   115→   115→    "pincode",
+   116→   116→    "email",
+   117→   117→  ];
+   118→   118→  for (const field of fields) {
+   119→   119→    const error = validateField(field, formData[field]);
+   120→   120→    if (error) errors[field] = error;
+   121→   121→  }
+   122→   122→  return errors;
+   123→   123→}
+   124→   124→
+   125→   125→// ─── Component ──────────────────────────────────────────────────────────────
+   126→   126→
+   127→   127→export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) {
+   128→   128→  const { items, cartTotal, totalItems, clearCart } = useCart();
+   129→   129→
+   130→   130→  // COD settings state
+   131→   131→  const [codSettings, setCodSettings] = useState<CodSettings | null>(null);
+   132→   132→  const [codLoading, setCodLoading] = useState(true);
+   133→   133→  const [codFetchError, setCodFetchError] = useState<string | null>(null);
+   134→   134→
+   135→   135→  // Form state
+   136→   136→  const [formData, setFormData] = useState<FormData>({
+   137→   137→    name: "",
+   138→   138→    phone: "",
+   139→   139→    street: "",
+   140→   140→    city: "",
+   141→   141→    state: "",
+   142→   142→    pincode: "",
+   143→   143→    email: "",
+   144→   144→    consent: false,
+   145→   145→  });
+   146→   146→
+   147→   147→  // Validation state
+   148→   148→  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+   149→   149→  const [touched, setTouched] = useState<Record<string, boolean>>({});
+   150→   150→
+   151→   151→  // Submission state
+   152→   152→  const [submitting, setSubmitting] = useState(false);
+   153→   153→  const [submitError, setSubmitError] = useState<string | null>(null);
+   154→   154→
+   155→   155→  // ─── Fetch COD Settings ─────────────────────────────────────────────────
+   156→   156→
+   157→   157→  useEffect(() => {
+   158→   158→    let cancelled = false;
+   159→   159→
+   160→   160→    async function fetchCodSettings() {
+   161→   161→      try {
+   162→   162→        const res = await fetch("/api/checkout/settings");
+   163→   163→        if (!res.ok) throw new Error("Failed to fetch settings");
+   164→   164→        const data: CodSettings = await res.json();
+   165→   165→        if (!cancelled) {
+   166→   166→          setCodSettings(data);
+   167→   167→          setCodLoading(false);
+   168→   168→        }
+   169→   169→      } catch {
+   170→   170→        if (!cancelled) {
+   171→   171→          setCodFetchError("Could not load checkout settings. Please refresh the page.");
+   172→   172→          setCodLoading(false);
+   173→   173→        }
+   174→   174→      }
+   175→   175→    }
+   176→   176→
+   177→   177→    fetchCodSettings();
+   178→   178→    return () => {
+   179→   179→      cancelled = true;
+   180→   180→    };
+   181→   181→  }, []);
+   182→   182→
+   183→   183→  // ─── COD Range Check ─────────────────────────────────────────────────────
+   184→   184→
+   185→   185→  const codOutOfRange = useMemo(() => {
+   186→   186→    if (!codSettings) return null;
+   187→   187→    if (cartTotal < codSettings.cod_min) {
+   188→   188→      return { type: "below" as const, min: codSettings.cod_min, max: codSettings.cod_max };
+   189→   189→    }
+   190→   190→    if (cartTotal > codSettings.cod_max) {
+   191→   191→      return { type: "above" as const, min: codSettings.cod_min, max: codSettings.cod_max };
+   192→   192→    }
+   193→   193→    return null;
+   194→   194→  }, [codSettings, cartTotal]);
+   195→   195→
+   196→   196→  // ─── Form Handlers ──────────────────────────────────────────────────────
+   197→   197→
+   198→   198→  const handleFieldChange = useCallback(
+   199→   199→    (field: keyof FormData, value: string | boolean) => {
+   200→   200→      setFormData((prev) => ({ ...prev, [field]: value }));
+   201→   201→
+   202→   202→      // Live-validate if field has been touched
+   203→   203→      if (touched[field]) {
+   204→   204→        const error =
+   205→   205→          typeof value === "string"
+   206→   206→            ? validateField(field as keyof FieldErrors, value)
+   207→   207→            : undefined;
+   208→   208→        setFieldErrors((prev) => ({ ...prev, [field]: error }));
+   209→   209→      }
+   210→   210→    },
+   211→   211→    [touched]
+   212→   212→  );
+   213→   213→
+   214→   214→  const handleBlur = useCallback(
+   215→   215→    (field: keyof FieldErrors) => {
+   216→   216→      setTouched((prev) => ({ ...prev, [field]: true }));
+   217→   217→      const error = validateField(field, formData[field]);
+   218→   218→      setFieldErrors((prev) => ({ ...prev, [field]: error }));
+   219→   219→    },
+   220→   220→    [formData]
+   221→   221→  );
+   222→   222→
+   223→   223→  // ─── Form Validity ──────────────────────────────────────────────────────
+   224→   224→
+   225→   225→  const isFormValid = useMemo(() => {
+   226→   226→    const errors = validateForm(formData);
+   227→   227→    return Object.keys(errors).length === 0;
+   228→   228→  }, [formData]);
+   229→   229→
+   230→   230→  const canSubmit = isFormValid && !codOutOfRange && !submitting && !codLoading && items.length > 0;
+   231→   231→
+   232→   232→  // ─── Submit Handler ──────────────────────────────────────────────────────
+   233→   233→
+   234→   234→  const handleSubmit = useCallback(
+   235→   235→    async (e: React.FormEvent) => {
+   236→   236→      e.preventDefault();
+   237→   237→      setSubmitError(null);
+   238→   238→
+   239→   239→      // Validate all fields
+   240→   240→      const errors = validateForm(formData);
+   241→   241→      if (Object.keys(errors).length > 0) {
+   242→   242→        // Mark all fields as touched
+   243→   243→        setTouched({
+   244→   244→          name: true,
+   245→   245→          phone: true,
+   246→   246→          street: true,
+   247→   247→          city: true,
+   248→   248→          state: true,
+   249→   249→          pincode: true,
+   250→   250→          email: true,
+   251→   251→        });
+   252→   252→        setFieldErrors(errors);
+   253→   253→        return;
+   254→   254→      }
+   255→   255→
+   256→   256→      if (codOutOfRange) return;
+   257→   257→
+   258→   258→      setSubmitting(true);
+   259→   259→
+   260→   260→      try {
+   261→   261→        const body = {
+   262→   262→          email: formData.email.trim(),
+   263→   263→          name: formData.name.trim(),
+   264→   264→          phone: formData.phone.trim(),
+   265→   265→          address: {
+   266→   266→            street: formData.street.trim(),
+   267→   267→            city: formData.city.trim(),
+   268→   268→            state: formData.state.trim(),
+   269→   269→            pincode: formData.pincode.trim(),
+   270→   270→          },
+   271→   271→          cart: items.map((item) => ({
+   272→   272→            variant_id: item.variantId,
+   273→   273→            quantity: item.quantity,
+   274→   274→          })),
+   275→   275→          consent: formData.consent,
+   276→   276→        };
+   277→   277→
+   278→   278→        const res = await fetch("/api/orders", {
+   279→   279→          method: "POST",
+   280→   280→          headers: { "Content-Type": "application/json" },
+   281→   281→          body: JSON.stringify(body),
+   282→   282→        });
+   283→   283→
+   284→   284→        const data = await res.json();
+   285→   285→
+   286→   286→        if (!res.ok) {
+   287→   287→          // Handle 400 validation errors with field-level details
+   288→   288→          if (res.status === 400 && data.details) {
+   289→   289→            const apiErrors: FieldErrors = {};
+   290→   290→            const details = data.details as Record<string, string[]>;
+   291→   291→
+   292→   292→            // Map API field names to form field names
+   293→   293→            const fieldMap: Record<string, keyof FieldErrors> = {
+   294→   294→              name: "name",
+   295→   295→              phone: "phone",
+   296→   296→              street: "street",
+   297→   297→              city: "city",
+   298→   298→              state: "state",
+   299→   299→              pincode: "pincode",
+   300→   300→              email: "email",
+   301→   301→            };
+   302→   302→
+   303→   303→            // Check address sub-fields
+   304→   304→            if (details.address) {
+   305→   305→              // details.address could be an object with nested field errors
+   306→   306→              if (typeof details.address === "object" && !Array.isArray(details.address)) {
+   307→   307→                const addrDetails = details.address as Record<string, string[]>;
+   308→   308→                for (const [key, messages] of Object.entries(addrDetails)) {
+   309→   309→                  if (fieldMap[key]) {
+   310→   310→                    apiErrors[fieldMap[key]] = messages[0];
+   311→   311→                  }
+   312→   312→                }
+   313→   313→              }
+   314→   314→            }
+   315→   315→
+   316→   316→            // Check top-level fields
+   317→   317→            for (const [key, messages] of Object.entries(details)) {
+   318→   318→              if (key === "address" || key === "cart" || key === "consent") continue;
+   319→   319→              if (fieldMap[key] && messages.length > 0) {
+   320→   320→                apiErrors[fieldMap[key]] = messages[0];
+   321→   321→              }
+   322→   322→            }
+   323→   323→
+   324→   324→            // Also check for address.street, address.city etc. (flattened Zod errors)
+   325→   325→            for (const key of Object.keys(details)) {
+   326→   326→              if (key.startsWith("address.") && details[key] != null) {
+   327→   327→                const subField = key.replace("address.", "");
+   328→   328→                if (fieldMap[subField]) {
+   329→   329→                  apiErrors[fieldMap[subField]] = (details[key] as string[])[0];
+   330→   330→                }
+   331→   331→              }
+   332→   332→            }
+   333→   333→
+   334→   334→            if (Object.keys(apiErrors).length > 0) {
+   335→   335→              setFieldErrors(apiErrors);
+   336→   336→              setTouched({
+   337→   337→                name: true,
+   338→   338→                phone: true,
+   339→   339→                street: true,
+   340→   340→                city: true,
+   341→   341→                state: true,
+   342→   342→                pincode: true,
+   343→   343→                email: true,
+   344→   344→              });
+   345→   345→              setSubmitError(data.error || "Please fix the errors below.");
+   346→   346→            } else {
+   347→   347→              setSubmitError(data.error || "Validation failed. Please check your details.");
+   348→   348→            }
+   349→   349→          } else {
+   350→   350→            setSubmitError(data.error || "Something went wrong. Please try again.");
+   351→   351→          }
+   352→   352→          return;
+   353→   353→        }
+   354→   354→
+   355→   355→        // Success — clear cart BEFORE redirecting (Resolution #10)
+   356→   356→        clearCart();
+   357→   357→        onOrderSuccess(data.orderNumber);
+   358→   358→      } catch {
+   359→   359→        setSubmitError("Network error. Please check your connection and try again.");
+   360→   360→      } finally {
+   361→   361→        setSubmitting(false);
+   362→   362→      }
+   363→   363→    },
+   364→   364→    [formData, items, codOutOfRange, clearCart, onOrderSuccess]
+   365→   365→  );
+   366→   366→
+   367→   367→  // ─── Render: Empty Cart ──────────────────────────────────────────────────
+   368→   368→
+   369→   369→  if (items.length === 0) {
+   370→   370→    return (
+   371→   371→      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+   372→   372→        <Card>
+   373→   373→          <CardContent className="flex flex-col items-center justify-center gap-4 py-12">
+   374→   374→            <Package className="size-16 text-muted-foreground/50" />
+   375→   375→            <p className="text-lg font-medium text-muted-foreground">
+   376→   376→              Your cart is empty
+   377→   377→            </p>
+   378→   378→            <Button
+   379→   379→              variant="outline"
+   380→   380→              className="min-h-[44px]"
+   381→   381→              onClick={() => onNavigate("home")}
+   382→   382→            >
+   383→   383→              <ArrowLeft className="size-4" />
+   384→   384→              Continue Shopping
+   385→   385→            </Button>
+   386→   386→          </CardContent>
+   387→   387→        </Card>
+   388→   388→      </div>
+   389→   389→    );
+   390→   390→  }
+   391→   391→
+   392→   392→  // ─── Render: Main Checkout ───────────────────────────────────────────────
+   393→   393→
+   394→   394→  return (
+   395→   395→    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+   396→   396→      {/* Back Button */}
+   397→   397→      <Button
+   398→   398→        variant="ghost"
+   399→   399→        className="mb-6 min-h-[44px] gap-2 px-2 text-muted-foreground hover:text-foreground -ml-2"
+   400→   400→        onClick={() => onNavigate("home")}
+   401→   401→      >
+   402→   402→        <ArrowLeft className="size-4" />
+   403→   403→        Back to Cart
+   404→   404→      </Button>
+   405→   405→
+   406→   406→      {/* Page Title */}
+   407→   407→      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-6 sm:mb-8">
+   408→   408→        Checkout
+   409→   409→      </h1>
+   410→   410→
+   411→   411→      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-6 lg:gap-8 items-start">
+   412→   412→        {/* ── Left Column: Order Summary (sticky on desktop) ── */}
+   413→   413→        <div className="lg:sticky lg:top-6">
+   414→   414→          <Card>
+   415→   415→            <CardHeader>
+   416→   416→              <CardTitle className="flex items-center gap-2 text-lg">
+   417→   417→                <Package className="size-5" />
+   418→   418→                Order Summary
+   419→   419→              </CardTitle>
+   420→   420→              <CardDescription>
+   421→   421→                {totalItems} {totalItems === 1 ? "item" : "items"}
+   422→   422→              </CardDescription>
+   423→   423→            </CardHeader>
+   424→   424→
+   425→   425→            <CardContent className="space-y-0">
+   426→   426→              {/* Cart Items */}
+   427→   427→              <div className="space-y-3">
+   428→   428→                {items.map((item, index) => (
+   429→   429→                  <React.Fragment key={item.variantId}>
+   430→   430→                    <div className="flex items-start gap-3">
+   431→   431→                      {/* Thumbnail 64x64 */}
+   432→   432→                      <img
+   433→   433→                        src={item.imageUrl}
+   434→   434→                        alt={item.productName}
+   435→   435→                        className="size-16 shrink-0 rounded-md object-cover"
+   436→   436→                        width={64}
+   437→   437→                        height={64}
+   438→   438→                      />
+   439→   439→
+   440→   440→                      {/* Product details */}
+   441→   441→                      <div className="flex flex-1 flex-col gap-0.5 min-w-0">
+   442→   442→                        <p className="font-medium leading-tight line-clamp-2 text-sm sm:text-base">
+   443→   443→                          {item.productName}
+   444→   444→                        </p>
+   445→   445→                        <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
+   446→   446→                          {item.variantDescription}
+   447→   447→                        </p>
+   448→   448→                        <p className="text-xs text-muted-foreground">
+   449→   449→                          {item.quantity} &times; {formatPrice(item.price)}
+   450→   450→                        </p>
+   451→   451→                      </div>
+   452→   452→
+   453→   453→                      {/* Line total */}
+   454→   454→                      <p className="font-medium text-sm sm:text-base shrink-0 tabular-nums">
+   455→   455→                        {formatPrice(item.price * item.quantity)}
+   456→   456→                      </p>
+   457→   457→                    </div>
+   458→   458→
+   459→   459→                    {index < items.length - 1 && <Separator className="my-3" />}
+   460→   460→                  </React.Fragment>
+   461→   461→                ))}
+   462→   462→              </div>
+   463→   463→
+   464→   464→              {/* Subtotal */}
+   465→   465→              <Separator className="my-4" />
+   466→   466→              <div className="flex items-center justify-between">
+   467→   467→                <span className="text-base font-medium">Subtotal</span>
+   468→   468→                <span className="text-lg font-bold tabular-nums">
+   469→   469→                  {formatPrice(cartTotal)}
+   470→   470→                </span>
+   471→   471→              </div>
+   472→   472→
+   473→   473→              {/* COD Range Notice */}
+   474→   474→              {codLoading && (
+   475→   475→                <div className="mt-4 space-y-2">
+   476→   476→                  <Skeleton className="h-4 w-3/4" />
+   477→   477→                  <Skeleton className="h-4 w-1/2" />
+   478→   478→                </div>
+   479→   479→              )}
+   480→   480→
+   481→   481→              {!codLoading && codSettings && (
+   482→   482→                <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+   483→   483→                  <ShieldCheck className="size-3.5 shrink-0" />
+   484→   484→                  <span>
+   485→   485→                    Pay on Delivery &middot; Orders {formatPrice(codSettings.cod_min)}&ndash;{formatPrice(codSettings.cod_max)}
+   486→   486→                  </span>
+   487→   487→                </div>
+   488→   488→              )}
+   489→   489→            </CardContent>
+   490→   490→          </Card>
+   491→   491→        </div>
+   492→   492→
+   493→   493→        {/* ── Right Column: Checkout Form ── */}
+   494→   494→        <Card>
+   495→   495→          <CardHeader>
+   496→   496→            <CardTitle className="flex items-center gap-2 text-lg">
+   497→   497→              <MapPin className="size-5" />
+   498→   498→              Delivery Details
+   499→   499→            </CardTitle>
+   500→   500→            <CardDescription>
+   501→   501→              Enter your shipping address and contact information
+   502→   502→            </CardDescription>
+   503→   503→          </CardHeader>
+   504→   504→
+   505→   505→          <CardContent>
+   506→   506→            {/* COD Out of Range Error */}
+   507→   507→            {!codLoading && codOutOfRange && (
+   508→   508→              <Alert variant="destructive" className="mb-6">
+   509→   509→                <AlertCircle className="size-4" />
+   510→   510→                <AlertTitle>Cash on Delivery Unavailable</AlertTitle>
+   511→   511→                <AlertDescription>
+   512→   512→                  {codOutOfRange.type === "below"
+   513→   513→                    ? `COD available for orders above ${formatPrice(codOutOfRange.min)}`
+   514→   514→                    : `COD available for orders up to ${formatPrice(codOutOfRange.max)}`}
+   515→   515→                </AlertDescription>
+   516→   516→              </Alert>
+   517→   517→            )}
+   518→   518→
+   519→   519→            {/* Settings Fetch Error */}
+   520→   520→            {codFetchError && (
+   521→   521→              <Alert variant="destructive" className="mb-6">
+   522→   522→                <AlertCircle className="size-4" />
+   523→   523→                <AlertTitle>Settings Error</AlertTitle>
+   524→   524→                <AlertDescription>{codFetchError}</AlertDescription>
+   525→   525→              </Alert>
+   526→   526→            )}
+   527→   527→
+   528→   528→            {/* Submit Error */}
+   529→   529→            {submitError && (
+   530→   530→              <Alert variant="destructive" className="mb-6">
+   531→   531→                <AlertCircle className="size-4" />
+   532→   532→                <AlertTitle>Order Failed</AlertTitle>
+   533→   533→                <AlertDescription>{submitError}</AlertDescription>
+   534→   534→              </Alert>
+   535→   535→            )}
+   536→   536→
+   537→   537→            {/* Loading Skeleton (COD settings fetching) */}
+   538→   538→            {codLoading ? (
+   539→   539→              <div className="space-y-5">
+   540→   540→                {[...Array(7)].map((_, i) => (
+   541→   541→                  <div key={i} className="space-y-2">
+   542→   542→                    <Skeleton className="h-4 w-24" />
+   543→   543→                    <Skeleton className="h-9 w-full" />
+   544→   544→                  </div>
+   545→   545→                ))}
+   546→   546→                <Skeleton className="h-11 w-full mt-4" />
+   547→   547→              </div>
+   548→   548→            ) : (
+   549→   549→              <form onSubmit={handleSubmit} noValidate className="space-y-5">
+   550→   550→                {/* Full Name */}
+   551→   551→                <div className="space-y-2">
+   552→   552→                  <Label htmlFor="name">
+   553→   553→                    Full Name <span className="text-destructive">*</span>
+   554→   554→                  </Label>
+   555→   555→                  <Input
+   556→   556→                    id="name"
+   557→   557→                    type="text"
+   558→   558→                    placeholder="Enter your full name"
+   559→   559→                    value={formData.name}
+   560→   560→                    onChange={(e) => handleFieldChange("name", e.target.value)}
+   561→   561→                    onBlur={() => handleBlur("name")}
+   562→   562→                    aria-invalid={touched.name && !!fieldErrors.name}
+   563→   563→                    aria-describedby={
+   564→   564→                      touched.name && fieldErrors.name ? "name-error" : undefined
+   565→   565→                    }
+   566→   566→                    className="min-h-[44px]"
+   567→   567→                  />
+   568→   568→                  {touched.name && fieldErrors.name && (
+   569→   569→                    <p id="name-error" className="text-sm text-destructive">
+   570→   570→                      {fieldErrors.name}
+   571→   571→                    </p>
+   572→   572→                  )}
+   573→   573→                </div>
+   574→   574→
+   575→   575→                {/* Phone Number */}
+   576→   576→                <div className="space-y-2">
+   577→   577→                  <Label htmlFor="phone">
+   578→   578→                    Phone Number <span className="text-destructive">*</span>
+   579→   579→                  </Label>
+   580→   580→                  <Input
+   581→   581→                    id="phone"
+   582→   582→                    type="tel"
+   583→   583→                    placeholder="10-digit mobile number"
+   584→   584→                    value={formData.phone}
+   585→   585→                    onChange={(e) => {
+   586→   586→                      // Allow only digits, max 10
+   587→   587→                      const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
+   588→   588→                      handleFieldChange("phone", val);
+   589→   589→                    }}
+   590→   590→                    onBlur={() => handleBlur("phone")}
+   591→   591→                    aria-invalid={touched.phone && !!fieldErrors.phone}
+   592→   592→                    aria-describedby={
+   593→   593→                      touched.phone && fieldErrors.phone ? "phone-error" : undefined
+   594→   594→                    }
+   595→   595→                    className="min-h-[44px]"
+   596→   596→                    inputMode="numeric"
+   597→   597→                  />
+   598→   598→                  {touched.phone && fieldErrors.phone && (
+   599→   599→                    <p id="phone-error" className="text-sm text-destructive">
+   600→   600→                      {fieldErrors.phone}
+   601→   601→                    </p>
+   602→   602→                  )}
+   603→   603→                </div>
+   604→   604→
+   605→   605→                {/* Street Address */}
+   606→   606→                <div className="space-y-2">
+   607→   607→                  <Label htmlFor="street">
+   608→   608→                    Street Address <span className="text-destructive">*</span>
+   609→   609→                  </Label>
+   610→   610→                  <Input
+   611→   611→                    id="street"
+   612→   612→                    type="text"
+   613→   613→                    placeholder="House no., building, street"
+   614→   614→                    value={formData.street}
+   615→   615→                    onChange={(e) => handleFieldChange("street", e.target.value)}
+   616→   616→                    onBlur={() => handleBlur("street")}
+   617→   617→                    aria-invalid={touched.street && !!fieldErrors.street}
+   618→   618→                    aria-describedby={
+   619→   619→                      touched.street && fieldErrors.street ? "street-error" : undefined
+   620→   620→                    }
+   621→   621→                    className="min-h-[44px]"
+   622→   622→                  />
+   623→   623→                  {touched.street && fieldErrors.street && (
+   624→   624→                    <p id="street-error" className="text-sm text-destructive">
+   625→   625→                      {fieldErrors.street}
+   626→   626→                    </p>
+   627→   627→                  )}
+   628→   628→                </div>
+   629→   629→
+   630→   630→                {/* City & State (side by side on sm+) */}
+   631→   631→                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   632→   632→                  <div className="space-y-2">
+   633→   633→                    <Label htmlFor="city">
+   634→   634→                      City <span className="text-destructive">*</span>
+   635→   635→                    </Label>
+   636→   636→                    <Input
+   637→   637→                      id="city"
+   638→   638→                      type="text"
+   639→   639→                      placeholder="City"
+   640→   640→                      value={formData.city}
+   641→   641→                      onChange={(e) => handleFieldChange("city", e.target.value)}
+   642→   642→                      onBlur={() => handleBlur("city")}
+   643→   643→                      aria-invalid={touched.city && !!fieldErrors.city}
+   644→   644→                      aria-describedby={
+   645→   645→                        touched.city && fieldErrors.city ? "city-error" : undefined
+   646→   646→                      }
+   647→   647→                      className="min-h-[44px]"
+   648→   648→                    />
+   649→   649→                    {touched.city && fieldErrors.city && (
+   650→   650→                      <p id="city-error" className="text-sm text-destructive">
+   651→   651→                        {fieldErrors.city}
+   652→   652→                      </p>
+   653→   653→                    )}
+   654→   654→                  </div>
+   655→   655→
+   656→   656→                  <div className="space-y-2">
+   657→   657→                    <Label htmlFor="state">
+   658→   658→                      State <span className="text-destructive">*</span>
+   659→   659→                    </Label>
+   660→   660→                    <Input
+   661→   661→                      id="state"
+   662→   662→                      type="text"
+   663→   663→                      placeholder="State"
+   664→   664→                      value={formData.state}
+   665→   665→                      onChange={(e) => handleFieldChange("state", e.target.value)}
+   666→   666→                      onBlur={() => handleBlur("state")}
+   667→   667→                      aria-invalid={touched.state && !!fieldErrors.state}
+   668→   668→                      aria-describedby={
+   669→   669→                        touched.state && fieldErrors.state ? "state-error" : undefined
+   670→   670→                      }
+   671→   671→                      className="min-h-[44px]"
+   672→   672→                    />
+   673→   673→                    {touched.state && fieldErrors.state && (
+   674→   674→                      <p id="state-error" className="text-sm text-destructive">
+   675→   675→                        {fieldErrors.state}
+   676→   676→                      </p>
+   677→   677→                    )}
+   678→   678→                  </div>
+   679→   679→                </div>
+   680→   680→
+   681→   681→                {/* Pincode */}
+   682→   682→                <div className="space-y-2">
+   683→   683→                  <Label htmlFor="pincode">
+   684→   684→                    Pincode <span className="text-destructive">*</span>
+   685→   685→                  </Label>
+   686→   686→                  <Input
+   687→   687→                    id="pincode"
+   688→   688→                    type="text"
+   689→   689→                    placeholder="6-digit pincode"
+   690→   690→                    value={formData.pincode}
+   691→   691→                    onChange={(e) => {
+   692→   692→                      const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
+   693→   693→                      handleFieldChange("pincode", val);
+   694→   694→                    }}
+   695→   695→                    onBlur={() => handleBlur("pincode")}
+   696→   696→                    aria-invalid={touched.pincode && !!fieldErrors.pincode}
+   697→   697→                    aria-describedby={
+   698→   698→                      touched.pincode && fieldErrors.pincode ? "pincode-error" : undefined
+   699→   699→                    }
+   700→   700→                    className="min-h-[44px]"
+   701→   701→                    inputMode="numeric"
+   702→   702→                  />
+   703→   703→                  {touched.pincode && fieldErrors.pincode && (
+   704→   704→                    <p id="pincode-error" className="text-sm text-destructive">
+   705→   705→                      {fieldErrors.pincode}
+   706→   706→                    </p>
+   707→   707→                  )}
+   708→   708→                </div>
+   709→   709→
+   710→   710→                {/* Email */}
+   711→   711→                <div className="space-y-2">
+   712→   712→                  <Label htmlFor="email">
+   713→   713→                    Email Address <span className="text-destructive">*</span>
+   714→   714→                  </Label>
+   715→   715→                  <Input
+   716→   716→                    id="email"
+   717→   717→                    type="email"
+   718→   718→                    placeholder="you@example.com"
+   719→   719→                    value={formData.email}
+   720→   720→                    onChange={(e) => handleFieldChange("email", e.target.value)}
+   721→   721→                    onBlur={() => handleBlur("email")}
+   722→   722→                    aria-invalid={touched.email && !!fieldErrors.email}
+   723→   723→                    aria-describedby={
+   724→   724→                      touched.email && fieldErrors.email ? "email-error" : undefined
+   725→   725→                    }
+   726→   726→                    className="min-h-[44px]"
+   727→   727→                  />
+   728→   728→                  {touched.email && fieldErrors.email && (
+   729→   729→                    <p id="email-error" className="text-sm text-destructive">
+   730→   730→                      {fieldErrors.email}
+   731→   731→                    </p>
+   732→   732→                  )}
+   733→   733→                </div>
+   734→   734→
+   735→   735→                {/* Consent Checkbox */}
+   736→   736→                <div className="flex items-start gap-3 pt-2">
+   737→   737→                  <Checkbox
+   738→   738→                    id="consent"
+   739→   739→                    checked={formData.consent}
+   740→   740→                    onCheckedChange={(checked) =>
+   741→   741→                      handleFieldChange("consent", checked === true)
+   742→   742→                    }
+   743→   743→                    className="mt-0.5"
+   744→   744→                  />
+   745→   745→                  <Label
+   746→   746→                    htmlFor="consent"
+   747→   747→                    className="text-sm font-normal leading-relaxed text-muted-foreground cursor-pointer"
+   748→   748→                  >
+   749→   749→                    I agree to receive order updates and marketing communications
+   750→   750→                    from Indicore
+   751→   751→                  </Label>
+   752→   752→                </div>
+   753→   753→
+   754→   754→                <Separator className="my-6" />
+   755→   755→
+   756→   756→                {/* Place Order Button */}
+   757→   757→                <Button
+   758→   758→                  type="submit"
+   759→   759→                  disabled={!canSubmit}
+   760→   760→                  className="w-full min-h-[44px] text-base font-semibold"
+   761→   761→                  size="lg"
+   762→   762→                >
+   763→   763→                  {submitting ? (
+   764→   764→                    <>
+   765→   765→                      <Loader2 className="size-4 animate-spin" />
+   766→   766→                      Placing Order...
+   767→   767→                    </>
+   768→   768→                  ) : (
+   769→   769→                    <>
+   770→   770→                      <ShieldCheck className="size-4" />
+   771→   771→                      Place Order &middot; {formatPrice(cartTotal)}
+   772→   772→                    </>
+   773→   773→                  )}
+   774→   774→                </Button>
+   775→   775→
+   776→   776→                {/* COD Info */}
+   777→   777→                <p className="text-center text-xs text-muted-foreground">
+   778→   778→                  Cash on Delivery only &middot; No online payment required
+   779→   779→                </p>
+   780→   780→              </form>
+   781→   781→            )}
+   782→   782→          </CardContent>
+   783→   783→        </Card>
+   784→   784→      </div>
+   785→   785→    </div>
+   786→   786→  );
+   787→   787→}
+   788→   788→
