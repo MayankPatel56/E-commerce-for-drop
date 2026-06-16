@@ -20,6 +20,14 @@ const QUICK_LINKS = [
   { id: "shop", label: "Shop" },
   { id: "track-order", label: "Track Order" },
   { id: "faq", label: "FAQ" },
+  { id: "about", label: "About Us" },
+  { id: "contact", label: "Contact" },
+] as const;
+
+const LEGAL_LINKS = [
+  { id: "privacy", label: "Privacy Policy" },
+  { id: "terms", label: "Terms & Conditions" },
+  { id: "returns", label: "Return Policy" },
 ] as const;
 
 export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
@@ -33,7 +41,7 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
     <footer className="bg-neutral-900 text-neutral-300">
       {/* Main footer content */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Column 1: Brand */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -70,7 +78,29 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
             </nav>
           </div>
 
-          {/* Column 3: Contact & Social */}
+          {/* Column 3: Legal */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+              Legal
+            </h3>
+            <nav aria-label="Legal links">
+              <ul className="space-y-2">
+                {LEGAL_LINKS.map((link) => (
+                  <li key={link.id}>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate(link.id)}
+                      className="text-sm text-neutral-400 hover:text-white transition-colors min-h-[44px] flex items-center w-full text-left"
+                    >
+                      {link.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+
+          {/* Column 4: Contact & Social */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
               Contact

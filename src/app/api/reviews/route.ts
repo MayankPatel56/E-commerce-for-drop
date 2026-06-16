@@ -30,6 +30,21 @@ export async function POST(request: NextRequest) {
 
     const { productId, rating, title, comment } = result.data;
 
+    // Rate limit: 5 reviews per hour per customer
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentReviews = await db.review.count({
+      where: {
+        customerId: customer.userId,
+        createdAt: { gte: oneHourAgo },
+      },
+    });
+    if (recentReviews >= 5) {
+      return NextResponse.json(
+        { error: "You can submit at most 5 reviews per hour. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     // 1. Verify delivered order containing this product
     const deliveredOrder = await db.order.findFirst({
       where: {

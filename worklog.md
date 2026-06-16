@@ -794,3 +794,39 @@ Stage Summary:
 - Row-level locking for inventory concurrency protection implemented
 - is_out_of_stock now fully maintained by database trigger (no manual setting in application code)
 - Key artifacts: backups/supabase-compliance-migration.sql, COMPLIANCE-REPORT.md
+---
+Task ID: 2-customer-apis
+Agent: full-stack-developer
+Task: Create missing customer/public APIs and add review rate limiting
+
+Work Log:
+- Created /api/settings (GET, Public) — returns all settings as a flat key-value map from the Setting table
+- Created /api/customer/orders (GET, Customer) — lists authenticated customer's orders with orderItems and variant product info, supports ?page and ?limit pagination, returns { orders, total }
+- Created /api/customer/export-data (GET, Customer) — DPDP Act compliance endpoint that exports all customer data (profile, orders, reviews, wishlist) as a downloadable JSON file with Content-Disposition header
+- Created /api/customer/delete-account (DELETE, Customer) — soft-delete approach that removes wishlist, reviews, then User (cascades to Customer); orders survive due to nullable customerId
+- Added 5/hour rate limiting to /api/reviews POST — counts reviews created in the last hour per customer, returns 429 if limit exceeded
+
+Stage Summary:
+- 4 new API route files created
+- Review rate limiting added (5/hour/customer)
+- All customer endpoints protected by requireCustomer()
+- Lint passes clean with no errors
+---
+Task ID: 2-admin-apis
+Agent: full-stack-developer
+Task: Create all missing admin API routes
+
+Work Log:
+- Created /api/admin/homepage (GET/PUT) — singleton HomepageContent (id=1) with upsert on PUT, Zod partial validation
+- Created /api/admin/faq (GET/POST) — list FAQs ordered by displayOrder with ?search, create FAQ with validation
+- Created /api/admin/faq/[id] (PUT/DELETE) — update/delete individual FAQ with existence checks
+- Created /api/admin/settings (GET/PUT) — key-value store, GET returns all as object, PUT upserts single setting
+- Created /api/admin/analytics (GET) — dashboard metrics with date range filtering (today/last7days/last30days/custom), 12 metrics including revenue, COD verification rate, repeat purchase rate, review counts
+- Created /api/admin/upload/image (POST) — FormData image upload with MIME/size validation, sharp resize (1200px max) and WebP conversion, saves to public/uploads/products/
+- Created /api/admin/customers (GET) — paginated customer list with ?search (name/email/phone), includes order count
+
+Stage Summary:
+- 7 new admin API route files created
+- All endpoints protected by requireAdmin()
+- Zod validation on all POST/PUT endpoints
+- Lint passes clean with no errors
