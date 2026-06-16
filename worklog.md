@@ -935,3 +935,30 @@ Stage Summary:
 - Infrastructure fixes: Schema provider, hero image, seed idempotency, logging
 - All Phase 7 deliverables confirmed: Homepage editor, FAQ management, Global settings, Customer Reviews config
 - No new API routes, database tables, or major components were needed
+
+---
+Task ID: DB-ARCH-RESTORE
+Agent: Main Agent
+Task: Database Architecture Restoration — Revert SQLite back to Supabase PostgreSQL
+
+Work Log:
+- Investigated the SQLite→PostgreSQL regression from commit 63f0dcf
+- Worklog line 914 confirmed: "Fixed: Prisma schema provider reverted from postgresql to sqlite (sandbox environment override)"
+- Determined intended architecture: Supabase PostgreSQL (confirmed by .env, SQL migration files, worklog)
+- Tested Supabase connectivity: REST API reachable (HTTP 401 = auth required, server alive), direct PG port 5432 works, pgbouncer port 6543 times out (sandbox firewall)
+- Restored prisma/schema.prisma: provider = "postgresql", directUrl = env("DIRECT_URL")
+- Fixed .env: Both DATABASE_URL and DIRECT_URL point to port 5432 (pgbouncer 6543 blocked in sandbox)
+- Ran prisma db pull to introspect actual Supabase schema and ensure compatibility
+- Restored @default(cuid()) on User.id (lost during introspection)
+- Restored @updatedAt on all 9 tables (needed for INSERT; DB trigger handles UPDATE)
+- Added RLS documentation comments to all 15 models
+- Documented idx_orders_pending partial index (not expressible in Prisma, exists in DB)
+- Successfully seeded Supabase database (admin, settings, categories, tags, FAQs, products, reviews, homepage)
+- Verified trigger: set_is_out_of_stock correctly sets isOutOfStock=true when stockQuantity=0
+- Comprehensive PostgreSQL feature audit confirmed all features intact
+
+Stage Summary:
+- Architecture RESTORED: Supabase PostgreSQL
+- Files changed: prisma/schema.prisma, .env
+- All 15 tables, 5 functions, 10 triggers, 42 RLS policies, 24 indexes, 1 partial index CONFIRMED on Supabase
+- Production will use Supabase PostgreSQL (change .env back to pgbouncer 6543 for pooling)
