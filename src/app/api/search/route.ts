@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       products: products.map((p) => {
-        const galleryImages: string[] = p.galleryImages ? JSON.parse(p.galleryImages) : [];
+        const galleryImages: string[] = (p.galleryImages as string[] | null) ?? [];
         const rating = ratingMap.get(p.id) || { avg: 0, count: 0 };
         const hasInStockVariant = p.variants.some((v) => !v.isOutOfStock && v.stockQuantity > 0);
 

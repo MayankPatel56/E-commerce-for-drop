@@ -53,9 +53,7 @@ export async function GET(
           ) / 10
         : 0;
 
-    const galleryImages: string[] = product.galleryImages
-      ? JSON.parse(product.galleryImages)
-      : [];
+    const galleryImages: string[] = (product.galleryImages as string[] | null) ?? [];
 
     // Group variants by type for the UI selector
     const variantTypes: Record<string, { value: string; variantId: number; price: number | null; stockQuantity: number; isOutOfStock: boolean }[]> = {};

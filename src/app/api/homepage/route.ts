@@ -14,18 +14,12 @@ export async function GET() {
     }
 
     // Parse JSON columns
-    const heroBanner = homepage.heroBanner ? JSON.parse(homepage.heroBanner) : null;
-    const featuredProductIds: number[] = homepage.featuredProductIds
-      ? JSON.parse(homepage.featuredProductIds)
-      : [];
-    const categoriesSection = homepage.categoriesSection
-      ? JSON.parse(homepage.categoriesSection)
-      : null;
-    const whyChooseUs = homepage.whyChooseUs ? JSON.parse(homepage.whyChooseUs) : [];
-    const customerReviews = homepage.customerReviews
-      ? JSON.parse(homepage.customerReviews)
-      : { max_reviews_to_show: 6 };
-    const footer = homepage.footer ? JSON.parse(homepage.footer) : null;
+    const heroBanner = homepage.heroBanner ?? null;
+    const featuredProductIds: number[] = (homepage.featuredProductIds as number[] | null) ?? [];
+    const categoriesSection = homepage.categoriesSection ?? null;
+    const whyChooseUs = homepage.whyChooseUs ?? [];
+    const customerReviews = homepage.customerReviews ?? { max_reviews_to_show: 6 };
+    const footer = homepage.footer ?? null;
 
     // 2. Fetch featured products (published only, with category)
     const featuredProducts = featuredProductIds.length > 0
@@ -82,7 +76,7 @@ export async function GET() {
 
     const settingsMap: Record<string, unknown> = {};
     for (const s of settings) {
-      settingsMap[s.key] = JSON.parse(s.value);
+      settingsMap[s.key] = s.value;
     }
 
     return NextResponse.json({

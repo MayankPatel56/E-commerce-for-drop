@@ -48,7 +48,7 @@ export async function GET(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    const shippingAddress = JSON.parse(order.shippingAddress) as Record<string, string>;
+    const shippingAddress = order.shippingAddress as Record<string, string>;
 
     return NextResponse.json({
       id: order.id,
@@ -66,7 +66,7 @@ export async function GET(
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         lineTotal: item.unitPrice * item.quantity,
-        variantSnapshot: item.variantSnapshot ? JSON.parse(item.variantSnapshot) : null,
+        variantSnapshot: item.variantSnapshot ?? null,
         variant: item.variant
           ? {
               id: item.variant.id,

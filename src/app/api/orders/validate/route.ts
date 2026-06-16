@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     let codMin = 0;
     let codMax = 50000;
     for (const s of settings) {
-      const parsed_val = JSON.parse(s.value);
+      const parsed_val = s.value as { value: number };
       if (s.key === "cod_min_order") codMin = parsed_val.value ?? 0;
       if (s.key === "cod_max_order") codMax = parsed_val.value ?? 50000;
     }

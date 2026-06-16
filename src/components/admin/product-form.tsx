@@ -167,19 +167,10 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
           setPrimaryPreview(p.primaryImage);
         }
 
-        // Gallery images - stored as JSON string
-        if (p.galleryImages) {
-          try {
-            const parsed = typeof p.galleryImages === "string"
-              ? JSON.parse(p.galleryImages)
-              : p.galleryImages;
-            if (Array.isArray(parsed)) {
-              setGalleryImages(parsed);
-              setGalleryPreviews(parsed);
-            }
-          } catch {
-            // Ignore parse errors
-          }
+        // Gallery images - API returns parsed array (native Json column)
+        if (p.galleryImages && Array.isArray(p.galleryImages)) {
+          setGalleryImages(p.galleryImages);
+          setGalleryPreviews(p.galleryImages);
         }
 
         // Tags
@@ -315,7 +306,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
         seoDescription: seoDescription.trim() || null,
         isPublished,
         primaryImage: finalPrimaryImage || null,
-        galleryImages: JSON.stringify(finalGalleryImages),
+        galleryImages: finalGalleryImages,
         tagIds: selectedTagIds,
       };
 

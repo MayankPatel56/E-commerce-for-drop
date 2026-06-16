@@ -721,3 +721,47 @@ Stage Summary:
 - All endpoints properly authenticated via NextAuth session
 - No password_hash exposed in any customer response
 - Review form on product detail checks eligibility before showing
+
+---
+Task ID: 6
+Agent: General-Purpose Sub Agent
+Task: Update client-side product-form component for Supabase PostgreSQL migration (galleryImages column now native Json type)
+
+Work Log:
+- Read /home/z/my-project/src/components/admin/product-form.tsx to identify exact code to change
+- Simplified gallery images load logic (lines 170-183): removed JSON.parse defensive try/catch block since API now returns parsed array from native Prisma Json column
+- Updated form submit payload (line 318): removed JSON.stringify() wrapping of finalGalleryImages, passing raw array to API instead
+
+Stage Summary: Two edits applied to product-form.tsx. Client now sends galleryImages as a raw JS array and reads it as a parsed array from the API, consistent with the Prisma native Json column type after SQLite→Supabase PostgreSQL migration.
+---
+Task ID: 5a
+Agent: Sub-agent (general-purpose)
+Task: Remove JSON.parse/JSON.stringify calls on DB Json columns in API routes batch 1
+Description: After migrating Prisma schema from SQLite to Supabase PostgreSQL, all JSON string columns are now native Prisma `Json` type. This means Prisma auto-serializes/deserializes, so manual JSON.parse() and JSON.stringify() calls on DB column values must be removed. This batch covers 7 API route files.
+
+Work Log:
+- Read all 7 target files to verify exact code matches
+- **customer/profile/route.ts**: 3 edits — (1) GET handler: replaced 7-line try/catch JSON.parse block with single `const parsedAddress = profile.address || null;`, (2) PUT handler: removed `JSON.stringify()` from `updateData.address = JSON.stringify(address)`, (3) PUT handler: replaced 7-line try/catch JSON.parse block with `const parsedAddress = updated.address || null;`
+- **checkout/settings/route.ts**: 1 edit — replaced `JSON.parse(s.value)` with `s.value as { value: number }` (type assertion preserved for `.value` access)
+- **orders/guest-history/route.ts**: 1 edit — replaced `item.variantSnapshot ? JSON.parse(item.variantSnapshot) : null` with `item.variantSnapshot ?? null`
+- **orders/route.ts**: 5 edits — (1) `JSON.parse(s.value)` → `s.value as { value: number }` for COD settings, (2) `JSON.stringify(address)` removed in customer.update, (3) `JSON.stringify(address)` removed in customer.create, (4) `JSON.stringify(address)` removed in order.create shippingAddress, (5) `JSON.stringify({...})` wrapper removed from variantSnapshot — object literal passed directly
+- **orders/validate/route.ts**: 1 edit — replaced `JSON.parse(s.value)` with `s.value as { value: number }`
+- **orders/track/route.ts**: 2 edits — (1) `JSON.parse(order.shippingAddress)` removed (kept `as Record<string, string>` assertion), (2) variantSnapshot ternary+parse → `?? null`
+- **admin/orders/[id]/route.ts**: 2 edits — (1) `JSON.parse(order.shippingAddress)` removed (kept type assertion), (2) variantSnapshot ternary+parse → `?? null`
+
+Stage Summary: 15 surgical edits across 7 files. All JSON.parse() calls on Prisma Json column reads replaced with direct access (plus type assertions where needed). All JSON.stringify() calls on Prisma Json column writes replaced with direct object passing. No non-DB JSON operations were modified. Files are ready for type-checking.
+
+---
+Task ID: 5b
+Agent: general-purpose sub-agent
+Task: Update API routes batch 2 — Remove JSON.parse/JSON.stringify on Prisma Json column reads/writes for Supabase PostgreSQL migration
+
+Work Log:
+- **search/route.ts** (1 edit): Line 82 `JSON.parse(p.galleryImages)` → `(p.galleryImages as string[] | null) ?? []`
+- **homepage/route.ts** (7 edits): Removed JSON.parse from heroBanner, featuredProductIds, categoriesSection, whyChooseUs, customerReviews, footer (lines 17-28), and settingsMap (line 85). Replaced ternary+parse patterns with `??` null coalescing and type assertions.
+- **products/[slug]/route.ts** (1 edit): Lines 56-58 `JSON.parse(product.galleryImages)` → `(product.galleryImages as string[] | null) ?? []`
+- **products/route.ts** (1 edit): Line 133 `JSON.parse(p.galleryImages)` → `(p.galleryImages as string[] | null) ?? []`
+- **admin/products/route.ts** (1 edit): Line 212 `JSON.stringify(data.galleryImages)` → `data.galleryImages` (write)
+- **admin/products/[id]/route.ts** (1 edit): Lines 190-195 `JSON.stringify(data.galleryImages)` → `data.galleryImages` (write)
+
+Stage Summary: 12 surgical edits across 6 files. All JSON.parse() calls on Prisma Json column reads replaced with direct access using nullish coalescing (`??`) and type assertions. All JSON.stringify() calls on Prisma Json column writes replaced with direct value passing. No non-DB JSON operations (HTTP bodies, localStorage) were modified. Zero remaining JSON.parse/JSON.stringify calls in any of the 6 files.

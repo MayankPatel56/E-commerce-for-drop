@@ -190,7 +190,7 @@ export async function PUT(
     if (data.galleryImages !== undefined) {
       updateData.galleryImages =
         data.galleryImages && data.galleryImages.length > 0
-          ? JSON.stringify(data.galleryImages)
+          ? data.galleryImages
           : null;
     }
     if (data.seoTitle !== undefined) updateData.seoTitle = data.seoTitle;

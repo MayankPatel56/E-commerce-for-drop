@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     let codMin = 0;
     let codMax = 50000;
     for (const s of settings) {
-      const val = JSON.parse(s.value);
+      const val = s.value as { value: number };
       if (s.key === "cod_min_order") codMin = val.value ?? 0;
       if (s.key === "cod_max_order") codMax = val.value ?? 50000;
     }
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
         data: {
           phone,
           name,
-          address: JSON.stringify(address),
+          address: address,
           // If consent is true, update email consent
           ...(consent && !existingCustomer.emailConsentGiven
             ? { emailConsentGiven: true }
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
           email: normalizedEmail,
           name,
           phone,
-          address: JSON.stringify(address),
+          address: address,
           isRegistered: false,
           role: "customer",
           emailConsentGiven: consent ?? false,
@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
           customerId,
           status: "pending",
           cartTotal,
-          shippingAddress: JSON.stringify(address),
+          shippingAddress: address,
           consentGiven: consent ?? false,
         },
       });
@@ -246,12 +246,12 @@ export async function POST(request: NextRequest) {
             variantId: item.variant_id,
             quantity: item.quantity,
             unitPrice,
-            variantSnapshot: JSON.stringify({
+            variantSnapshot: {
               sku: variant.sku,
               variantType: variant.variantType,
               variantValue: variant.variantValue,
               productName: variant.product.name,
-            }),
+            },
           },
         });
 

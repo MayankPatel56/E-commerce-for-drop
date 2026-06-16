@@ -44,15 +44,8 @@ export async function GET() {
       return NextResponse.json({ error: "Customer profile not found" }, { status: 404 });
     }
 
-    // Parse address JSON
-    let parsedAddress = null;
-    if (profile.address) {
-      try {
-        parsedAddress = JSON.parse(profile.address);
-      } catch {
-        parsedAddress = null;
-      }
-    }
+    // Prisma Json type: already parsed
+    const parsedAddress = profile.address || null;
 
     return NextResponse.json({
       ...profile,
@@ -86,7 +79,7 @@ export async function PUT(request: NextRequest) {
     const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
     if (phone !== undefined) updateData.phone = phone;
-    if (address !== undefined) updateData.address = JSON.stringify(address);
+    if (address !== undefined) updateData.address = address;
     if (withdrawConsent === true) updateData.emailConsentGiven = false;
 
     const updated = await db.customer.update({
@@ -104,14 +97,7 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    let parsedAddress = null;
-    if (updated.address) {
-      try {
-        parsedAddress = JSON.parse(updated.address);
-      } catch {
-        parsedAddress = null;
-      }
-    }
+    const parsedAddress = updated.address || null;
 
     return NextResponse.json({
       ...updated,

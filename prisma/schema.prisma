@@ -1,13 +1,14 @@
-// Indicore Originals - Phase 1: Database & Authentication
-// Adapted from Supabase/PostgreSQL plan to Prisma/SQLite
+// Indicore Originals — Phase 1: Database & Authentication
+// Migrated from SQLite to Supabase PostgreSQL
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================================================
@@ -16,12 +17,12 @@ datasource db {
 // ============================================================================
 
 model User {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  name       String?
-  password   String   // bcrypt hash — NextAuth/Credentials owns this
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String   // bcrypt hash — NextAuth/Credentials owns this
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   customer Customer?
 }
@@ -37,7 +38,7 @@ model Customer {
   email             String    @unique
   name              String
   phone             String    // Non-unique (Resolution: phone NOT unique constraint)
-  address           String?   // JSON string: {"street","city","state","pincode"}
+  address           Json?     // {"street","city","state","pincode"}
   role              String    @default("customer") // "admin" or "customer"
   isRegistered      Boolean   @default(false) // false for guest checkouts
   emailConsentGiven Boolean   @default(false) // Marketing opt-in
@@ -78,19 +79,19 @@ model Tag {
 
 /// Products table
 model Product {
-  id            Int       @id @default(autoincrement())
-  name          String
-  slug          String    @unique
-  description   String?
-  price         Float     // Base price
-  primaryImage  String?   // Primary image URL
-  galleryImages String?   // JSON array of image URLs
-  seoTitle      String?
+  id             Int      @id @default(autoincrement())
+  name           String
+  slug           String   @unique
+  description    String?
+  price          Float    // Base price
+  primaryImage   String?  // Primary image URL
+  galleryImages  Json?    // Array of image URLs
+  seoTitle       String?
   seoDescription String?
-  isPublished   Boolean   @default(false)
-  categoryId    Int
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isPublished    Boolean  @default(false)
+  categoryId     Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   category     Category       @relation(fields: [categoryId], references: [id])
   variants     ProductVariant[]
@@ -103,7 +104,7 @@ model Product {
 }
 
 /// Product Variants table
-/// is_out_of_stock maintained by application logic (no DB triggers in SQLite)
+/// is_out_of_stock maintained by application logic
 model ProductVariant {
   id             Int     @id @default(autoincrement())
   sku            String  @unique
@@ -112,7 +113,7 @@ model ProductVariant {
   variantValue   String  // "M", "Black", "Cotton", etc.
   price          Float?  // Override price (null = use product price)
   stockQuantity  Int     @default(0)
-  isOutOfStock   Boolean @default(false) // Updated via app logic (equivalent to trigger)
+  isOutOfStock   Boolean @default(false) // Updated via app logic
 
   product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItems  OrderItem[]
@@ -142,7 +143,7 @@ model Order {
   customerId      String?
   status          String   @default("pending") // pending → confirmed → shipped → delivered / cancelled
   cartTotal       Float
-  shippingAddress String   // JSON: {"street","city","state","pincode"}
+  shippingAddress Json     // {"street","city","state","pincode"}
   consentGiven    Boolean  @default(false) // Marketing opt-in snapshot (Resolution #7)
   internalNotes   String?  // Admin notes
   createdAt       DateTime @default(now())
@@ -165,7 +166,7 @@ model OrderItem {
   variantId      Int
   quantity       Int
   unitPrice      Float   // Snapshot of price at order time
-  variantSnapshot String? // JSON snapshot of variant details
+  variantSnapshot Json?  // Snapshot of variant details
 
   order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   variant ProductVariant @relation(fields: [variantId], references: [id])
@@ -224,27 +225,28 @@ model Faq {
 }
 
 /// Homepage Content table — Singleton (only 1 row)
-/// Includes customer_reviews jsonb column (Resolution #6)
+/// Uses native JSON columns (PostgreSQL JSONB)
 model HomepageContent {
   id                 Int      @id @default(1) // Fixed ID = 1, singleton
-  heroBanner         String?  // JSON: {"image_url","text","cta_text","cta_link"}
-  featuredProductIds String?  // JSON array of product IDs
-  categoriesSection  String?  // JSON: {"display_categories": [id,...]}
-  whyChooseUs        String?  // JSON: [{"icon","title","description"},...]
-  customerReviews    String   @default("{\"max_reviews_to_show\": 6}") // JSON config
-  footer             String?  // JSON: {"contact_text","social_links","copyright_text"}
+  heroBanner         Json?    // {"image_url","text","cta_text","cta_link"}
+  featuredProductIds Json?    // Array of product IDs
+  categoriesSection  Json?    // {"display_categories": [id,...]}
+  whyChooseUs        Json?    // [{"icon","title","description"},...]
+  /// JSON config: {"max_reviews_to_show": N}
+  customerReviews    Json
+  footer             Json?    // {"contact_text","social_links","copyright_text"}
   updatedAt          DateTime @default(now())
 }
 
-/// Settings table — Key-Value store
+/// Settings table — Key-Value store with native JSON values
 /// No email config keys (V1 sends no automated emails)
 model Setting {
   key   String @id
-  value String // JSON: {"value": ...}
+  value Json   // {"value": ...}
 }
 
-/// Order Track Attempts — Database-based rate limiting (no Redis)
-/// Cleaned up via application logic (equivalent to pg_cron cleanup)
+/// Order Track Attempts — Database-based rate limiting
+/// Cleaned up via application logic
 model OrderTrackAttempt {
   id          Int      @id @default(autoincrement())
   ipAddress   String

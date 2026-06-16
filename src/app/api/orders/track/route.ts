@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 5. Return tracking info (don't expose internal notes)
-    const address = JSON.parse(order.shippingAddress) as Record<string, string>;
+    const address = order.shippingAddress as Record<string, string>;
 
     return NextResponse.json({
       orderNumber: order.orderNumber,
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
       updatedAt: order.updatedAt,
       shippingAddress: address,
       items: order.orderItems.map((item) => ({
-        variantSnapshot: item.variantSnapshot ? JSON.parse(item.variantSnapshot) : null,
+        variantSnapshot: item.variantSnapshot ?? null,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         lineTotal: item.unitPrice * item.quantity,

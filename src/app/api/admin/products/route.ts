@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
         price: data.price,
         categoryId: data.categoryId,
         primaryImage: data.primaryImage ?? null,
-        galleryImages: data.galleryImages.length > 0 ? JSON.stringify(data.galleryImages) : null,
+        galleryImages: data.galleryImages.length > 0 ? data.galleryImages : null,
         seoTitle: data.seoTitle ?? null,
         seoDescription: data.seoDescription ?? null,
         isPublished: data.isPublished,

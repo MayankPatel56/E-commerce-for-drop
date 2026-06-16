@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         ...order,
         itemCount: order.orderItems.reduce((sum, item) => sum + item.quantity, 0),
         orderItems: order.orderItems.map((item) => ({
-          variantSnapshot: item.variantSnapshot ? JSON.parse(item.variantSnapshot) : null,
+          variantSnapshot: item.variantSnapshot ?? null,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           lineTotal: item.unitPrice * item.quantity,

@@ -1,3 +1,6 @@
+import { config } from "dotenv";
+config();
+
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 
@@ -33,18 +36,19 @@ async function seed() {
   console.log(`✅ Admin user created: ${adminUser.email} (role: ${adminUser.customer?.role})`);
 
   // 2. Seed default settings (no email config — V1 sends no emails)
+  // Uses native Json type — no JSON.stringify needed
   const defaultSettings = [
-    { key: "cod_min_order_value", value: JSON.stringify({ value: 299 }) },
-    { key: "cod_max_order_value", value: JSON.stringify({ value: 50000 }) },
-    { key: "store_name", value: JSON.stringify({ value: "Indicore Originals" }) },
-    { key: "store_email", value: JSON.stringify({ value: "support@indicoreoriginals.com" }) },
-    { key: "store_phone", value: JSON.stringify({ value: "+91XXXXXXXXXX" }) },
+    { key: "cod_min_order_value", value: { value: 299 } },
+    { key: "cod_max_order_value", value: { value: 50000 } },
+    { key: "store_name", value: { value: "Indicore Originals" } },
+    { key: "store_email", value: { value: "support@indicoreoriginals.com" } },
+    { key: "store_phone", value: { value: "+91XXXXXXXXXX" } },
     {
       key: "social_links",
-      value: JSON.stringify({
+      value: {
         instagram: "https://instagram.com/indicore",
         facebook: "https://facebook.com/indicore",
-      }),
+      },
     },
   ];
 
@@ -59,34 +63,35 @@ async function seed() {
   console.log("✅ Settings seeded (6 keys)");
 
   // 3. Seed homepage content singleton (includes customer_reviews — Resolution #6)
+  // Uses native Json type — no JSON.stringify needed
   await db.homepageContent.upsert({
     where: { id: 1 },
     update: {},
     create: {
       id: 1,
-      heroBanner: JSON.stringify({
+      heroBanner: {
         image_url: "/placeholder-hero.jpg",
         text: "Welcome to Indicore Originals",
         cta_text: "Shop Now",
         cta_link: "/shop",
-      }),
-      featuredProductIds: JSON.stringify([]),
-      categoriesSection: JSON.stringify({ display_categories: [] }),
-      whyChooseUs: JSON.stringify([
+      },
+      featuredProductIds: [],
+      categoriesSection: { display_categories: [] },
+      whyChooseUs: [
         { icon: "truck", title: "Free Shipping", description: "On orders above ₹299" },
         { icon: "shield-check", title: "Secure Payments", description: "COD available" },
         { icon: "refresh-cw", title: "Easy Returns", description: "Hassle-free return policy" },
         { icon: "headphones", title: "24/7 Support", description: "We're here to help" },
-      ]),
-      customerReviews: JSON.stringify({ max_reviews_to_show: 6 }),
-      footer: JSON.stringify({
+      ],
+      customerReviews: { max_reviews_to_show: 6 },
+      footer: {
         contact_text: "support@indicoreoriginals.com",
         social_links: {
           instagram: "https://instagram.com/indicore",
           facebook: "https://facebook.com/indicore",
         },
         copyright_text: "© 2024 Indicore Originals. All rights reserved.",
-      }),
+      },
     },
   });
 
@@ -296,10 +301,11 @@ async function seed() {
   console.log(`✅ Products seeded (${createdProducts.length})`);
 
   // 8. Update featured product IDs on homepage (first 4 products)
+  // Uses native Json type — no JSON.stringify needed
   const featuredIds = createdProducts.slice(0, 4).map((p) => p.id);
   await db.homepageContent.update({
     where: { id: 1 },
-    data: { featuredProductIds: JSON.stringify(featuredIds) },
+    data: { featuredProductIds: featuredIds },
   });
   console.log(`✅ Featured products set (IDs: ${featuredIds.join(", ")})`);
 
@@ -327,13 +333,14 @@ async function seed() {
   const customerId = reviewCustomer.customer!.id;
 
   // Create a delivered order for review validation
+  // Uses native Json type — no JSON.stringify needed
   const sampleOrder = await db.order.create({
     data: {
       orderNumber: "ORD-1700000000-ABC123",
       customerId: customerId,
       status: "delivered",
       cartTotal: 599,
-      shippingAddress: JSON.stringify({ street: "123 MG Road", city: "Mumbai", state: "Maharashtra", pincode: "400001" }),
+      shippingAddress: { street: "123 MG Road", city: "Mumbai", state: "Maharashtra", pincode: "400001" },
       consentGiven: false,
     },
   });
@@ -347,7 +354,7 @@ async function seed() {
       variantId: firstVariant.id,
       quantity: 1,
       unitPrice: firstProduct.price,
-      variantSnapshot: JSON.stringify({ type: firstVariant.variantType, value: firstVariant.variantValue }),
+      variantSnapshot: { type: firstVariant.variantType, value: firstVariant.variantValue },
     },
   });
 

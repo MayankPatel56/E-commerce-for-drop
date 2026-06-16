@@ -19,7 +19,7 @@ export async function GET() {
     };
 
     for (const s of settings) {
-      const parsed = JSON.parse(s.value);
+      const parsed = s.value as { value: number };
       if (s.key === "cod_min_order") {
         settingsMap.cod_min = parsed.value ?? 0;
       } else if (s.key === "cod_max_order") {
