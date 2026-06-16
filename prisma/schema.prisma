@@ -104,7 +104,7 @@ model Product {
 }
 
 /// Product Variants table
-/// is_out_of_stock maintained by application logic
+/// is_out_of_stock maintained by DB trigger: set_is_out_of_stock
 model ProductVariant {
   id             Int     @id @default(autoincrement())
   sku            String  @unique
@@ -113,7 +113,7 @@ model ProductVariant {
   variantValue   String  // "M", "Black", "Cotton", etc.
   price          Float?  // Override price (null = use product price)
   stockQuantity  Int     @default(0)
-  isOutOfStock   Boolean @default(false) // Updated via app logic
+  isOutOfStock   Boolean @default(false) // DB trigger: SET (stock_quantity <= 0)
 
   product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItems  OrderItem[]
@@ -235,7 +235,7 @@ model HomepageContent {
   /// JSON config: {"max_reviews_to_show": N}
   customerReviews    Json
   footer             Json?    // {"contact_text","social_links","copyright_text"}
-  updatedAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 /// Settings table — Key-Value store with native JSON values

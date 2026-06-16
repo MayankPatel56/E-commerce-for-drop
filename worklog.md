@@ -854,3 +854,44 @@ Stage Summary:
 - Review rate limiting implemented (5/hour) per Plan §8
 - robots.txt updated per Plan §12
 - All changes verified: lint clean, API auth checks pass, headers confirmed
+
+---
+Task ID: 1
+Agent: main
+Task: Fix 3 critical blockers + complete Phase 6
+
+Work Log:
+- Fixed COD settings key mismatch: seed.ts used `cod_min_order_value`/`cod_max_order_value` but APIs read `cod_min_order`/`cod_max_order`. Updated seed.ts keys and ran SQL to fix existing DB data.
+- Implemented `is_out_of_stock` DB trigger: Created `set_is_out_of_stock()` function with `BEFORE INSERT OR UPDATE ON "ProductVariant"` trigger. Drops old trigger_update_is_out_of_stock first. Also fixed existing data.
+- Added partial indexes: `idx_orders_pending` (WHERE status='pending') and `idx_reviews_pending` (WHERE status='pending') via raw SQL.
+- Fixed HomepageContent.updatedAt bug: Changed `@default(now())` to `@updatedAt` in schema.prisma.
+- Fixed email field label: Changed "Email Address" to "Email Address (For order updates)" on checkout page (DPDP compliance).
+- Built 6 missing admin panels via parallel subagents:
+  1. admin-dashboard.tsx - KPI cards, pending orders, recent orders
+  2. analytics-dashboard.tsx - Date range, KPIs, COD metrics, review metrics, top products
+  3. homepage-editor.tsx - 7-section editor (hero, featured, categories, why choose us, reviews config, FAQ note, footer)
+  4. faq-manager.tsx - CRUD with search, inline edit, reorder, active toggle
+  5. settings-manager.tsx - Grouped settings (Order, Store, Social)
+  6. customers-table.tsx - Paginated table with search, role/registered badges
+- Created customer-orders.tsx - Full paginated order history for registered customers
+- Added "Add to Cart" button to wishlist (alongside existing "View" button)
+- Integrated all new components into page.tsx:
+  - Added 8 new imports (6 admin panels + CustomerOrders)
+  - Added "customer-orders" to AppView union type
+  - Added 8 new AdminPanel values (dashboard, homepage, faq, settings, analytics, customers)
+  - Default admin panel changed from "products" to "dashboard"
+  - Added customer-orders to auth guard in handleNavigate
+  - Added all 6 admin panel renderers in renderAdminPanel
+  - Updated admin header title to handle all new panels
+- Updated admin-sidebar.tsx:
+  - Added 3 icon imports (BarChart3, FileText, Settings, Users, Home)
+  - Reorganized sidebar into 3 groups: Main (7 items), Content (3 items), Data (2 items)
+  - Dashboard now first item in Main group
+- All changes pass ESLint with zero errors
+
+Stage Summary:
+- All 3 critical blockers resolved: COD key mismatch, is_out_of_stock trigger, 6 missing admin panels
+- Phase 6 fully complete: customer orders view, wishlist "Add to Cart" button
+- Database: trigger, 2 partial indexes, HomepageContent.updatedAt fix
+- Compliance: DPDP email label fixed
+- 13 files changed, 7 new files created

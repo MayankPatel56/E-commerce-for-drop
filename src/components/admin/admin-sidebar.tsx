@@ -20,6 +20,11 @@ import {
   LogOut,
   Menu,
   Store,
+  BarChart3,
+  FileText,
+  Settings,
+  Users,
+  Home,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -29,11 +34,23 @@ interface AdminSidebarProps {
 }
 
 const NAV_ITEMS = [
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "orders", label: "Orders", icon: ClipboardList },
   { id: "products", label: "Products", icon: Package },
   { id: "categories", label: "Categories", icon: FolderTree },
   { id: "tags", label: "Tags", icon: Tag },
   { id: "reviews", label: "Reviews", icon: MessageSquare },
+] as const;
+
+const CMS_ITEMS = [
+  { id: "homepage", label: "Homepage", icon: Home },
+  { id: "faq", label: "FAQs", icon: FileText },
+  { id: "settings", label: "Settings", icon: Settings },
+] as const;
+
+const DATA_ITEMS = [
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "customers", label: "Customers", icon: Users },
 ] as const;
 
 function NavContent({
@@ -58,7 +75,7 @@ function NavContent({
       <Separator />
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4" aria-label="Admin navigation">
+      <nav className="flex-1 px-3 py-4 overflow-auto" aria-label="Admin navigation">
         <ul className="space-y-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
@@ -82,6 +99,60 @@ function NavContent({
             );
           })}
         </ul>
+
+        <div className="my-3">
+          <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-1">Content</p>
+          <ul className="space-y-1">
+            {CMS_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeView === item.id;
+              return (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => onViewChange(item.id)}
+                    className={`flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] text-left ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <div className="mb-3">
+          <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-1">Data</p>
+          <ul className="space-y-1">
+            {DATA_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeView === item.id;
+              return (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => onViewChange(item.id)}
+                    className={`flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] text-left ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </nav>
 
       <Separator />

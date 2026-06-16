@@ -710,7 +710,7 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                 {/* Email */}
                 <div className="space-y-2">
                   <Label htmlFor="email">
-                    Email Address <span className="text-destructive">*</span>
+                    Email Address (For order updates) <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="email"

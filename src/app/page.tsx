@@ -46,7 +46,14 @@ import { CustomerDashboard } from "@/components/store/customer-dashboard";
 import { CustomerProfile } from "@/components/store/customer-profile";
 import { CustomerWishlist } from "@/components/store/customer-wishlist";
 import { CustomerReviews } from "@/components/store/customer-reviews";
+import { CustomerOrders } from "@/components/store/customer-orders";
 import { AdminReviewsTable } from "@/components/admin/admin-reviews-table";
+import { AdminDashboard } from "@/components/admin/admin-dashboard";
+import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard";
+import { HomepageEditor } from "@/components/admin/homepage-editor";
+import { FaqManager } from "@/components/admin/faq-manager";
+import { SettingsManager } from "@/components/admin/settings-manager";
+import { CustomersTable } from "@/components/admin/customers-table";
 import { useCart } from "@/context/cart-context";
 import {
   PrivacyPolicyPage,
@@ -73,6 +80,7 @@ type AppView =
   | "customer-dashboard"
   | "customer-profile"
   | "customer-wishlist"
+  | "customer-orders"
   | "customer-reviews"
   | "privacy"
   | "terms"
@@ -82,6 +90,7 @@ type AppView =
   | "faq";
 
 type AdminPanel =
+  | "dashboard"
   | "orders"
   | "order-detail"
   | "products"
@@ -90,7 +99,12 @@ type AdminPanel =
   | "reviews"
   | "product-edit"
   | "product-new"
-  | "product-variants";
+  | "product-variants"
+  | "homepage"
+  | "faq"
+  | "settings"
+  | "analytics"
+  | "customers";
 
 interface UserInfo {
   id: string;
@@ -131,7 +145,7 @@ export default function HomePage() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
   // Admin state
-  const [adminPanel, setAdminPanel] = useState<AdminPanel>("products");
+  const [adminPanel, setAdminPanel] = useState<AdminPanel>("dashboard");
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [variantProductId, setVariantProductId] = useState<number | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -220,7 +234,7 @@ export default function HomePage() {
       return;
     }
     // Customer views
-    if (view === "customer-dashboard" || view === "customer-profile" || view === "customer-wishlist" || view === "customer-reviews") {
+    if (view === "customer-dashboard" || view === "customer-profile" || view === "customer-wishlist" || view === "customer-reviews" || view === "customer-orders") {
       if (!user) {
         setShowLoginModal(true);
         return;
@@ -601,6 +615,9 @@ export default function HomePage() {
         {appView === "customer-wishlist" && (
           <CustomerWishlist onNavigate={handleNavigate} />
         )}
+        {appView === "customer-orders" && (
+          <CustomerOrders onNavigate={handleNavigate} />
+        )}
         {appView === "customer-reviews" && (
           <CustomerReviews onNavigate={handleNavigate} />
         )}
@@ -666,12 +683,14 @@ export default function HomePage() {
               {adminPanel === "product-edit" ? "Edit Product" :
                adminPanel === "product-new" ? "New Product" :
                adminPanel === "product-variants" ? "Manage Variants" :
-               adminPanel === "orders" ? "Orders" :
                adminPanel === "order-detail" ? "Order Detail" :
-               adminPanel === "products" ? "Products" :
-               adminPanel === "categories" ? "Categories" :
-               adminPanel === "reviews" ? "Reviews" :
-               "Tags"}
+               adminPanel === "dashboard" ? "Dashboard" :
+               adminPanel === "homepage" ? "Homepage Editor" :
+               adminPanel === "faq" ? "FAQ Manager" :
+               adminPanel === "settings" ? "Settings" :
+               adminPanel === "analytics" ? "Analytics" :
+               adminPanel === "customers" ? "Customers" :
+               adminPanel.charAt(0).toUpperCase() + adminPanel.slice(1)}
             </h1>
             <div className="ml-auto flex items-center gap-3">
               <span className="text-sm text-muted-foreground hidden sm:inline">
@@ -756,6 +775,33 @@ export default function HomePage() {
               <div className="max-w-2xl">
                 <TagsManager />
               </div>
+            )}
+            {adminPanel === "dashboard" && (
+              <AdminDashboard
+                onNavigate={handleNavigate}
+                onViewOrder={handleViewOrder}
+              />
+            )}
+            {adminPanel === "homepage" && (
+              <div className="max-w-3xl">
+                <HomepageEditor />
+              </div>
+            )}
+            {adminPanel === "faq" && (
+              <div className="max-w-3xl">
+                <FaqManager />
+              </div>
+            )}
+            {adminPanel === "settings" && (
+              <div className="max-w-2xl">
+                <SettingsManager />
+              </div>
+            )}
+            {adminPanel === "analytics" && (
+              <AnalyticsDashboard />
+            )}
+            {adminPanel === "customers" && (
+              <CustomersTable />
             )}
           </main>
         </div>

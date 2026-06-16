@@ -1,0 +1,857 @@
+     1→---
+     2→Task ID: 1
+     3→Agent: Main Agent
+     4→Task: Phase 1 — Database & Authentication for Indicore Originals e-commerce platform
+     5→
+     6→Work Log:
+     7→- Read and analyzed the 50-page implementation plan PDF
+     8→- Designed Prisma schema with 15 tables (14 business + 1 auth User table) adapted from Supabase/PostgreSQL to Prisma/SQLite
+     9→- Key adaptation: Supabase Auth → NextAuth.js v4 with Credentials provider; RLS policies → application-level access control
+    10→- Created all tables: User, Customer, Category, Tag, Product, ProductVariant, ProductTag, Order, OrderItem, Review, Wishlist, Faq, HomepageContent, Setting, OrderTrackAttempt
+    11→- Enforced Resolution #4 (no password_hash in customers table — stored in User table)
+    12→- Enforced Resolution #6 (customer_reviews jsonb column in homepage_content)
+    13→- Enforced Resolution #7 (consent is optional)
+    14→- Enforced Resolution #8 (state field in address JSON)
+    15→- Pushed schema to SQLite database successfully
+    16→- Installed bcryptjs for password hashing
+    17→- Set up NextAuth.js v4 with JWT strategy, 7-day session for customers
+    18→- Created 4 auth API routes: /api/auth/[...nextauth], /api/auth/login, /api/auth/signup, /api/auth/session
+    19→- Implemented database-based rate limiting (no Redis/Upstash per Resolution #2): 5 attempts / 15min per email using customers.login_attempts + locked_until columns
+    20→- Created /api/auth/login with pre-check rate limiting, credential validation, and attempt tracking
+    21→- Created /api/auth/signup with Zod validation (name, email, password min 8, phone 10-digit), bcrypt hashing, and 409 conflict handling
+    22→- Created /api/auth/session returning authenticated state + user role
+    23→- Built middleware for /admin/* and /customer/* route protection (admin requires role check)
+    24→- Created NextAuth type declarations for Session and JWT with id and role
+    25→- Built professional mobile-first Login page at / with: email/password form, signup toggle, password visibility toggle, rate-limiting lockout display with remaining minutes, form validation, loading states, role-based redirect (admin → /admin/dashboard, customer → /customer/dashboard)
+    26→- Created seed script with admin account (email: admin@indicoreoriginals.com, password: IndicoreAdmin2024!Secure), 6 default settings (COD min/max, store info, social links), and homepage content singleton with customer_reviews config
+    27→- All tests verified: login success (200), wrong password (401), signup (200), duplicate signup (409), rate limiting increments (loginAttempts tracking)
+    28→- Lint passes clean with zero errors
+    29→
+    30→Stage Summary:
+    31→- Phase 1 is complete: Database schema (15 tables), Authentication system (NextAuth.js + 4 API routes), Rate limiting (DB-based), Middleware (route protection), Login UI, Seed data
+    32→- Key architecture decision: User table (auth layer) separate from Customer table (business layer) — preserves "no password_hash in customers" rule
+    33→- Admin credentials: admin@indicoreoriginals.com / IndicoreAdmin2024!Secure
+    34→- Customer session: 7 days via JWT; Admin session: manual logout only (no idle timeout per plan)
+    35→
+    36→---
+    37→Task ID: 2-a
+    38→Agent: API Agent
+    39→Task: Phase 2 — Product Management Admin API Routes (9 route files)
+    40→
+    41→Work Log:
+    42→- Created 9 admin API route files for product, category, tag, and image management
+    43→- All routes protected with `requireAdmin()` at the top of every handler
+    44→- All validation done via Zod schemas; all handlers wrapped in try/catch returning 500
+    45→- Proper HTTP status codes used throughout (200, 201, 400, 401, 404, 409, 500)
+    46→
+    47→Routes created:
+    48→1. `/api/admin/products/route.ts` — GET (list with filters: category, search, inStock, pagination, sorting) + POST (create with variants & tags, slug collision handling, SKU uniqueness validation)
+    49→2. `/api/admin/products/[id]/route.ts` — GET (single with variants, tags, category) + PUT (update fields, diff-based variant management: create/update/delete, tag replacement) + DELETE (cascade via Prisma onDelete)
+    50→3. `/api/admin/products/[id]/variants/route.ts` — POST (add single variant, global SKU uniqueness check, auto isOutOfStock)
+    51→4. `/api/admin/products/[id]/variants/[vid]/route.ts` — PUT (update variant, SKU change validation) + DELETE (remove variant)
+    52→5. `/api/admin/categories/route.ts` — GET (list with productCount via _count) + POST (create with slug collision handling, name uniqueness)
+    53→6. `/api/admin/categories/[id]/route.ts` — PUT (update name + regenerate slug) + DELETE (409 if products use category)
+    54→7. `/api/admin/tags/route.ts` — GET (list with productCount) + POST (create with name uniqueness)
+    55→8. `/api/admin/tags/[id]/route.ts` — PUT (update name with uniqueness check) + DELETE (remove tag)
+    56→9. `/api/admin/upload/image/route.ts` — POST (FormData with "image" field, delegates to processUploadedImage, returns galleryUrl + thumbnailUrl)
+    57→
+    58→Key implementation details:
+    59→- Slug collision: queries DB for slugs starting with base, appends -N counter if needed
+    60→- Variant diffing on product update: compares incoming variant IDs with existing, deletes removed, creates new, updates existing
+    61→- isOutOfStock derived from stockQuantity <= 0 on every create/update
+    62→- galleryImages stored as JSON string in Prisma (SQLite text column)
+    63→- Image upload returns 400 for validation errors (invalid type, too large) and 500 for unexpected errors
+    64→- All dynamic route params use Next.js 16 `params: Promise<>` pattern
+    65→- No existing files were modified
+    66→- Lint passes clean with zero errors
+    67→
+    68→Stage Summary:
+    69→- Phase 2-a (Admin Product Management APIs) is complete
+    70→- 9 API route files covering full CRUD for products (with variants), categories, tags, and image upload
+    71→- All routes are admin-protected, validated with Zod, and return proper status codes
+    72→- Ready for Phase 2-b (Admin Product Management Frontend) or continued backend work
+    73→
+    74→---
+    75→Task ID: 2-b
+    76→Agent: UI Agent
+    77→Task: Phase 2-b — Admin UI Components (6 component files)
+    78→
+    79→Work Log:
+    80→- Created 6 "use client" React component files in /src/components/admin/
+    81→- All components use shadcn/ui exclusively, Tailwind CSS classes, and Lucide React icons
+    82→- No existing files were modified (except removing 3 unused eslint-disable directives for clean lint)
+    83→- Lint passes clean with zero errors/warnings
+    84→
+    85→Components created:
+    86→
+    87→1. `products-table.tsx` — Admin product listing
+    88→   - Search input with 400ms debounce (filters by name via server)
+    89→   - Category filter dropdown (fetched from /api/admin/categories)
+    90→   - "In Stock Only" toggle switch
+    91→   - Sort dropdown: Newest, Price Low→High, Price High→Low
+    92→   - Data table with columns: Name (with thumbnail), Category, Price (₹ INR format), Variants count, Stock status badge, Published/Draft badge, Actions dropdown (Edit/Delete)
+    93→   - Pagination with Previous/Next buttons and page indicator
+    94→   - "Add Product" button calling onCreate prop
+    95→   - Loading skeleton state (6 rows)
+    96→   - Empty state with contextual message and optional Add Product CTA
+    97→   - Props: onEdit, onCreate, onRefresh
+    98→
+    99→2. `product-form.tsx` — Product create/edit form
+   100→   - Fields: Name (auto-generates slug), Slug (editable), Description (textarea), Price (number), Category (select from /api/categories), SEO Title, SEO Description, Published (switch)
+   101→   - Primary Image: click-to-upload area with preview, remove button on hover
+   102→   - Gallery Images: up to 10 images, multi-file upload, grid preview with individual remove buttons
+   103→   - Tag multi-select: Popover with checkboxes, selected tags shown as removable badges
+   104→   - Client-side validation before submit (required fields, valid price, category)
+   105→   - Fetches categories from /api/categories and tags from /api/tags on mount
+   106→   - If productId provided, fetches product detail from /api/admin/products/:id and populates all fields including gallery and tags
+   107→   - Image upload via POST /api/admin/upload/image for each new file
+   108→   - Loading skeleton for edit mode, loading spinner on submit button
+   109→   - Props: productId?, onSuccess, onCancel
+   110→
+   111→3. `variant-manager.tsx` — Variant management sub-component
+   112→   - Fetches variants from /api/admin/products/:id (product detail endpoint)
+   113→   - Table: SKU, Type (outline badge), Value, Price Override (₹ or —), Stock, Status (In Stock/Out of Stock badges), Actions
+   114→   - "Add Variant" button opens Dialog with form: SKU, Variant Type (Select: Size/Color/Material/Custom), Value, Price Override (optional), Stock Quantity
+   115→   - Edit: opens same Dialog pre-filled
+   116→   - Delete: AlertDialog confirmation before deleting
+   117→   - Client-side validation, toast notifications, loading states
+   118→   - Props: productId, onVariantChange?
+   119→
+   120→4. `categories-manager.tsx` — Category management
+   121→   - Inline add: input + button at top (Enter key support)
+   122→   - Table: Name (click to inline edit), Slug (code badge), Product count (badge), Edit/Delete actions
+   123→   - Inline edit: click name → input appears with Check/Cancel buttons (Enter/Escape keyboard support)
+   124→   - Delete: AlertDialog confirmation; disabled if category has products (shows warning message)
+   125→   - Loading skeleton, empty state
+   126→   - All CRUD via /api/admin/categories endpoints
+   127→
+   128→5. `tags-manager.tsx` — Tag management
+   129→   - Inline add: input + button at top (Enter key support)
+   130→   - Table: Name (outline badge, click to edit), Product count, Edit/Delete actions
+   131→   - Inline edit: same pattern as categories
+   132→   - Delete: inline button with loading spinner (no confirmation dialog per spec)
+   133→   - Loading skeleton, empty state
+   134→   - All CRUD via /api/admin/tags endpoints
+   135→
+   136→6. `admin-sidebar.tsx` — Sidebar/navigation
+   137→   - Logo "Indicore Originals" with Store icon at top
+   138→   - Navigation: Dashboard (LayoutDashboard), Products (Package), Categories (FolderTree), Tags (Tag)
+   139→   - Active item highlighted with bg-primary + text-primary-foreground
+   140→   - Logout button at bottom calling signOut from next-auth/react
+   141→   - Mobile: fixed top bar with hamburger → Sheet drawer (left side, 64w)
+   142→   - Desktop: fixed sidebar (56w) with lg:flex responsive display
+   143→   - Semantic nav with aria-label and aria-current for accessibility
+   144→   - Props: activeView, onViewChange
+   145→
+   146→Design patterns applied across all components:
+   147→- Mobile-first responsive (320px to 1440px)
+   148→- Tables: max-h-96 overflow-y-auto on mobile, full on desktop
+   149→- Buttons: min-h-[44px] and min-w-[44px] for touch targets
+   150→- Loading states: Skeleton from shadcn
+   151→- Error states: Alert from shadcn with AlertCircle icon
+   152→- Toasts: sonner library for success/error notifications
+   153→- No blue/indigo colors — uses primary theme variables only
+   154→- Keyboard navigation: Enter/Escape support on inline edits and inputs
+   155→- Screen reader support: sr-only labels on action buttons
+   156→
+   157→Stage Summary:
+   158→- Phase 2-b (Admin Product Management Frontend) is complete
+   159→- 6 component files covering full admin CRUD UI for products, variants, categories, and tags, plus navigation sidebar
+   160→- All components are self-contained "use client" modules with their own data fetching
+   161→- Zero lint errors/warnings
+   162→- Ready for integration into the main admin dashboard page
+   163→
+   164→---
+   165→Task ID: 2-c
+   166→Agent: Main Agent
+   167→Task: Phase 2 — Admin Dashboard Integration into page.tsx
+   168→
+   169→Work Log:
+   170→- Rewrote /src/app/page.tsx as a state-machine shell with 3 views: login, signup, admin
+   171→- Auth state managed via session check on mount (GET /api/auth/session)
+   172→- Login/signup forms preserved from Phase 1 (identical functionality)
+   173→- On successful admin login, switches to admin dashboard view automatically
+   174→- Admin dashboard layout: AdminSidebar (fixed left) + top header bar + scrollable content area
+   175→- Top header shows current panel name, user name, and "Admin" badge
+   176→- Admin panel state machine: products → product-new/product-edit → product-variants, categories, tags
+   177→- Sidebar navigation calls onViewChange which resets editing state before switching
+   178→- Product edit view combines ProductForm + VariantManager in a stacked layout
+   179→- Logout via sidebar onLogout prop → clears local state + calls signOut → returns to login
+   180→- Fixed AdminSidebar component: added onLogout prop, removed stale onNavigate reference, wired logout button to call onLogout callback
+   181→- All Phase 1 functionality preserved: login, signup, rate limiting, session check
+   182→
+   183→Stage Summary:
+   184→- Phase 2-c is complete: Single-page app at / that switches between login and admin dashboard
+   185→- Admin sees: Products table → Create/Edit product → Variant manager → Categories → Tags
+   186→- Customer users stay on login view (customer dashboard is future phase)
+   187→- Zero lint errors
+   188→
+   189→---
+   190→Task ID: 2-d
+   191→Agent: Main Agent
+   192→Task: Phase 2 — Testing & Verification
+   193→
+   194→Work Log:
+   195→- Lint passes clean with zero errors after all changes
+   196→- Verified all 9 admin API routes return 401 (Unauthorized) when no session cookie
+   197→- Verified POST-only routes (upload/image, variants) return 405 for GET requests (correct HTTP behavior)
+   198→- Verified PUT/DELETE-only routes (categories/:id, tags/:id, variants/:vid) return 405 for GET
+   199→- Verified public /api/auth/session returns 200 with authenticated:false
+   200→- Verified page HTML renders "Indicore Originals", "Welcome Back", "Sign In" (3 UI elements)
+   201→- Total files created in Phase 2: 3 utilities + 9 API routes + 6 UI components + 1 page rewrite = 19 files
+   202→
+   203→Stage Summary:
+   204→- Phase 2 (Product Management - Admin) is fully complete
+   205→- 9 backend API routes with admin auth protection, Zod validation, slug collision handling, variant diffing
+   206→- 6 frontend components: products table, product form (create/edit), variant manager, categories manager, tags manager, admin sidebar
+   207→- Single-page app at / with login → admin dashboard state machine
+   208→- All Phase 1 functionality preserved
+   209→- Admin credentials: admin@indicoreoriginals.com / IndicoreAdmin2024!Secure
+   210→---
+   211→Task ID: 3-a
+   212→Agent: Main Agent
+   213→Task: Phase 3 — Storefront & Product Display (Public API Routes)
+   214→
+   215→Work Log:
+   216→- Created 7 public API route files for storefront data access
+   217→- All routes are public (no auth required)
+   218→- All routes handle errors with try/catch returning 500
+   219→- Next.js 16 `params: Promise<>` pattern used for dynamic routes
+   220→
+   221→Routes created:
+   222→1. `/api/categories/route.ts` — GET: public category listing with productCount (published only)
+   223→2. `/api/tags/route.ts` — GET: public tag listing with productCount (published products only)
+   224→3. `/api/faq/route.ts` — GET: active FAQs ordered by displayOrder
+   225→4. `/api/homepage/route.ts` — GET: homepage content singleton + featured products + categories + approved reviews (count controlled by customer_reviews.max_reviews_to_show) + settings
+   226→5. `/api/products/route.ts` — GET: public product listing with multi-tag filter (Resolution #9: OR logic), category filter, price range, inStock, search, sort, pagination. Includes batch rating aggregation.
+   227→6. `/api/products/[slug]/route.ts` — GET: full product detail with variants, variantTypes (grouped), gallery, approved reviews, SEO metadata, average rating. Returns 404 for unpublished products.
+   228→7. `/api/search/route.ts` — GET: search products by name/description with same response shape as /api/products
+   229→
+   230→Key implementation details:
+   231→- Multi-tag filter: comma-separated tag IDs, OR logic (products matching ANY selected tag)
+   232→- Rating aggregation: batch groupBy query for performance
+   233→- inStock detection: checks if any variant has stockQuantity > 0 and isOutOfStock = false
+   234→- Gallery images parsed from JSON string column
+   235→- Homepage endpoint aggregates data from multiple tables in one response
+   236→
+   237→Stage Summary:
+   238→- 7 public API routes created, all verified working via curl
+   239→- Multi-tag filtering (Resolution #9) fully implemented
+   240→- Homepage API returns all 7 section data in single call
+   241→
+   242→---
+   243→Task ID: 3-b
+   244→Agent: Main Agent
+   245→Task: Phase 3 — Cart Context (React Context + localStorage)
+   246→
+   247→Work Log:
+   248→- Created `/src/context/cart-context.tsx` with CartProvider and useCart hook
+   249→- CartItem interface: variantId, productId, productName, variantDescription, price, quantity, imageUrl, stockAvailable
+   250→- useReducer pattern with HYDRATE action for localStorage hydration
+   251→- Persist to localStorage on every state change (after hydration)
+   252→- clearCart removes localStorage + dispatches CLEAR_CART
+   253→- Quantity capping: addItem and updateQuantity cap at stockAvailable
+   254→- Existing item detection: same variantId increments quantity
+   255→- Fixed lint error: replaced separate `hydrated` useState with hydrated flag in reducer state to avoid `set-state-in-effect` rule violation
+   256→
+   257→Stage Summary:
+   258→- Cart context fully functional with localStorage persistence
+   259→- Exposes: items, addItem, removeItem, updateQuantity, clearCart, totalItems, cartTotal
+   260→- Zero lint errors
+   261→
+   262→---
+   263→Task ID: 3-c
+   264→Agent: Frontend Styling Expert
+   265→Task: Phase 3 — Store Header & Footer Components
+   266→
+   267→Work Log:
+   268→- Created `/src/components/store/store-header.tsx` (275 lines)
+   269→  - Sticky top header with logo, nav links, search, cart badge, login/logout
+   270→  - Desktop: inline nav (Home, Shop, Track Order) + action buttons
+   271→  - Mobile: hamburger → Sheet drawer from right (w-72)
+   272→  - Cart badge: absolute positioned, shows "99+" for overflow
+   273→  - Auth state: shows user name + logout when authenticated, login button when not
+   274→  - Added onLogout prop to properly handle logout action (separate from onOpenLogin)
+   275→
+   276→- Created `/src/components/store/store-footer.tsx` (122 lines)
+   277→  - Dark background (bg-neutral-900), 3-column grid responsive layout
+   278→  - Column 1: Brand name with Store icon
+   279→  - Column 2: Quick Links (Home, Shop, Track Order, FAQ)
+   280→  - Column 3: Contact text + social links (Instagram, Facebook)
+   281→  - Bottom: separator + copyright text
+   282→
+   283→Stage Summary:
+   284→- Mobile-first responsive (320px–1440px), min-h-[44px] touch targets
+   285→- No blue/indigo colors, uses primary theme variables
+   286→
+   287→---
+   288→Task ID: 3-d
+   289→Agent: Frontend Styling Expert
+   290→Task: Phase 3 — Storefront Homepage (7 Fixed Sections)
+   291→
+   292→Work Log:
+   293→- Created `/src/components/store/storefront-homepage.tsx` (~535 lines)
+   294→- Renders exactly 7 sections as per plan (DO NOT DEVIATE):
+   295→  1. Hero Banner: full-width with next/image, overlay, CTA button → "shop" view
+   296→  2. Featured Products: horizontal scroll (mobile) / grid (desktop), product cards with price/rating
+   297→  3. Shop by Category: grid of category cards with product count
+   298→  4. Why Choose Us: USP cards with dynamically-mapped lucide icons
+   299→  5. Customer Reviews: star ratings, review cards from approved reviews
+   300→  6. FAQ Section: shadcn Accordion, fetched from /api/faq
+   301→  7. Footer: delegates to StoreFooter component
+   302→- Data fetching: GET /api/homepage + GET /api/faq in parallel via Promise.all
+   303→- Loading state: Skeleton components per section
+   304→- Error state: Alert with error message
+   305→- Featured product count controlled by homepage_content.featuredProductIds
+   306→- Review count controlled by homepage_content.customer_reviews.max_reviews_to_show
+   307→
+   308→Stage Summary:
+   309→- Full 7-section homepage as specified in implementation plan
+   310→- All data fetched from single /api/homepage endpoint
+   311→- Dynamic icon mapping for Why Choose Us section
+   312→
+   313→---
+   314→Task ID: 3-e
+   315→Agent: Frontend Styling Expert
+   316→Task: Phase 3 — Product Listing with Multi-Tag Filter
+   317→
+   318→Work Log:
+   319→- Created `/src/components/store/product-listing.tsx` (~898 lines)
+   320→- Desktop: left sidebar (w-64) with filters + right content area with product grid
+   321→- Mobile: filter button → Sheet drawer from left with all filters
+   322→- Filter sidebar contains:
+   323→  - Search input with 400ms debounce
+   324→  - Category filter (radio list from /api/categories)
+   325→  - Tags filter (multi-select checkboxes — Resolution #9: OR logic)
+   326→  - Price range (min/max number inputs)
+   327→  - In Stock Only (Switch toggle)
+   328→  - Sort By (Select: Newest, Price Low→High, Price High→Low, Name A-Z)
+   329→  - Clear All Filters button
+   330→- Product grid: responsive grid-cols-2 md:3 lg:4
+   331→- Product cards: image, name (2-line truncate), category, price (₹), star rating, out-of-stock badge
+   332→- Pagination: "Showing X-Y of Z", Prev/Next, page number buttons
+   333→- Loading state: 8-card skeleton grid
+   334→- Empty state: contextual message + Clear Filters CTA
+   335→- Custom scrollbar styling via scoped <style jsx global>
+   336→
+   337→Stage Summary:
+   338→- Full multi-tag product filtering as per Resolution #9
+   339→- Responsive desktop sidebar + mobile drawer layout
+   340→
+   341→---
+   342→Task ID: 3-f
+   343→Agent: Frontend Styling Expert
+   344→Task: Phase 3 — Product Detail with Variant Selector & Gallery
+   345→
+   346→Work Log:
+   347→- Created `/src/components/store/product-detail.tsx` (~690 lines)
+   348→- 2-column layout: image gallery (left) + product info (right) on desktop
+   349→- Image gallery: main image display + thumbnail row with horizontal scroll
+   350→- Product info: breadcrumb, name, star rating, price (with variant override strikethrough), description
+   351→- Variant selector: grouped by variantType (Size, Color, etc.), chip-style buttons
+   352→  - Selected: bg-primary, Out of stock: opacity-50 + disabled
+   353→  - Check icon on selected variant
+   354→- Add to Cart button: 3 states (Select Options / Add to Cart / Out of Stock)
+   355→  - Disabled until all variant types have a selection
+   356→  - Integrates with cart context useCart().addItem()
+   357→- Reviews section below: list of approved review cards with star ratings
+   358→- Loading skeleton, error state, not-found state
+   359→- Back navigation: "← Back to Shop" link
+   360→
+   361→Stage Summary:
+   362→- Complete product detail page with variant selection, gallery, reviews
+   363→- Cart integration via useCart hook
+   364→
+   365→---
+   366→Task ID: 3-g
+   367→Agent: Frontend Styling Expert
+   368→Task: Phase 3 — Cart Drawer Component
+   369→
+   370→Work Log:
+   371→- Created `/src/components/store/cart-drawer.tsx` (~182 lines)
+   372→- shadcn/ui Sheet (side="right", sm:w-[400px])
+   373→- Empty state: centered ShoppingCart icon + "Your cart is empty" + Continue Shopping button
+   374→- Items list: scrollable (max-h-[calc(100vh-14rem)])
+   375→  - Each item: 64×64 thumbnail, name, variant description, line total, quantity controls (Minus/Plus), remove button
+   376→  - Quantity bounds: min 1, max stockAvailable
+   377→- Summary footer: subtotal (₹), item count, "Proceed to Checkout" primary button, "Continue Shopping" link
+   378→- Uses useCart() from cart-context for all operations
+   379→- Price formatting: ₹toLocaleString("en-IN")
+   380→
+   381→Stage Summary:
+   382→- Functional cart drawer with quantity management and checkout navigation
+   383→
+   384→---
+   385→Task ID: 3-h
+   386→Agent: Main Agent
+   387→Task: Phase 3 — Integration into page.tsx State Machine
+   388→
+   389→Work Log:
+   390→- Rewrote page.tsx as comprehensive state machine with views: home, shop, product, search, track-order, login, signup, admin
+   391→- Default view is now "home" (storefront) instead of "login"
+   392→- Login/signup moved to modal overlay (Dialog-style) triggered by header Login button
+   393→- Navigation handler: handleNavigate(view, data?) manages all view transitions
+   394→- Storefront layout: StoreHeader + main content area + StoreFooter (via homepage) + CartDrawer
+   395→- Admin dashboard preserved with all Phase 2 functionality
+   396→- Added "Store" link in admin top bar to navigate back to storefront
+   397→- Fixed StoreHeader: added onLogout prop, separated login/logout actions
+   398→- Fixed import issues: StorefrontHomepage and ProductDetail use default exports
+   399→- Fixed lint error: generic type annotation on useState caused parsing error
+   400→- Updated layout.tsx to wrap children in CartProvider
+   401→- All Phase 1 and Phase 2 functionality preserved
+   402→
+   403→Stage Summary:
+   404→- Complete single-page app with storefront as default view
+   405→- Admin login via modal → admin dashboard
+   406→- Customer login via modal → stays on storefront
+   407→- Zero lint errors
+   408→
+   409→---
+   410→Task ID: 3-i
+   411→Agent: Main Agent
+   412→Task: Phase 3 — Seed Sample Data
+   413→
+   414→Work Log:
+   415→- Extended seed.ts with storefront sample data
+   416→- 4 categories: T-Shirts, Hoodies, Accessories, Jackets
+   417→- 7 tags: cotton, premium, bestseller, new-arrival, summer, winter, unisex
+   418→- 6 FAQs with display order
+   419→- 8 products with variants (size variants for clothing, color variants for accessories)
+   420→- Featured product IDs set on homepage content (first 4 products)
+   421→- 4 approved reviews from sample customer (with delivered order for validation)
+   422→- Fixed unique constraint error: one review per product per customer
+   423→
+   424→Stage Summary:
+   425→- Full sample data for testing storefront: 8 products, 4 categories, 7 tags, 6 FAQs, 4 reviews
+   426→- Admin credentials: admin@indicoreoriginals.com / IndicoreAdmin2024!Secure
+   427→
+   428→---
+   429→Task ID: 3-j
+   430→Agent: Main Agent
+   431→Task: Phase 3 — Testing & Verification
+   432→
+   433→Work Log:
+   434→- Lint passes clean with zero errors
+   435→- Verified all 7 public API endpoints return correct data:
+   436→  - /api/categories: 4 categories with product counts
+   437→  - /api/tags: 7 tags with product counts
+   438→  - /api/faq: 6 FAQs ordered by displayOrder
+   439→  - /api/homepage: full homepage data (hero, featured, categories, USPs, reviews, footer, settings)
+   440→  - /api/products: 8 published products with variants, tags, ratings, pagination
+   441→  - /api/search?q=black: 2 results (description matching)
+   442→  - /api/auth/session: {authenticated: false, user: null}
+   443→- Homepage returns 200 OK with 31KB HTML (Next.js SSR shell + client script bundles)
+   444→- Page HTML contains "Indicore Originals" brand text (client-side rendered content expected)
+   445→- Zero runtime errors in dev.log for all successful API calls
+   446→- Total files created in Phase 3: 7 API routes + 1 context + 6 components + 2 modified files (page.tsx, layout.tsx) + 1 updated seed = 17 operations
+   447→
+   448→Stage Summary:
+   449→- Phase 3 (Storefront & Product Display) is fully complete
+   450→- 7 public API routes with multi-tag filtering, search, pagination
+   451→- Cart system (React Context + localStorage) with add/remove/update/clear
+   452→- 6 storefront components: header, footer, homepage (7 sections), product listing (multi-tag filter), product detail (variant selector), cart drawer
+   453→- Full state machine integration: storefront default, login modal, admin dashboard preserved
+   454→- Sample data: 8 products, 4 categories, 7 tags, 6 FAQs, 4 reviews
+   455→- All Phase 1 and Phase 2 functionality preserved
+   456→- Zero lint errors
+   457→
+   458→---
+   459→Task ID: 4-a
+   460→Agent: Main Agent
+   461→Task: Phase 4 — Checkout & Order Creation Backend API Routes
+   462→
+   463→Work Log:
+   464→- Created 3 API route files for checkout and order management
+   465→- GET /api/checkout/settings — Returns COD min/max from Settings table (cod_min_order, cod_max_order keys)
+   466→- POST /api/orders/validate — Validates cart: checks COD range, stock availability, variant existence, published status
+   467→- POST /api/orders — Full order creation: Zod validation (email, name, phone 10-digit, address with state, pincode 6-digit, consent optional), customer upsert (reuse by email), guest customer creation (creates User+Customer with placeholder password for 1:1 relation), order number generation (ORD-timestamp-RANDOM), transactional order+items creation with inventory deduction
+   468→- Fixed issue: Customer model has required 1:1 relation to User — guest checkouts create minimal User record with placeholder bcrypt hash
+   469→- All routes use try/catch with proper HTTP status codes (200, 400, 500)
+   470→
+   471→Stage Summary:
+   472→- 3 backend API routes verified working via curl
+   473→- Order creation handles: guest customers, customer reuse, consent snapshot, COD enforcement, inventory deduction
+   474→- Transaction ensures atomicity of order + items + stock update
+   475→
+   476→---
+   477→Task ID: 4-b
+   478→Agent: Frontend Styling Expert
+   479→Task: Phase 4 — Checkout Page Component
+   480→
+   481→Work Log:
+   482→- Created /src/components/store/checkout-page.tsx (788 lines)
+   483→- Single-step checkout form with all required fields (name, phone, street, city, state, pincode, email)
+   484→- Optional consent checkbox (default unchecked per Resolution #7)
+   485→- COD min/max enforcement: fetches /api/checkout/settings on mount, disables Place Order when out of range
+   486→- Order summary section: cart items with thumbnails, line totals, subtotal
+   487→- Two-column layout on desktop (order summary sticky left, form right), single column mobile
+   488→- Client-side validation matching server Zod schemas
+   489→- On success: clearCart() before onOrderSuccess (Resolution #10)
+   490→- Field-level error mapping from API 400 responses
+   491→
+   492→Stage Summary:
+   493→- Professional mobile-first checkout form
+   494→- COD range enforcement with Alert messages
+   495→- Empty cart state, loading skeleton, error handling
+   496→
+   497→---
+   498→Task ID: 4-c
+   499→Agent: Frontend Styling Expert
+   500→Task: Phase 4 — Order Confirmation Component
+   501→
+   502→Work Log:
+   503→- Created /src/components/store/order-confirmation.tsx (113 lines)
+   504→- Success icon (green CheckCircle2), heading, order number in monospace code format
+   505→- COD payment method display
+   506→- Info message about phone contact
+   507→- Two buttons: Continue Shopping (primary) and Track Your Order (outline)
+   508→- Entrance animation (opacity + translateY)
+   509→- Centered layout (max-w-md mx-auto, py-16)
+   510→
+   511→Stage Summary:
+   512→- Clean order confirmation page with order number display
+   513→
+   514→---
+   515→Task ID: 4-d
+   516→Agent: Main Agent
+   517→Task: Phase 4 — Integration into page.tsx State Machine
+   518→
+   519→Work Log:
+   520→- Added "checkout" and "order-confirmation" to AppView type
+   521→- Imported CheckoutPage and OrderConfirmation components
+   522→- Added orderNumber state and handleOrderSuccess callback
+   523→- Added checkout navigation handler (resets orderNumber)
+   524→- Rendered CheckoutPage and OrderConfirmation in storefront main area
+   525→- Cart drawer's "Proceed to Checkout" navigates to checkout view (already wired in Phase 3)
+   526→- All Phase 1-3 functionality preserved
+   527→
+   528→Stage Summary:
+   529→- Complete checkout flow: Cart → Checkout → Order Confirmation
+   530→- Zero lint errors
+   531→
+   532→---
+   533→Task ID: 4-e
+   534→Agent: Main Agent
+   535→Task: Phase 4 — Testing & Verification
+   536→
+   537→Work Log:
+   538→- Lint passes clean with zero errors
+   539→- Verified all 3 API routes via curl:
+   540→  - GET /api/checkout/settings → 200, {cod_min: 0, cod_max: 50000}
+   541→  - POST /api/orders/validate (empty cart) → 400, validation error
+   542→  - POST /api/orders/validate (invalid variant) → 400, variant not found
+   543→  - POST /api/orders/validate (valid cart) → 200, {valid: true, cartTotal: 599}
+   544→  - POST /api/orders (missing fields) → 400, field-level validation details
+   545→  - POST /api/orders (invalid pincode) → 400, pincode validation
+   546→  - POST /api/orders (valid guest) → 200, {success: true, orderNumber: "ORD-..."}
+   547→  - POST /api/orders (same email reuse) → 200, customer record updated
+   548→  - POST /api/orders (with consent) → 200, consent stored
+   549→- Homepage renders in browser with all 7 sections
+   550→- Dev log shows clean transaction execution (BEGIN IMMEDIATE, INSERTs, UPDATE, COMMIT)
+   551→- Total files created in Phase 4: 3 API routes + 2 UI components + 1 modified file (page.tsx) = 6 operations
+   552→
+   553→Stage Summary:
+   554→- Phase 4 (Checkout & Order Creation) is fully complete
+   555→- 3 backend API routes: settings, validate, order creation with inventory deduction
+   556→- 2 frontend components: checkout form (single-step, COD enforcement, consent checkbox) + order confirmation
+   557→- Full state machine integration: cart → checkout → order confirmation
+   558→- Guest checkout supported with auto customer creation
+   559→- All Phase 1, 2, and 3 functionality preserved
+   560→- Zero lint errors
+   561→
+   562→---
+   563→Task ID: 5-a
+   564→Agent: Main Agent
+   565→Task: Phase 5 — Order Management & Tracking Backend API Routes
+   566→
+   567→Work Log:
+   568→- Created 7 API route files for order management and tracking
+   569→- GET /api/orders/track — Guest tracking by order number + email, rate limited (10/15min/IP via checkTrackingRateLimit), returns order with items (variant snapshot), address (with State), no internal notes
+   570→- GET /api/orders/guest-history — List all orders by email, returns orders with items and item counts
+   571→- GET /api/admin/orders — Admin order list with status filter, search by order number, sort (newest/oldest), pagination, and pendingCount for badge (Resolution #11)
+   572→- GET /api/admin/orders/[id] — Full order detail with customer info, shipping address, items with variant+product, internal notes
+   573→- PATCH /api/admin/orders/[id]/status — Status update with valid transition checking (pending→confirmed→shipped→delivered, cancelled/return_requested/returned paths)
+   574→- POST /api/admin/orders/[id]/verify-cod — Manual COD verification (Resolution #11), only for pending orders, optional internal notes
+   575→- POST /api/admin/orders/[id]/return — Process return request, only for return_requested orders, required notes
+   576→- All admin routes protected with requireAdmin()
+   577→- Updated signup route for guest-to-registered account linking: detects existing guest Customer, deletes placeholder User, creates real User with same ID, marks isRegistered=true, links existing orders
+   578→
+   579→Stage Summary:
+   580→- 7 API routes + 1 modified route (signup) for account linking
+   581→- Valid status transition state machine enforced server-side
+   582→- Rate limiting for tracking via existing checkTrackingRateLimit
+   583→
+   584→---
+   585→Task ID: 5-b
+   586→Agent: Frontend Styling Expert
+   587→Task: Phase 5 — Track Order Page Component
+   588→
+   589→Work Log:
+   590→- Created /src/components/store/track-order-page.tsx
+   591→- Two-tab layout using shadcn Tabs: "Track Order" + "Order History"
+   592→- Track tab: Order Number + Email inputs, client-side validation, 429 rate limit alert, 404 not found alert, success card with status badge (7 colors), formatted date, ₹ total, shipping address with State, items list with variant snapshot
+   593→- History tab: Email-only search, clickable order cards that auto-fill Track tab
+   594→- Named export: TrackOrderPage
+   595→
+   596→Stage Summary:
+   597→- Professional mobile-first guest tracking with rate limit handling
+   598→
+   599→---
+   600→Task ID: 5-c
+   601→Agent: Frontend Styling Expert
+   602→Task: Phase 5 — Admin Orders Table Component
+   603→
+   604→Work Log:
+   605→- Created /src/components/admin/orders-table.tsx
+   606→- Prominent pending count badge with Clock icon (Resolution #11)
+   607→- Debounced search (400ms), status filter (7 statuses + All), sort (newest/oldest)
+   608→- Responsive: desktop Table, mobile Card layout
+   609→- 7-color status badge system
+   610→- Pagination with "Showing X-Y of Z"
+   611→- Named export: OrdersTable
+   612→
+   613→Stage Summary:
+   614→- Full admin orders list with filters, search, pending badge
+   615→
+   616→---
+   617→Task ID: 5-d
+   618→Agent: Frontend Styling Expert
+   619→Task: Phase 5 — Admin Order Detail Component
+   620→
+   621→Work Log:
+   622→- Created /src/components/admin/order-detail.tsx
+   623→- Two-column layout (lg:grid-cols-[2fr_1fr]) with sticky right sidebar
+   624→- Left: order header, customer card (with Registered badge), shipping address (with State), items table with variant details, read-only internal notes
+   625→- Right sidebar: contextual action panels based on status:
+   626→  - pending: COD verification (phone link, notes, "Mark as Confirmed")
+   627→  - confirmed/shipped/delivered: status transition buttons + Cancel
+   628→  - return_requested: return processing with required notes
+   629→  - cancelled/returned: notes only
+   630→- Notes save via PATCH with current status echoed back
+   631→- Fixed export from default to named: OrderDetail
+   632→
+   633→Stage Summary:
+   634→- Complete admin order management with COD verification workflow
+   635→
+   636→---
+   637→Task ID: 5-e
+   638→Agent: Main Agent
+   639→Task: Phase 5 — Integration into page.tsx + Admin Sidebar
+   640→
+   641→Work Log:
+   642→- Added "orders" and "order-detail" to AdminPanel type
+   643→- Added selectedOrderId state and handleViewOrder/handleBackToOrders callbacks
+   644→- Updated handleViewChange to reset selectedOrderId
+   645→- Updated sidebar view mapping: order-detail → "orders" for sidebar highlight
+   646→- Imported OrdersTable, OrderDetail, TrackOrderPage
+   647→- Added Orders panel and OrderDetail panel to admin rendering
+   648→- Replaced track-order placeholder with TrackOrderPage component
+   649→- Updated AdminSidebar: added "Orders" with ClipboardList icon as first nav item
+   650→
+   651→Stage Summary:
+   652→- Admin sidebar: Orders → Products → Categories → Tags
+   653→- Storefront: Track Order page fully functional (was placeholder)
+   654→- State machine: orders list → order detail → back to orders
+   655→
+   656→---
+   657→Task ID: 5-f
+   658→Agent: Main Agent
+   659→Task: Phase 5 — Testing & Verification
+   660→
+   661→Work Log:
+   662→- Lint passes clean with zero errors
+   663→- Verified via curl:
+   664→  - GET /api/orders/track (correct email) → 200 with full order data, items, address with State
+   665→  - GET /api/orders/track (wrong email) → 404 Order not found
+   666→  - GET /api/orders/guest-history → 200 with orders list and item counts
+   667→  - GET /api/admin/orders (no auth) → 401 Unauthorized
+   668→- Page compilation verified (200 OK for homepage after clean .next)
+   669→- Total files created in Phase 5: 7 API routes + 3 UI components + 2 modified files (page.tsx, admin-sidebar.tsx, signup/route.ts) = 12 operations
+   670→
+   671→Stage Summary:
+   672→- Phase 5 (Order Management & Tracking) is fully complete
+   673→- 7 backend API routes: guest tracking (rate limited), guest history, admin list/detail/status/verify-cod/return
+   674→- Guest-to-registered account linking in signup route
+   675→- 3 frontend components: track order page, admin orders table, admin order detail
+   676→- Admin sidebar updated with Orders as first navigation item
+   677→- All Phase 1-4 functionality preserved
+   678→- Zero lint errors
+   679→
+   680→---
+   681→Task ID: 6
+   682→Agent: Main Agent
+   683→Task: Phase 6 — Customer Features & Reviews
+   684→
+   685→Work Log:
+   686→- Read and analyzed Phase 6 requirements from implementation plan (pages 23-25)
+   687→- Created customer auth helper at `/src/lib/customer-auth.ts` (requireCustomer, getCustomerSession)
+   688→- Created 8 backend API routes:
+   689→  - `GET/PUT /api/customer/profile` — Profile management with name, phone, address (with State), consent withdrawal
+   690→  - `GET/POST /api/customer/wishlist` — Wishlist get/add with product validation
+   691→  - `DELETE /api/customer/wishlist/[productId]` — Remove from wishlist
+   692→  - `POST /api/reviews` — Submit review (purchase-validated, registered only, status=pending)
+   693→  - `POST /api/reviews/check-eligibility` — Check if customer can review a product
+   694→  - `PUT /api/reviews/[id]` — Edit review (own reviews only, status returns to pending)
+   695→  - `GET /api/admin/reviews` — List reviews with filters, search, pagination, status counts
+   696→  - `PATCH /api/admin/reviews/[id]/moderate` — Approve/reject/hide/delete with state machine validation
+   697→- Created `GET /api/customer/dashboard` — Dashboard overview with recent orders, wishlist preview, pending review count
+   698→- Created `GET /api/customer/reviews` — Customer's own reviews list
+   699→- Review moderation state machine: pending→approved/rejected, approved→hidden, rejected→[], hidden→approved
+   700→- Created 5 frontend components:
+   701→  - `customer-dashboard.tsx` — Overview cards (orders, wishlist, pending reviews), recent orders table, wishlist preview grid
+   702→  - `customer-profile.tsx` — Edit name, phone, address (street, city, state, pincode), consent withdrawal
+   703→  - `customer-wishlist.tsx` — Grid of wishlisted products with remove and view product buttons
+   704→  - `customer-reviews.tsx` — Review list with status badges, edit dialog with interactive star rating
+   705→  - `admin-reviews-table.tsx` (in admin/) — Filter tabs with counts, search, table with status-dependent actions
+   706→- Updated `product-detail.tsx` — Added ReviewForm component with eligibility check, star rating, title/comment, success state
+   707→- Updated `store-header.tsx` — Added customer nav links (My Account, Wishlist, My Reviews, Profile) in mobile menu; desktop user button links to dashboard
+   708→- Updated `admin-sidebar.tsx` — Added Reviews nav item with MessageSquare icon
+   709→- Updated `page.tsx`:
+   710→  - Added 4 new AppView types: customer-dashboard, customer-profile, customer-wishlist, customer-reviews
+   711→  - Added "reviews" AdminPanel type
+   712→  - Added customer view routing with auth check (redirects to login if not authenticated)
+   713→  - Integrated all 4 customer components and AdminReviewsTable
+   714→  - Passed isAuthenticated to ProductDetail for review form visibility
+   715→- All 7 new API endpoints verified via curl (401 for unauthenticated — correct behavior)
+   716→- Zero lint errors
+   717→
+   718→Stage Summary:
+   719→- Phase 6 fully implemented: Customer Dashboard, Profile, Wishlist, Reviews, Admin Review Moderation
+   720→- Purchase-validated review system with state machine moderation
+   721→- All endpoints properly authenticated via NextAuth session
+   722→- No password_hash exposed in any customer response
+   723→- Review form on product detail checks eligibility before showing
+   724→
+   725→---
+   726→Task ID: 6
+   727→Agent: General-Purpose Sub Agent
+   728→Task: Update client-side product-form component for Supabase PostgreSQL migration (galleryImages column now native Json type)
+   729→
+   730→Work Log:
+   731→- Read /home/z/my-project/src/components/admin/product-form.tsx to identify exact code to change
+   732→- Simplified gallery images load logic (lines 170-183): removed JSON.parse defensive try/catch block since API now returns parsed array from native Prisma Json column
+   733→- Updated form submit payload (line 318): removed JSON.stringify() wrapping of finalGalleryImages, passing raw array to API instead
+   734→
+   735→Stage Summary: Two edits applied to product-form.tsx. Client now sends galleryImages as a raw JS array and reads it as a parsed array from the API, consistent with the Prisma native Json column type after SQLite→Supabase PostgreSQL migration.
+   736→---
+   737→Task ID: 5a
+   738→Agent: Sub-agent (general-purpose)
+   739→Task: Remove JSON.parse/JSON.stringify calls on DB Json columns in API routes batch 1
+   740→Description: After migrating Prisma schema from SQLite to Supabase PostgreSQL, all JSON string columns are now native Prisma `Json` type. This means Prisma auto-serializes/deserializes, so manual JSON.parse() and JSON.stringify() calls on DB column values must be removed. This batch covers 7 API route files.
+   741→
+   742→Work Log:
+   743→- Read all 7 target files to verify exact code matches
+   744→- **customer/profile/route.ts**: 3 edits — (1) GET handler: replaced 7-line try/catch JSON.parse block with single `const parsedAddress = profile.address || null;`, (2) PUT handler: removed `JSON.stringify()` from `updateData.address = JSON.stringify(address)`, (3) PUT handler: replaced 7-line try/catch JSON.parse block with `const parsedAddress = updated.address || null;`
+   745→- **checkout/settings/route.ts**: 1 edit — replaced `JSON.parse(s.value)` with `s.value as { value: number }` (type assertion preserved for `.value` access)
+   746→- **orders/guest-history/route.ts**: 1 edit — replaced `item.variantSnapshot ? JSON.parse(item.variantSnapshot) : null` with `item.variantSnapshot ?? null`
+   747→- **orders/route.ts**: 5 edits — (1) `JSON.parse(s.value)` → `s.value as { value: number }` for COD settings, (2) `JSON.stringify(address)` removed in customer.update, (3) `JSON.stringify(address)` removed in customer.create, (4) `JSON.stringify(address)` removed in order.create shippingAddress, (5) `JSON.stringify({...})` wrapper removed from variantSnapshot — object literal passed directly
+   748→- **orders/validate/route.ts**: 1 edit — replaced `JSON.parse(s.value)` with `s.value as { value: number }`
+   749→- **orders/track/route.ts**: 2 edits — (1) `JSON.parse(order.shippingAddress)` removed (kept `as Record<string, string>` assertion), (2) variantSnapshot ternary+parse → `?? null`
+   750→- **admin/orders/[id]/route.ts**: 2 edits — (1) `JSON.parse(order.shippingAddress)` removed (kept type assertion), (2) variantSnapshot ternary+parse → `?? null`
+   751→
+   752→Stage Summary: 15 surgical edits across 7 files. All JSON.parse() calls on Prisma Json column reads replaced with direct access (plus type assertions where needed). All JSON.stringify() calls on Prisma Json column writes replaced with direct object passing. No non-DB JSON operations were modified. Files are ready for type-checking.
+   753→
+   754→---
+   755→Task ID: 5b
+   756→Agent: general-purpose sub-agent
+   757→Task: Update API routes batch 2 — Remove JSON.parse/JSON.stringify on Prisma Json column reads/writes for Supabase PostgreSQL migration
+   758→
+   759→Work Log:
+   760→- **search/route.ts** (1 edit): Line 82 `JSON.parse(p.galleryImages)` → `(p.galleryImages as string[] | null) ?? []`
+   761→- **homepage/route.ts** (7 edits): Removed JSON.parse from heroBanner, featuredProductIds, categoriesSection, whyChooseUs, customerReviews, footer (lines 17-28), and settingsMap (line 85). Replaced ternary+parse patterns with `??` null coalescing and type assertions.
+   762→- **products/[slug]/route.ts** (1 edit): Lines 56-58 `JSON.parse(product.galleryImages)` → `(product.galleryImages as string[] | null) ?? []`
+   763→- **products/route.ts** (1 edit): Line 133 `JSON.parse(p.galleryImages)` → `(p.galleryImages as string[] | null) ?? []`
+   764→- **admin/products/route.ts** (1 edit): Line 212 `JSON.stringify(data.galleryImages)` → `data.galleryImages` (write)
+   765→- **admin/products/[id]/route.ts** (1 edit): Lines 190-195 `JSON.stringify(data.galleryImages)` → `data.galleryImages` (write)
+   766→
+   767→Stage Summary: 12 surgical edits across 6 files. All JSON.parse() calls on Prisma Json column reads replaced with direct access using nullish coalescing (`??`) and type assertions. All JSON.stringify() calls on Prisma Json column writes replaced with direct value passing. No non-DB JSON operations (HTTP bodies, localStorage) were modified. Zero remaining JSON.parse/JSON.stringify calls in any of the 6 files.
+   768→---
+   769→Task ID: 1
+   770→Agent: Main Agent
+   771→Task: Supabase Compliance Migration — Implement all missing Supabase-native requirements from Implementation Plan
+   772→
+   773→Work Log:
+   774→- Read and analyzed the full Implementation Plan (50 pages, 1713 lines)
+   775→- Mapped plan requirements to current project state (15 tables, PascalCase names, camelCase columns)
+   776→- Created backup documentation (backups/pre-rls-backup.sql)
+   777→- Created comprehensive SQL migration (backups/supabase-compliance-migration.sql) with:
+   778→  - 5 PostgreSQL functions (generate_order_number, generate_unique_slug, cleanup_order_track_attempts, update_updated_at_column, set_is_out_of_stock)
+   779→  - 11 triggers (is_out_of_stock + updated_at on 9 tables)
+   780→  - RLS enabled on all 15 tables
+   781→  - 42 RLS policies covering all access patterns
+   782→- Executed migration successfully (single prisma db execute)
+   783→- Created 2 Supabase Storage buckets via API (product-images, review-photos — both public)
+   784→- Added 4 missing environment variables (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_APP_URL, IMAGE_OPTIMIZATION_SECRET)
+   785→- Implemented row-level locking (SELECT FOR UPDATE) in order creation with re-validation under lock
+   786→- Removed manual isOutOfStock setting from 4 admin routes (trigger handles it now)
+   787→- Verified: all triggers fire correctly, functions return expected values, RLS policies exist, buckets created, no security violations
+   788→- Verified: guest checkout works end-to-end (POST /api/orders → 200)
+   789→- Generated comprehensive compliance report (COMPLIANCE-REPORT.md)
+   790→
+   791→Stage Summary:
+   792→- 94.4% compliance with Implementation Plan (8/9 requirements fully compliant, 1 partial — Supabase Auth adoption deferred)
+   793→- All database-level requirements implemented: RLS, policies, functions, triggers, storage buckets, environment variables
+   794→- Row-level locking for inventory concurrency protection implemented
+   795→- is_out_of_stock now fully maintained by database trigger (no manual setting in application code)
+   796→- Key artifacts: backups/supabase-compliance-migration.sql, COMPLIANCE-REPORT.md
+   797→---
+   798→Task ID: 2-customer-apis
+   799→Agent: full-stack-developer
+   800→Task: Create missing customer/public APIs and add review rate limiting
+   801→
+   802→Work Log:
+   803→- Created /api/settings (GET, Public) — returns all settings as a flat key-value map from the Setting table
+   804→- Created /api/customer/orders (GET, Customer) — lists authenticated customer's orders with orderItems and variant product info, supports ?page and ?limit pagination, returns { orders, total }
+   805→- Created /api/customer/export-data (GET, Customer) — DPDP Act compliance endpoint that exports all customer data (profile, orders, reviews, wishlist) as a downloadable JSON file with Content-Disposition header
+   806→- Created /api/customer/delete-account (DELETE, Customer) — soft-delete approach that removes wishlist, reviews, then User (cascades to Customer); orders survive due to nullable customerId
+   807→- Added 5/hour rate limiting to /api/reviews POST — counts reviews created in the last hour per customer, returns 429 if limit exceeded
+   808→
+   809→Stage Summary:
+   810→- 4 new API route files created
+   811→- Review rate limiting added (5/hour/customer)
+   812→- All customer endpoints protected by requireCustomer()
+   813→- Lint passes clean with no errors
+   814→---
+   815→Task ID: 2-admin-apis
+   816→Agent: full-stack-developer
+   817→Task: Create all missing admin API routes
+   818→
+   819→Work Log:
+   820→- Created /api/admin/homepage (GET/PUT) — singleton HomepageContent (id=1) with upsert on PUT, Zod partial validation
+   821→- Created /api/admin/faq (GET/POST) — list FAQs ordered by displayOrder with ?search, create FAQ with validation
+   822→- Created /api/admin/faq/[id] (PUT/DELETE) — update/delete individual FAQ with existence checks
+   823→- Created /api/admin/settings (GET/PUT) — key-value store, GET returns all as object, PUT upserts single setting
+   824→- Created /api/admin/analytics (GET) — dashboard metrics with date range filtering (today/last7days/last30days/custom), 12 metrics including revenue, COD verification rate, repeat purchase rate, review counts
+   825→- Created /api/admin/upload/image (POST) — FormData image upload with MIME/size validation, sharp resize (1200px max) and WebP conversion, saves to public/uploads/products/
+   826→- Created /api/admin/customers (GET) — paginated customer list with ?search (name/email/phone), includes order count
+   827→
+   828→Stage Summary:
+   829→- 7 new admin API route files created
+   830→- All endpoints protected by requireAdmin()
+   831→- Zod validation on all POST/PUT endpoints
+   832→- Lint passes clean with no errors
+   833→---
+   834→Task ID: 3-compliance-final
+   835→Agent: main
+   836→Task: Fix all remaining non-auth compliance gaps — security headers, compliance pages, ISR, rate limiting, production readiness
+   837→
+   838→Work Log:
+   839→- Added 7 security headers to next.config.ts: HSTS (2yr), X-Frame-Options (SAMEORIGIN), X-Content-Type-Options (nosniff), Referrer-Policy (origin-when-cross-origin), X-XSS-Protection (1;mode=block), Permissions-Policy, CSP (with Supabase domains)
+   840→- Created /api/admin/upload/image (POST, Admin) — sharp-based image upload endpoint
+   841→- Added ISR revalidate to 6 public read-only API routes: products (3600), products/[slug] (60), homepage (300), categories (3600), faq (1800), checkout/settings (3600)
+   842→- Created compliance-pages.tsx with 6 SPA view components: PrivacyPolicyPage, TermsPage, ReturnPolicyPage, AboutPage, ContactPage, FaqPage (with live FAQ fetch + Accordion)
+   843→- Updated store-footer.tsx: 4-column grid layout, new Legal column, added About/Contact to Quick Links
+   844→- Integrated all 6 compliance page views into page.tsx (new AppView types + render cases)
+   845→- Added review submission rate limiting (5/hour per customer) to /api/reviews POST
+   846→- Created robots.txt: Disallow /api/ and /admin/
+   847→- Verified: lint clean, all admin routes return 401 without auth, all customer routes return 401 without auth, security headers present in HTTP responses, robots.txt serves correctly
+   848→
+   849→Stage Summary:
+   850→- 11 new API route files created (7 admin + 4 customer/public)
+   851→- 7 security headers implemented per Plan §Phase 9
+   852→- 6 compliance page components created and integrated into SPA
+   853→- ISR revalidation added to 6 public API routes per Plan §Phase 9
+   854→- Review rate limiting implemented (5/hour) per Plan §8
+   855→- robots.txt updated per Plan §12
+   856→- All changes verified: lint clean, API auth checks pass, headers confirmed
+   857→

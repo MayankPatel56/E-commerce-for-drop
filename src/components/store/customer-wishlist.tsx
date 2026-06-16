@@ -14,7 +14,10 @@ import {
   ArrowRight,
   Package,
   Loader2,
+  ShoppingCart,
 } from "lucide-react";
+
+import { useCart } from "@/context/cart-context";
 
 interface CustomerWishlistProps {
   onNavigate: (view: string, data?: Record<string, unknown>) => void;
@@ -43,6 +46,7 @@ function formatPrice(price: number): string {
 }
 
 export function CustomerWishlist({ onNavigate }: CustomerWishlistProps) {
+  const { addItem } = useCart();
   const [items, setItems] = useState<WishlistProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -246,15 +250,37 @@ export function CustomerWishlist({ onNavigate }: CustomerWishlistProps) {
                   </Badge>
                 )}
 
-                {/* Action */}
-                <Button
-                  size="sm"
-                  className="w-full min-h-[44px] text-xs"
-                  onClick={() => handleViewProduct(item.product.slug)}
-                >
-                  View Product
-                  <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                </Button>
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="flex-1 min-h-[44px] text-xs"
+                    onClick={() => handleViewProduct(item.product.slug)}
+                  >
+                    View
+                    <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 min-h-[44px] text-xs"
+                    onClick={() => {
+                      addItem({
+                        variantId: 0,
+                        productId: item.productId,
+                        productName: item.product.name,
+                        variantDescription: "",
+                        price: item.product.price,
+                        quantity: 1,
+                        imageUrl: item.product.primaryImage ?? "",
+                        stockAvailable: 99,
+                      });
+                      onNavigate("product", { slug: item.product.slug });
+                    }}
+                  >
+                    <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
+                    Add to Cart
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           );

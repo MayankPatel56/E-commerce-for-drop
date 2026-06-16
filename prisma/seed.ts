@@ -38,8 +38,8 @@ async function seed() {
   // 2. Seed default settings (no email config — V1 sends no emails)
   // Uses native Json type — no JSON.stringify needed
   const defaultSettings = [
-    { key: "cod_min_order_value", value: { value: 299 } },
-    { key: "cod_max_order_value", value: { value: 50000 } },
+    { key: "cod_min_order", value: { value: 299 } },
+    { key: "cod_max_order", value: { value: 50000 } },
     { key: "store_name", value: { value: "Indicore Originals" } },
     { key: "store_email", value: { value: "support@indicoreoriginals.com" } },
     { key: "store_phone", value: { value: "+91XXXXXXXXXX" } },
