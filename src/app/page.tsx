@@ -48,6 +48,14 @@ import { CustomerWishlist } from "@/components/store/customer-wishlist";
 import { CustomerReviews } from "@/components/store/customer-reviews";
 import { AdminReviewsTable } from "@/components/admin/admin-reviews-table";
 import { useCart } from "@/context/cart-context";
+import {
+  PrivacyPolicyPage,
+  TermsPage,
+  ReturnPolicyPage,
+  AboutPage,
+  ContactPage,
+  FaqPage,
+} from "@/components/store/compliance-pages";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -65,7 +73,13 @@ type AppView =
   | "customer-dashboard"
   | "customer-profile"
   | "customer-wishlist"
-  | "customer-reviews";
+  | "customer-reviews"
+  | "privacy"
+  | "terms"
+  | "returns"
+  | "about"
+  | "contact"
+  | "faq";
 
 type AdminPanel =
   | "orders"
@@ -589,6 +603,24 @@ export default function HomePage() {
         )}
         {appView === "customer-reviews" && (
           <CustomerReviews onNavigate={handleNavigate} />
+        )}
+        {appView === "privacy" && (
+          <PrivacyPolicyPage onNavigate={handleNavigate} />
+        )}
+        {appView === "terms" && (
+          <TermsPage onNavigate={handleNavigate} />
+        )}
+        {appView === "returns" && (
+          <ReturnPolicyPage onNavigate={handleNavigate} />
+        )}
+        {appView === "about" && (
+          <AboutPage onNavigate={handleNavigate} />
+        )}
+        {appView === "contact" && (
+          <ContactPage onNavigate={handleNavigate} />
+        )}
+        {appView === "faq" && (
+          <FaqPage onNavigate={handleNavigate} />
         )}
       </main>
 

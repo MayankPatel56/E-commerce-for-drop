@@ -4,7 +4,10 @@ import { db } from "@/lib/db";
 /**
  * GET /api/categories — Public category listing
  * Returns categories with product count for storefront navigation
+ * Plan Reference: Phase 9 ISR — revalidate = 3600 (1 hour)
  */
+export const revalidate = 3600;
+
 export async function GET() {
   try {
     const categories = await db.category.findMany({

@@ -4,7 +4,10 @@ import { db } from "@/lib/db";
 /**
  * GET /api/faq — Public FAQ listing
  * Returns active FAQs ordered by displayOrder
+ * Plan Reference: Phase 9 ISR — revalidate = 1800 (30 minutes)
  */
+export const revalidate = 1800;
+
 export async function GET() {
   try {
     const faqs = await db.faq.findMany({

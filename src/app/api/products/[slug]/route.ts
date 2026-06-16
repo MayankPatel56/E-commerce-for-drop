@@ -4,7 +4,10 @@ import { db } from "@/lib/db";
 /**
  * GET /api/products/[slug] — Public product detail
  * Returns full product info: variants, gallery, approved reviews, SEO, avg rating
+ * Plan Reference: Phase 9 ISR — revalidate = 60 (1 minute)
  */
+export const revalidate = 60;
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }

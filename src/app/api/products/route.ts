@@ -6,7 +6,10 @@ import { db } from "@/lib/db";
  * Query params: category (slug), tags (comma-separated ids), inStock (true/false),
  *               minPrice, maxPrice, search, sort, page, limit
  * Resolution #9: Multi-tag filtering — products matching ANY of the selected tags
+ * Plan Reference: Phase 9 ISR — revalidate = 3600 (1 hour)
  */
+export const revalidate = 3600;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;

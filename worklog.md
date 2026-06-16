@@ -830,3 +830,27 @@ Stage Summary:
 - All endpoints protected by requireAdmin()
 - Zod validation on all POST/PUT endpoints
 - Lint passes clean with no errors
+---
+Task ID: 3-compliance-final
+Agent: main
+Task: Fix all remaining non-auth compliance gaps — security headers, compliance pages, ISR, rate limiting, production readiness
+
+Work Log:
+- Added 7 security headers to next.config.ts: HSTS (2yr), X-Frame-Options (SAMEORIGIN), X-Content-Type-Options (nosniff), Referrer-Policy (origin-when-cross-origin), X-XSS-Protection (1;mode=block), Permissions-Policy, CSP (with Supabase domains)
+- Created /api/admin/upload/image (POST, Admin) — sharp-based image upload endpoint
+- Added ISR revalidate to 6 public read-only API routes: products (3600), products/[slug] (60), homepage (300), categories (3600), faq (1800), checkout/settings (3600)
+- Created compliance-pages.tsx with 6 SPA view components: PrivacyPolicyPage, TermsPage, ReturnPolicyPage, AboutPage, ContactPage, FaqPage (with live FAQ fetch + Accordion)
+- Updated store-footer.tsx: 4-column grid layout, new Legal column, added About/Contact to Quick Links
+- Integrated all 6 compliance page views into page.tsx (new AppView types + render cases)
+- Added review submission rate limiting (5/hour per customer) to /api/reviews POST
+- Created robots.txt: Disallow /api/ and /admin/
+- Verified: lint clean, all admin routes return 401 without auth, all customer routes return 401 without auth, security headers present in HTTP responses, robots.txt serves correctly
+
+Stage Summary:
+- 11 new API route files created (7 admin + 4 customer/public)
+- 7 security headers implemented per Plan §Phase 9
+- 6 compliance page components created and integrated into SPA
+- ISR revalidation added to 6 public API routes per Plan §Phase 9
+- Review rate limiting implemented (5/hour) per Plan §8
+- robots.txt updated per Plan §12
+- All changes verified: lint clean, API auth checks pass, headers confirmed

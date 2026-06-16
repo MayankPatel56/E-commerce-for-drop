@@ -4,7 +4,10 @@ import { db } from "@/lib/db";
 /**
  * GET /api/checkout/settings
  * Returns COD min/max values for checkout validation
+ * Plan Reference: Phase 9 ISR — revalidate = 3600 (1 hour)
  */
+export const revalidate = 3600;
+
 export async function GET() {
   try {
     const settings = await db.setting.findMany({

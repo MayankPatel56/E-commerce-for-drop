@@ -1,82 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
-import sharp from "sharp";
-import { generateImageFilename } from "@/lib/slug";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { processUploadedImage } from "@/lib/image-processing";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "products");
-const ALLOWED_MIME_TYPES = [
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-];
-const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
-
-// ─── POST: Upload and process an image ────────────────────────────────────────
-
+/**
+ * POST /api/admin/upload/image
+ * Admin-only image upload endpoint
+ * Accepts FormData with "image" file field
+ * Returns { url, thumbnailUrl }
+ */
 export async function POST(request: NextRequest) {
   const { error } = await requireAdmin();
   if (error) return error;
 
   try {
     const formData = await request.formData();
-    const file = formData.get("image");
+    const file = formData.get("image") as File | null;
 
-    if (!file || !(file instanceof File)) {
+    if (!file) {
       return NextResponse.json(
-        { error: "No image file provided. Use 'image' field." },
+        { error: "No image file provided. Use field name 'image'." },
         { status: 400 }
       );
     }
 
-    // Validate MIME type
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        {
-          error:
-            "Invalid file type. Accepted: JPG, JPEG, PNG, WebP, GIF",
-        },
-        { status: 400 }
-      );
-    }
+    const processed = await processUploadedImage(file);
 
-    // Validate size
-    if (file.size > MAX_SIZE_BYTES) {
-      return NextResponse.json(
-        { error: "File too large. Maximum size is 5MB." },
-        { status: 400 }
-      );
-    }
-
-    // Ensure upload directory exists
-    await mkdir(UPLOAD_DIR, { recursive: true });
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const baseName = generateImageFilename(file.name).replace(/\.[^.]+$/, "");
-
-    // Process image: resize to max 1200px width, convert to WebP
-    const processedBuffer = await sharp(buffer)
-      .resize({ width: 1200, withoutEnlargement: true })
-      .webp({ quality: 80 })
-      .toBuffer();
-
-    const filename = `${baseName}.webp`;
-    const filePath = path.join(UPLOAD_DIR, filename);
-    await writeFile(filePath, processedBuffer);
-
-    const url = `/uploads/products/${filename}`;
-
-    return NextResponse.json({ url }, { status: 201 });
-  } catch (err) {
-    console.error("POST /api/admin/upload/image error:", err);
     return NextResponse.json(
-      { error: "Failed to upload image" },
-      { status: 500 }
+      {
+        url: processed.galleryUrl,
+        thumbnailUrl: processed.thumbnailUrl,
+      },
+      { status: 201 }
     );
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Failed to upload image";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

@@ -4,7 +4,10 @@ import { db } from "@/lib/db";
 /**
  * GET /api/homepage — Public homepage content
  * Returns the homepage_content singleton + featured products + categories + latest approved reviews
+ * Plan Reference: Phase 9 ISR — revalidate = 300 (5 minutes)
  */
+export const revalidate = 300;
+
 export async function GET() {
   try {
     // 1. Get homepage content singleton
