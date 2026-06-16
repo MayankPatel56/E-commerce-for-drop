@@ -65,7 +65,7 @@ export async function POST(
         variantValue: data.variantValue,
         price: data.price ?? null,
         stockQuantity: data.stockQuantity,
-        isOutOfStock: data.stockQuantity <= 0,
+        // isOutOfStock is set automatically by DB trigger (set_is_out_of_stock)
       },
     });
 

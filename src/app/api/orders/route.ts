@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+// Plan: §Phase 4 — Order Creation Transaction with Row-Level Locks
+// Uses DIRECT_URL (non-PgBouncer) for FOR UPDATE support in transactions
 
 // ─── Validation Schemas ──────────────────────────────────────────────────────
 
@@ -76,20 +80,22 @@ export async function POST(request: NextRequest) {
       if (s.key === "cod_max_order") codMax = val.value ?? 50000;
     }
 
-    // 3. Fetch and validate variants (with product info)
+    // 3. Pre-fetch variants for initial validation (before transaction)
+    // Plan: §Phase 4 — We do a light check here, then re-validate inside the transaction
+    //       with row-level locks to prevent race conditions.
     const variantIds = cart.map((item) => item.variant_id);
-    const variants = await db.productVariant.findMany({
+    const preCheckVariants = await db.productVariant.findMany({
       where: { id: { in: variantIds } },
       include: {
         product: { select: { id: true, name: true, price: true, isPublished: true } },
       },
     });
 
-    const variantMap = new Map(variants.map((v) => [v.id, v]));
+    const preCheckMap = new Map(preCheckVariants.map((v) => [v.id, v]));
 
-    // Validate all variants exist, are published, and have sufficient stock
+    // Quick pre-check: all variants exist and products are published
     for (const item of cart) {
-      const variant = variantMap.get(item.variant_id);
+      const variant = preCheckMap.get(item.variant_id);
       if (!variant) {
         return NextResponse.json(
           { error: `Variant ID ${item.variant_id} not found` },
@@ -102,20 +108,12 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      if (variant.stockQuantity < item.quantity) {
-        return NextResponse.json(
-          {
-            error: `Insufficient stock for ${variant.product.name} (${variant.variantType}: ${variant.variantValue}). Only ${variant.stockQuantity} available.`,
-          },
-          { status: 400 }
-        );
-      }
     }
 
-    // 4. Calculate cart total
+    // 4. Calculate cart total (for COD validation, uses pre-check prices)
     let cartTotal = 0;
     for (const item of cart) {
-      const variant = variantMap.get(item.variant_id)!;
+      const variant = preCheckMap.get(item.variant_id)!;
       const unitPrice = variant.price ?? variant.product.price;
       cartTotal += unitPrice * item.quantity;
     }
@@ -220,9 +218,54 @@ export async function POST(request: NextRequest) {
       retries++;
     }
 
-    // 8. Create order with transaction: create order + order items + deduct inventory
+    // 8. Create order with transaction — Plan: §Phase 4 Row-Level Locks
+    //    1. Lock variants FOR UPDATE (prevents concurrent stock race conditions)
+    //    2. Re-validate stock under lock
+    //    3. Deduct inventory (is_out_of_stock trigger fires automatically)
+    //    4. Create order + order items
     const order = await db.$transaction(async (tx) => {
-      // Create the order
+      // ── Step 1: Lock variants for update (row-level lock) ──
+      // Plan: SELECT * FROM product_variants WHERE id IN (variant_ids) FOR UPDATE;
+      const lockedVariants = await tx.$queryRaw<
+        Array<{
+          id: number;
+          sku: string;
+          "productId": number;
+          "variantType": string;
+          "variantValue": string;
+          price: number | null;
+          "stockQuantity": number;
+          "isOutOfStock": boolean;
+        }>
+      >(Prisma.sql`SELECT * FROM "ProductVariant" WHERE id IN (${Prisma.join(variantIds)}) FOR UPDATE`);
+
+      const lockedMap = new Map(lockedVariants.map((v) => [v.id, v]));
+
+      // ── Step 2: Re-validate stock under lock ──
+      for (const item of cart) {
+        const variant = lockedMap.get(item.variant_id);
+        if (!variant) {
+          throw new Error(`Variant ID ${item.variant_id} not found`);
+        }
+        if (variant.stockQuantity < item.quantity) {
+          throw new Error(
+            `Insufficient stock for variant ${item.variant_id}. Only ${variant.stockQuantity} available. `
+            + `(Concurrent order may have claimed remaining stock.)`
+          );
+        }
+      }
+
+      // ── Step 3: Deduct inventory (trigger sets isOutOfStock automatically) ──
+      for (const item of cart) {
+        const newStock = lockedMap.get(item.variant_id)!.stockQuantity - item.quantity;
+        await tx.productVariant.update({
+          where: { id: item.variant_id },
+          data: { stockQuantity: newStock },
+          // isOutOfStock is set by the DB trigger (set_is_out_of_stock)
+        });
+      }
+
+      // ── Step 4: Create order ──
       const newOrder = await tx.order.create({
         data: {
           orderNumber,
@@ -234,12 +277,12 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Create order items and deduct inventory
+      // ── Step 5: Create order items ──
       for (const item of cart) {
-        const variant = variantMap.get(item.variant_id)!;
-        const unitPrice = variant.price ?? variant.product.price;
+        const variant = lockedMap.get(item.variant_id)!;
+        const preVariant = preCheckMap.get(item.variant_id)!;
+        const unitPrice = variant.price ?? preVariant.product?.price ?? 0;
 
-        // Create order item with variant snapshot
         await tx.orderItem.create({
           data: {
             orderId: newOrder.id,
@@ -250,18 +293,8 @@ export async function POST(request: NextRequest) {
               sku: variant.sku,
               variantType: variant.variantType,
               variantValue: variant.variantValue,
-              productName: variant.product.name,
+              productName: preVariant.product?.name ?? "",
             },
-          },
-        });
-
-        // Deduct inventory
-        const newStock = variant.stockQuantity - item.quantity;
-        await tx.productVariant.update({
-          where: { id: item.variant_id },
-          data: {
-            stockQuantity: newStock,
-            isOutOfStock: newStock <= 0,
           },
         });
       }

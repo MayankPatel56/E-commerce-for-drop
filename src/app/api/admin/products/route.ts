@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
             variantValue: v.variantValue,
             price: v.price ?? null,
             stockQuantity: v.stockQuantity,
-            isOutOfStock: v.stockQuantity <= 0,
+            // isOutOfStock set by DB trigger
           })),
         },
         productTags: {

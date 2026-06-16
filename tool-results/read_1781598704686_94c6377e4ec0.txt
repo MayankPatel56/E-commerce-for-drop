@@ -1,0 +1,502 @@
+     1→     1→     1→--- PAGE 1 ---
+     2→     2→     2→Indicore Originals: Implementation Plan
+     3→     3→     3→1.1 Project Summary
+     4→     4→     4→Indicore Originals is a modern, mobile-first e-commerce platform selling curated products via Instagram-driven traffic. The MVP supports:
+     5→     5→     5→ Cash on Delivery (COD) as the sole payment method.
+     6→     6→     6→ Single-step checkout with integrated lead collection.
+     7→     7→     7→ Product variants, image management, moderated reviews (registered customers only).
+     8→     8→     8→ Guest order tracking (Order ID + Email).
+     9→     9→     9→ Manual COD verification.
+    10→    10→    10→ Homepage content management, FAQs, and analytics.
+    11→    11→    11→Key Differentiators:
+    12→    12→    12→ Single login page with role-based redirect (admin/customer).
+    13→    13→    13→ Guest checkout with automatic order linking upon registration.
+    14→    14→    14→ Purchase-validated reviews (only delivered orders can review).
+    15→    15→    15→ Manual COD verification workflow (no OTP/SMS/email dependency).
+    16→    16→    16→ Fixed 7-section homepage structure (content-managed, not structural).
+    17→    17→    17→ All customer communication handled manually by admin via phone or WhatsApp.
+    18→    18→    18→1.2 Business Goals
+    19→    19→    19→Goal Success Metric Target (3 months)
+    20→    20→    20→Convert Instagram traffic Conversion rate 2.5%
+    21→    21→    21→Build customer database Consented emails collected 5,000
+    22→    22→    22→Maintain trust via manual verification COD success rate 85%
+    23→    23→    23→Generate repeat purchases Repeat purchase rate 20%
+    24→    24→    24→Collect product feedback Reviews per order 0.3
+    25→    25→    25→1.3 Technical Goals
+    26→    26→    26→Goal Success Metric Target
+    27→    27→    27→Mobile-first performance Lighthouse mobile score > 90
+    28→    28→    28→Fast page loads LCP < 2.5s on 3G
+    29→    29→    29→
+    30→    30→    30→--- PAGE 2 ---
+    31→    31→    31→Goal Success Metric Target
+    32→    32→    32→Secure authentication No breaches Zero incidents
+    33→    33→    33→Zero-cost MVP Monthly hosting $0 (free tier)
+    34→    34→    34→Maintainable codebase Developer onboarding < 2 days
+    35→    35→    35→1.4 MVP Scope (Version 1)
+    36→    36→    36→In Scope:
+    37→    37→    37→ COD as sole payment method.
+    38→    38→    38→ Single-step checkout with optional consent checkbox (marketing opt-in).
+    39→    39→    39→ Product variants (size, color, material, custom).
+    40→    40→    40→ Product images (primary + up to 10 gallery, WebP conversion).
+    41→    41→    41→ Guest checkout + optional registration.
+    42→    42→    42→ Order tracking via Order ID + Email (with State in address).
+    43→    43→    43→ Guest order history via Email only.
+    44→    44→    44→ Purchase-validated reviews (registered customers only).
+    45→    45→    45→ Review moderation (approve/reject/hide/delete).
+    46→    46→    46→ Fixed 7-section homepage (content-managed), including Customer Reviews settings.
+    47→    47→    47→ FAQ management (create/edit/delete/reorder).
+    48→    48→    48→ Manual COD verification workflow.
+    49→    49→    49→ Analytics dashboard with date range filtering.
+    50→    50→    50→ Admin product/category/tag management.
+    51→    51→    51→ Multi-tag product filtering.
+    52→    52→    52→ Database-based rate limiting (login + order tracking).
+    53→    53→    53→Explicitly Out of Scope (V1):
+    54→    54→    54→ Email notifications of any kind (order confirmation, status updates, admin alerts) — Post-V1.
+    55→    55→    55→ Automated admin order notifications — Admin monitors dashboard manually.
+    56→    56→    56→ SMS notifications / OTP verification.
+    57→    57→    57→ Online payment gateways.
+    58→    58→    58→ Multiple saved shipping addresses per customer — Post-V1 (single address only in V1).
+    59→    59→    59→ Multi-vendor marketplace, affiliate program, mobile apps, multi-language/currency, AI recommendations, live chat, 2FA / IP
+    60→    60→    60→whitelisting, gamification / loyalty features, inventory forecasting / low-stock alerts.
+    61→    61→    61→ Admin idle session timeout (admin manages logout manually).
+    62→    62→    62→1.5 Document Conflict Resolution
+    63→    63→    63→
+    64→    64→    64→--- PAGE 3 ---
+    65→    65→    65→All conflicts between the PRD and TRD have been resolved below. This implementation plan supersedes both documents where conflicts
+    66→    66→    66→exist.
+    67→    67→    67→# Conflict / Gap PRD Position TRD Position Resolution Applied
+    68→    68→    68→"Email is the only "No automated Follow TRD for V1. No email service, no
+    69→    69→    69→automated channel; email/SMS email triggers anywhere. All customer
+    70→    70→    70→1 Email notifications
+    71→    71→    71→order confirmation notifications — communication is manual (phone/WhatsApp).
+    72→    72→    72→email sent" non-goal" Post-V1 enhancement.
+    73→    73→    73→Follow
+    74→    74→    74→"Implement via "Database-based
+    75→    75→    75→Rate limiting TRD. Use customers.login_attempts / locked_
+    76→    76→    76→2 Upstash Redis rate limiting (no
+    77→    77→    77→approach until for login; order_track_attempts table for
+    78→    78→    78→middleware" Redis)"
+    79→    79→    79→order tracking. No Redis/Upstash dependency.
+    80→    80→    80→customers table
+    81→    81→    81→Registered customers has single Remove from V1. Single shipping address
+    82→    82→    82→Multiple shipping
+    83→    83→    83→3 can save multiple address column; storage per customer. Feature moved to Post-
+    84→    84→    84→addresses
+    85→    85→    85→addresses no addresses V1 Out of Scope.
+    86→    86→    86→table exists
+    87→    87→    87→Supabase Auth Remove password_hash from customers tabl
+    88→    88→    88→PRD data model
+    89→    89→    89→password_hash in manages e. Supabase Auth handles password storage.
+    90→    90→    90→4 lists password_hash fie
+    91→    91→    91→Customer Model passwords No password_hash column anywhere in the
+    92→    92→    92→ld
+    93→    93→    93→in auth.users customer table.
+    94→    94→    94→Same, but not
+    95→    95→    95→Remove requirement. Supabase does not
+    96→    96→    96→30-minute admin "Session timeout: 30 implementable
+    97→    97→    97→5 support idle timeouts natively; logout is
+    98→    98→    98→idle timeout min admin" natively in
+    99→    99→    99→manual. Customer session remains 7 days.
+   100→   100→   100→Supabase
+   101→   101→   101→PRD
+   102→   102→   102→homepage_content Add customer_reviews jsonb
+   103→   103→   103→defines customer_revi homepage_conte
+   104→   104→   104→schema missing column to homepage_content (e.g., {"max_re
+   105→   105→   105→6 ews: nt table has no
+   106→   106→   106→Customer Reviews views_to_show": 6}). Admin editor includes
+   107→   107→   107→max_reviews_to_show such column
+   108→   108→   108→settings this field.
+   109→   109→   109→(integer)
+   110→   110→   110→POST /api/orders
+   111→   111→   111→Consent is optional. It is a marketing opt-in,
+   112→   112→   112→"Consent checkbox lists "all fields
+   113→   113→   113→Consent field not a prerequisite for placing an
+   114→   114→   114→7 (explicit, not pre- present"
+   115→   115→   115→validation order. consent defaults to false. Orders are
+   116→   116→   116→ticked)" for marketing implying consent
+   117→   117→   117→accepted with or without consent.
+   118→   118→   118→required
+   119→   119→   119→Add State to all address
+   120→   120→   120→State field missing Address stored
+   121→   121→   121→Form collects: street, structures. Checkout API payloads, Zod
+   122→   122→   122→8 from shipping as plain text; no
+   123→   123→   123→city, pincode (no State) validation, and orders.shipping_address JSON
+   124→   124→   124→address State field
+   125→   125→   125→all include state.
+   126→   126→   126→Support multiple
+   127→   127→   127→Product tag Products filterable by API param tag-
+   128→   128→   128→9 tags: tags=id1,id2,id3 (comma-separated).
+   129→   129→   129→filtering (singular) tags (plural) id (singular)
+   130→   130→   130→Frontend uses multi-select.
+   131→   131→   131→Clear localStorage cart immediately after
+   132→   132→   132→Cart not cleared
+   133→   133→   133→10 Not specified Cart uses successful order placement, before redirecting
+   134→   134→   134→after checkout
+   135→   135→   135→localStorage; no to order confirmation page.
+   136→   136→   136→
+   137→   137→   137→--- PAGE 4 ---
+   138→   138→   138→# Conflict / Gap PRD Position TRD Position Resolution Applied
+   139→   139→   139→clear after
+   140→   140→   140→success
+   141→   141→   141→No automated notification in V1. Admin
+   142→   142→   142→11
+   143→   143→   143→Admin new-order No mechanism defined No mechanism manually monitors the Orders dashboard. No
+   144→   144→   144→(Ga
+   145→   145→   145→notifications in either document defined push, email, or SMS alert on new order.
+   146→   146→   146→p)
+   147→   147→   147→Explicitly in Out of Scope.
+   148→   148→   148→Action Items from Conflict Resolution:
+   149→   149→   149→ PRD Section "Communication" must state: *"No automated email or SMS in V1. Customer communication is manual (admin
+   150→   150→   150→phone/WhatsApp). Order status available via Track Order page."*
+   151→   151→   151→ PRD Customer Model must remove password_hash field.
+   152→   152→   152→ PRD Customer Features must remove "Save multiple shipping addresses" from V1.
+   153→   153→   153→ All address fields in PRD, TRD, and this plan now include: street, city, state, pincode.
+   154→   154→   154→2. Development Approach & Strategy
+   155→   155→   155→2.1 Recommended Development Approach
+   156→   156→   156→Iterative, Feature-First Development with Parallel Tracks.
+   157→   157→   157→Track Focus Timeline
+   158→   158→   158→Track A Backend & Database -
+   159→   159→   159→Track B Frontend Storefront -
+   160→   160→   160→Track C Admin Dashboard -
+   161→   161→   161→Track D QA & Testing -
+   162→   162→   162→Development Philosophy:
+   163→   163→   163→ Build vertical slices (complete features from DB to UI).
+   164→   164→   164→ Deploy to staging after each phase.
+   165→   165→   165→ No feature branches longer than 3 days.
+   166→   166→   166→ Daily integration to develop branch.
+   167→   167→   167→2.2 Feature Delivery Strategy
+   168→   168→   168→Priority Feature Dependency Risk
+   169→   169→   169→P0 Database schema + RLS None High
+   170→   170→   170→
+   171→   171→   171→--- PAGE 5 ---
+   172→   172→   172→Priority Feature Dependency Risk
+   173→   173→   173→P0 Authentication + roles Database High
+   174→   174→   174→P0 Product management (admin) Database Medium
+   175→   175→   175→P0 Storefront product display Product API Medium
+   176→   176→   176→P0 Cart + checkout (with State) Product + Customer High
+   177→   177→   177→P0 Order creation + inventory Cart + Product High
+   178→   178→   178→P1 Guest order tracking Order Low
+   179→   179→   179→P1 Admin order management Order Medium
+   180→   180→   180→P1 Customer registration Customer Low
+   181→   181→   181→P1 Wishlist Customer Low
+   182→   182→   182→P2 Reviews (customer + admin) Order Medium
+   183→   183→   183→P2 Homepage editor (with customer_reviews config) CMS Low
+   184→   184→   184→P2 FAQ management CMS Low
+   185→   185→   185→P2 Analytics Order Low
+   186→   186→   186→2.3 Risk Reduction Strategy
+   187→   187→   187→Risk Mitigation Timeline
+   188→   188→   188→Supabase RLS complexity Build + test RLS policies in Phase 0 (prototype) -
+   189→   189→   189→Variant inventory concurrency Use database row-level locks in order creation -
+   190→   190→   190→Rate limiting edge cases Test with k6 load testing -
+   191→   191→   191→Guest order linking race condition Use database transaction with unique constraint -
+   192→   192→   192→Image upload performance Implement client-side resizing before upload -
+   193→   193→   193→
+   194→   194→   194→--- PAGE 6 ---
+   195→   195→   195→3. Phase-by-Phase Implementation Plan
+   196→   196→   196→Phase 0: Foundation & Infrastructure Setup
+   197→   197→   197→Objective: Establish development environment, Supabase project, and foundational code structure.
+   198→   198→   198→Activity Details
+   199→   199→   199→Supabase project creation New project (indicore-originals-prod) + (indicore-originals-staging)
+   200→   200→   200→GitHub repository setup Branch protection rules, main/develop/staging branches
+   201→   201→   201→Vercel project connection Connect GitHub, configure staging/production environments
+   202→   202→   202→Local development environment Docker Compose with local Supabase, Node.js 20+
+   203→   203→   203→Shared component library shadcn/ui setup, Tailwind configuration
+   204→   204→   204→Deliverables:
+   205→   205→   205→1. Supabase projects created (staging + production).
+   206→   206→   206→2. GitHub repo with branch protection.
+   207→   207→   207→3. Vercel deployments auto-deploying from staging and main.
+   208→   208→   208→4. Local development environment documented in README.
+   209→   209→   209→Phase 1: Database & Authentication
+   210→   210→   210→Objective: Complete database schema with RLS policies, authentication system with role-based redirect.
+   211→   211→   211→Database Work
+   212→   212→   212→Tables to Create (in order):
+   213→   213→   213→sql
+   214→   214→   214→-- Run via Supabase migration
+   215→   215→   215→-- 1. customers (extends auth.users - no password_hash column)
+   216→   216→   216→-- 2. categories
+   217→   217→   217→-- 3. tags
+   218→   218→   218→-- 4. products
+   219→   219→   219→-- 5. product_variants
+   220→   220→   220→-- 6. product_tags
+   221→   221→   221→-- 7. orders
+   222→   222→   222→-- 8. order_items
+   223→   223→   223→-- 9. reviews
+   224→   224→   224→-- 10. wishlist
+   225→   225→   225→-- 11. faq
+   226→   226→   226→-- 12. homepage_content (includes customer_reviews jsonb column)
+   227→   227→   227→-- 13. settings
+   228→   228→   228→
+   229→   229→   229→--- PAGE 7 ---
+   230→   230→   230→-- 14. order_track_attempts
+   231→   231→   231→Key Implementation Details:
+   232→   232→   232→Requirement Implementation
+   233→   233→   233→is_out_of_stock BEFORE INSERT OR UPDATE trigger; set NEW.is_out_of_stock := (NEW.stock_quantity <= 0) — DO NOT update same table
+   234→   234→   234→Phone non-unique No unique constraint on customers.phone
+   235→   235→   235→Email unique Unique constraint on customers.email
+   236→   236→   236→Guest customers is_registered = false; no password_hash column — Supabase Auth owns all passwords
+   237→   237→   237→Admin idle timeout Not implemented. Admin logs out manually. Customer session: 7 days.
+   238→   238→   238→Shipping address Stored as JSON with fields: street, city, state, pincode
+   239→   239→   239→homepage_content table - includes Customer Reviews settings:
+   240→   240→   240→sql
+   241→   241→   241→CREATE TABLE homepage_content (
+   242→   242→   242→id bigserial PRIMARY KEY,
+   243→   243→   243→hero_banner jsonb,
+   244→   244→   244→featured_product_ids bigint[],
+   245→   245→   245→categories_section jsonb,
+   246→   246→   246→why_choose_us jsonb,
+   247→   247→   247→customer_reviews jsonb DEFAULT '{"max_reviews_to_show": 6}',
+   248→   248→   248→footer jsonb,
+   249→   249→   249→updated_at timestamp DEFAULT now()
+   250→   250→   250→);
+   251→   251→   251→-- Singleton: only one row allowed
+   252→   252→   252→RLS Policies (Mandatory):
+   253→   253→   253→ Enable RLS on all tables.
+   254→   254→   254→ Customers: users read/update own, admins all.
+   255→   255→   255→sql
+   256→   256→   256→CREATE POLICY "Users read own customer row" ON customers FOR SELECT USING (auth.uid() = id);
+   257→   257→   257→CREATE POLICY "Users update own customer row" ON customers FOR UPDATE USING (auth.uid() = id);
+   258→   258→   258→CREATE POLICY "Allow guest customer creation" ON customers FOR INSERT WITH CHECK (true);
+   259→   259→   259→CREATE POLICY "Admins all customers" ON customers FOR ALL USING ( (SELECT role FROM customers WHERE id = auth.uid()) =
+   260→   260→   260→'admin' );
+   261→   261→   261→ Products & Variants: public read, admin write.
+   262→   262→   262→ Orders: customers read own; allow INSERT for guest checkout; admin all.
+   263→   263→   263→
+   264→   264→   264→--- PAGE 8 ---
+   265→   265→   265→ Order Items: allow INSERT with orders.
+   266→   266→   266→ Reviews: public read approved; customers create/update own; admin all.
+   267→   267→   267→ FAQs, homepage_content, settings: public read; admin write.
+   268→   268→   268→ order_track_attempts: allow insert from public (rate limiting); admin read.
+   269→   269→   269→Backend Work (Authentication Endpoints)
+   270→   270→   270→Endpoint Method Purpose
+   271→   271→   271→/api/auth/login POST Email/password login, DB rate limiting, role redirect
+   272→   272→   272→/api/auth/signup POST Customer registration
+   273→   273→   273→/api/auth/logout POST Destroy session
+   274→   274→   274→/api/auth/session GET Get current session + role
+   275→   275→   275→Rate Limiting Logic (Login - Database-based, no Redis):
+   276→   276→   276→typescript
+   277→   277→   277→// Database-based login rate limiting - no external dependencies
+   278→   278→   278→async function checkLoginRateLimit(email: string): Promise<{ allowed: boolean; remainingMinutes: number }> {
+   279→   279→   279→const customer = await db.customers.findUnique({ where: { email } });
+   280→   280→   280→if (customer?.locked_until && customer.locked_until > new Date()) {
+   281→   281→   281→const remainingMinutes = Math.ceil((customer.locked_until.getTime() - Date.now()) / 60000);
+   282→   282→   282→return { allowed: false, remainingMinutes };
+   283→   283→   283→}
+   284→   284→   284→if (customer && customer.login_attempts >= 5) {
+   285→   285→   285→await db.customers.update({
+   286→   286→   286→where: { email },
+   287→   287→   287→data: { locked_until: new Date(Date.now() + 15 * 60 * 1000) }
+   288→   288→   288→});
+   289→   289→   289→return { allowed: false, remainingMinutes: 15 };
+   290→   290→   290→}
+   291→   291→   291→return { allowed: true, remainingMinutes: 0 };
+   292→   292→   292→}
+   293→   293→   293→Middleware Implementation:
+   294→   294→   294→typescript
+   295→   295→   295→import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+   296→   296→   296→import { NextResponse } from 'next/server';
+   297→   297→   297→export async function middleware(req) {
+   298→   298→   298→
+   299→   299→   299→--- PAGE 9 ---
+   300→   300→   300→const res = NextResponse.next();
+   301→   301→   301→const supabase = createMiddlewareClient({ req, res });
+   302→   302→   302→const { data: { session } } = await supabase.auth.getSession();
+   303→   303→   303→// Admin route protection
+   304→   304→   304→if (req.nextUrl.pathname.startsWith('/admin')) {
+   305→   305→   305→if (!session) {
+   306→   306→   306→return NextResponse.redirect(new URL('/login', req.url));
+   307→   307→   307→}
+   308→   308→   308→const { data: customer } = await supabase
+   309→   309→   309→.from('customers')
+   310→   310→   310→.select('role')
+   311→   311→   311→.eq('id', session.user.id)
+   312→   312→   312→.single();
+   313→   313→   313→if (customer?.role !== 'admin') {
+   314→   314→   314→return NextResponse.redirect(new URL('/login', req.url));
+   315→   315→   315→}
+   316→   316→   316→}
+   317→   317→   317→if (req.nextUrl.pathname.startsWith('/customer')) {
+   318→   318→   318→if (!session) {
+   319→   319→   319→return NextResponse.redirect(new URL('/login', req.url));
+   320→   320→   320→}
+   321→   321→   321→}
+   322→   322→   322→return res;
+   323→   323→   323→}
+   324→   324→   324→export const config = {
+   325→   325→   325→matcher: ['/admin/:path*', '/customer/:path*']
+   326→   326→   326→};
+   327→   327→   327→Note: Admin session timeout is NOT implemented. Supabase does not support idle timeouts natively. Admin must log out manually.
+   328→   328→   328→Customer sessions persist for 7 days.
+   329→   329→   329→Testing Requirements:
+   330→   330→   330→ Admin login redirects to /admin/dashboard.
+   331→   331→   331→ Customer login redirects to /customer/dashboard.
+   332→   332→   332→ 5 failed login attempts → 15-minute lockout (database-based).
+   333→   333→   333→ Admin route inaccessible to customers.
+   334→   334→   334→ Guest customer insertion succeeds via RLS INSERT policy.
+   335→   335→   335→Deliverables:
+   336→   336→   336→
+   337→   337→   337→--- PAGE 10 ---
+   338→   338→   338→ Working authentication with role-based redirect.
+   339→   339→   339→ Database schema deployed to staging.
+   340→   340→   340→ RLS policies tested.
+   341→   341→   341→ Login page with rate-limiting error messages.
+   342→   342→   342→Phase 2: Product Management (Admin) (Days 11-17)
+   343→   343→   343→Objective: Complete admin product CRUD with variants, images, categories, tags, and SEO fields.
+   344→   344→   344→Database Work
+   345→   345→   345→Table Operations
+   346→   346→   346→products INSERT, UPDATE, DELETE (admin only via RLS)
+   347→   347→   347→product_variants INSERT, UPDATE, DELETE (cascade with product)
+   348→   348→   348→categories CRUD
+   349→   349→   349→tags CRUD
+   350→   350→   350→product_tags Junction table management
+   351→   351→   351→Slug Uniqueness:
+   352→   352→   352→sql
+   353→   353→   353→ALTER TABLE products ADD CONSTRAINT products_slug_unique UNIQUE (slug);
+   354→   354→   354→CREATE OR REPLACE FUNCTION generate_unique_slug(base_slug TEXT)
+   355→   355→   355→RETURNS TEXT AS $$
+   356→   356→   356→DECLARE
+   357→   357→   357→new_slug TEXT;
+   358→   358→   358→counter INT := 0;
+   359→   359→   359→BEGIN
+   360→   360→   360→new_slug := base_slug;
+   361→   361→   361→WHILE EXISTS (SELECT 1 FROM products WHERE slug = new_slug) LOOP
+   362→   362→   362→counter := counter + 1;
+   363→   363→   363→new_slug := base_slug || '-' || counter;
+   364→   364→   364→END LOOP;
+   365→   365→   365→RETURN new_slug;
+   366→   366→   366→END;
+   367→   367→   367→$$ LANGUAGE plpgsql;
+   368→   368→   368→Backend Work (Admin Product Endpoints)
+   369→   369→   369→
+   370→   370→   370→--- PAGE 11 ---
+   371→   371→   371→Endpoint Method Purpose
+   372→   372→   372→/api/admin/products GET List products with filters
+   373→   373→   373→/api/admin/products POST Create product with variants
+   374→   374→   374→/api/admin/products/:id GET/PUT/DELETE Single product operations
+   375→   375→   375→/api/admin/products/:id/variants POST Add variant
+   376→   376→   376→/api/admin/products/:id/variants/:vid PUT/DELETE Variant operations
+   377→   377→   377→/api/admin/categories CRUD Category management
+   378→   378→   378→/api/admin/tags CRUD Tag management
+   379→   379→   379→/api/admin/upload/image POST Upload to Supabase Storage, convert to WebP
+   380→   380→   380→Image Upload Requirements:
+   381→   381→   381→typescript
+   382→   382→   382→// Must implement:
+   383→   383→   383→// - Accept: JPG, JPEG, PNG, WebP
+   384→   384→   384→// - Max size: 5MB
+   385→   385→   385→// - Resize: max width 1200px (gallery), 600px (thumbnails)
+   386→   386→   386→// - Convert to WebP (quality 80)
+   387→   387→   387→// - Upload to Supabase Storage bucket 'product-images'
+   388→   388→   388→// - Return public URL
+   389→   389→   389→// - Validate MIME type server-side (never trust client)
+   390→   390→   390→Variant Validation:
+   391→   391→   391→ SKU must be unique across all variants.
+   392→   392→   392→ Each variant has stock_quantity (default 0).
+   393→   393→   393→ is_out_of_stock updated automatically via trigger.
+   394→   394→   394→Frontend Work (Admin)
+   395→   395→   395→Screen Components
+   396→   396→   396→/admin/products Data table with search, filter by category, pagination
+   397→   397→   397→/admin/products/new Form: name, description, price, category, SEO fields, slug editor
+   398→   398→   398→
+   399→   399→   399→--- PAGE 12 ---
+   400→   400→   400→Screen Components
+   401→   401→   401→/admin/products/[id]/edit Same as new + variant manager, image gallery
+   402→   402→   402→/admin/categories List + create/edit modal
+   403→   403→   403→/admin/tags Simple list + add/delete
+   404→   404→   404→Testing Requirements:
+   405→   405→   405→ Create product with 3 variants → variants saved correctly.
+   406→   406→   406→ Edit product → slug uniqueness enforced.
+   407→   407→   407→ Upload image → converted to WebP, URL returned.
+   408→   408→   408→ Delete product → variants cascade deleted.
+   409→   409→   409→ Out-of-stock variant → is_out_of_stock = true automatically.
+   410→   410→   410→ SKU uniqueness violation → error message.
+   411→   411→   411→Deliverables:
+   412→   412→   412→ Fully functional admin product management.
+   413→   413→   413→ Image upload with WebP conversion.
+   414→   414→   414→ Variant management working.
+   415→   415→   415→ Category and tag CRUD.
+   416→   416→   416→Phase 3: Storefront & Product Display
+   417→   417→   417→Objective: Customer-facing product browsing, multi-tag filtering, search, and cart.
+   418→   418→   418→Backend Work (Public Endpoints)
+   419→   419→   419→Endpoint Method Purpose
+   420→   420→   420→/api/products GET Public product listing with filters
+   421→   421→   421→/api/products/:slug GET Public product detail
+   422→   422→   422→/api/categories GET Public categories
+   423→   423→   423→/api/tags GET Public tags
+   424→   424→   424→/api/search GET Search products
+   425→   425→   425→Product Listing Filters (multi-tag support):
+   426→   426→   426→typescript
+   427→   427→   427→// Query parameters supported:
+   428→   428→   428→
+   429→   429→   429→--- PAGE 13 ---
+   430→   430→   430→// ?category=slug
+   431→   431→   431→// ?tags=id1,id2,id3 <-- comma-separated; multiple tags supported (Resolution #9)
+   432→   432→   432→// ?inStock=true
+   433→   433→   433→// ?minPrice=100&maxPrice=5000
+   434→   434→   434→// ?search=black+tshirt
+   435→   435→   435→// ?sort=price_asc|price_desc|newest|popularity
+   436→   436→   436→// ?page=1&limit=20
+   437→   437→   437→// Tag parsing on API:
+   438→   438→   438→const tagIds = req.query.tags ? String(req.query.tags).split(',').map(Number).filter(Boolean) : [];
+   439→   439→   439→// Apply to query:
+   440→   440→   440→if (tagIds.length > 0) {
+   441→   441→   441→query = query.filter('product_tags.tag_id', 'in', `(${tagIds.join(',')})`);
+   442→   442→   442→}
+   443→   443→   443→Product Detail Response must include:
+   444→   444→   444→ All variants with stock status.
+   445→   445→   445→ Gallery images (array of URLs).
+   446→   446→   446→ Approved reviews (filtered by status = 'approved').
+   447→   447→   447→ SEO metadata (title, description).
+   448→   448→   448→ Average rating (aggregate from approved reviews).
+   449→   449→   449→Frontend Work (Customer)
+   450→   450→   450→Screen Components Priority
+   451→   451→   451→Homepage 7 fixed sections (fetch from homepage_content) P0
+   452→   452→   452→Product Listing Grid with filters sidebar (mobile: drawer) P0
+   453→   453→   453→Product Detail Variant selector, gallery carousel, add to cart P0
+   454→   454→   454→Cart List items, quantity update, remove, total P0
+   455→   455→   455→Search Results Same as product listing P1
+   456→   456→   456→Homepage Fixed Sections (DO NOT DEVIATE - 7 sections exactly):
+   457→   457→   457→1. Hero Banner (image, text, CTA)
+   458→   458→   458→2. Featured Products (selected by admin)
+   459→   459→   459→3. Categories Section (display categories)
+   460→   460→   460→4. Why Choose Us (USPs with icons)
+   461→   461→   461→5. Customer Reviews (latest approved; count controlled by customer_reviews.max_reviews_to_show from homepage_content)
+   462→   462→   462→
+   463→   463→   463→--- PAGE 14 ---
+   464→   464→   464→6. FAQ Section (from FAQ table, ordered)
+   465→   465→   465→7. Footer (contact, social, copyright)
+   466→   466→   466→Multi-Tag Filter UI:
+   467→   467→   467→tsx
+   468→   468→   468→// FilterSidebar - tags use multi-select checkboxes
+   469→   469→   469→const [selectedTags, setSelectedTags] = useState<number[]>([]);
+   470→   470→   470→const toggleTag = (tagId: number) => {
+   471→   471→   471→setSelectedTags(prev =>
+   472→   472→   472→prev.includes(tagId)
+   473→   473→   473→? prev.filter(id => id !== tagId)
+   474→   474→   474→: [...prev, tagId]
+   475→   475→   475→);
+   476→   476→   476→};
+   477→   477→   477→// Build URL param when selectedTags changes
+   478→   478→   478→const tagParam = selectedTags.length > 0 ? `tags=${selectedTags.join(',')}` : '';
+   479→   479→   479→Cart State Management:
+   480→   480→   480→typescript
+   481→   481→   481→// React Context + localStorage
+   482→   482→   482→interface CartItem {
+   483→   483→   483→variantId: number;
+   484→   484→   484→productId: number;
+   485→   485→   485→productName: string;
+   486→   486→   486→variantDescription: string; // e.g. "Size: M, Color: Black"
+   487→   487→   487→price: number;
+   488→   488→   488→quantity: number;
+   489→   489→   489→imageUrl: string;
+   490→   490→   490→stockAvailable: number;
+   491→   491→   491→}
+   492→   492→   492→// Cart context must expose:
+   493→   493→   493→function clearCart(): void {
+   494→   494→   494→localStorage.removeItem('indicore_cart');
+   495→   495→   495→setItems([]);
+   496→   496→   496→}
+   497→   497→   497→// Called immediately after successful order placement (see Phase 4)
+   498→   498→   498→Testing Requirements:
+   499→   499→   499→ Product listing multi-tag filter works (selecting 2 tags shows products with either tag).
+   500→   500→   500→ Search returns relevant results.
+
+[showing lines 1-500 of 1713; use offset=501 with limit to continue reading]

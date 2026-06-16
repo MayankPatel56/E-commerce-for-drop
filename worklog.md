@@ -765,3 +765,32 @@ Work Log:
 - **admin/products/[id]/route.ts** (1 edit): Lines 190-195 `JSON.stringify(data.galleryImages)` → `data.galleryImages` (write)
 
 Stage Summary: 12 surgical edits across 6 files. All JSON.parse() calls on Prisma Json column reads replaced with direct access using nullish coalescing (`??`) and type assertions. All JSON.stringify() calls on Prisma Json column writes replaced with direct value passing. No non-DB JSON operations (HTTP bodies, localStorage) were modified. Zero remaining JSON.parse/JSON.stringify calls in any of the 6 files.
+---
+Task ID: 1
+Agent: Main Agent
+Task: Supabase Compliance Migration — Implement all missing Supabase-native requirements from Implementation Plan
+
+Work Log:
+- Read and analyzed the full Implementation Plan (50 pages, 1713 lines)
+- Mapped plan requirements to current project state (15 tables, PascalCase names, camelCase columns)
+- Created backup documentation (backups/pre-rls-backup.sql)
+- Created comprehensive SQL migration (backups/supabase-compliance-migration.sql) with:
+  - 5 PostgreSQL functions (generate_order_number, generate_unique_slug, cleanup_order_track_attempts, update_updated_at_column, set_is_out_of_stock)
+  - 11 triggers (is_out_of_stock + updated_at on 9 tables)
+  - RLS enabled on all 15 tables
+  - 42 RLS policies covering all access patterns
+- Executed migration successfully (single prisma db execute)
+- Created 2 Supabase Storage buckets via API (product-images, review-photos — both public)
+- Added 4 missing environment variables (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_APP_URL, IMAGE_OPTIMIZATION_SECRET)
+- Implemented row-level locking (SELECT FOR UPDATE) in order creation with re-validation under lock
+- Removed manual isOutOfStock setting from 4 admin routes (trigger handles it now)
+- Verified: all triggers fire correctly, functions return expected values, RLS policies exist, buckets created, no security violations
+- Verified: guest checkout works end-to-end (POST /api/orders → 200)
+- Generated comprehensive compliance report (COMPLIANCE-REPORT.md)
+
+Stage Summary:
+- 94.4% compliance with Implementation Plan (8/9 requirements fully compliant, 1 partial — Supabase Auth adoption deferred)
+- All database-level requirements implemented: RLS, policies, functions, triggers, storage buckets, environment variables
+- Row-level locking for inventory concurrency protection implemented
+- is_out_of_stock now fully maintained by database trigger (no manual setting in application code)
+- Key artifacts: backups/supabase-compliance-migration.sql, COMPLIANCE-REPORT.md

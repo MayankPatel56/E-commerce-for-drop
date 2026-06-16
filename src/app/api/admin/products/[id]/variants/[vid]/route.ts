@@ -66,7 +66,7 @@ export async function PUT(
     if (data.price !== undefined) updateData.price = data.price;
     if (data.stockQuantity !== undefined) {
       updateData.stockQuantity = data.stockQuantity;
-      updateData.isOutOfStock = data.stockQuantity <= 0;
+      // isOutOfStock is set automatically by DB trigger (set_is_out_of_stock)
     }
 
     const variant = await db.productVariant.update({

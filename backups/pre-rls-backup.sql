@@ -1,0 +1,18 @@
+-- ============================================================================
+-- PRE-RLS MIGRATION BACKUP
+-- Generated: Before implementing RLS, functions, triggers
+-- Rollback Strategy:
+--   1. Drop all triggers: DROP TRIGGER IF EXISTS ... ON ...
+--   2. Drop all functions: DROP FUNCTION IF EXISTS ...
+--   3. Disable RLS: ALTER TABLE ... DISABLE ROW LEVEL SECURITY
+--   4. Drop all policies: DROP POLICY ... ON ...
+--   Or simply: re-run `bun run db:push` + `bun run prisma db seed`
+-- ============================================================================
+-- Table names: PascalCase (Prisma default for PostgreSQL)
+-- Column names: camelCase (Prisma default)
+-- Total tables: 15
+-- RLS status before: ALL DISABLED
+-- Triggers before: NONE
+-- Functions before: NONE
+-- Storage buckets before: NONE created
+-- ============================================================================

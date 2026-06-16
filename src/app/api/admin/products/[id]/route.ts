@@ -229,7 +229,7 @@ export async function PUT(
           variantValue: v.variantValue,
           price: v.price ?? null,
           stockQuantity: v.stockQuantity,
-          isOutOfStock: v.stockQuantity <= 0,
+          // isOutOfStock set by DB trigger
         };
 
         if (v.id !== undefined && existingIds.has(v.id)) {
