@@ -1,0 +1,927 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useState, useEffect, useCallback } from "react";
+     4→     4→import { toast } from "sonner";
+     5→     5→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+     6→     6→import { Input } from "@/components/ui/input";
+     7→     7→import { Label } from "@/components/ui/label";
+     8→     8→import { Button } from "@/components/ui/button";
+     9→     9→import { Textarea } from "@/components/ui/textarea";
+    10→    10→import { Badge } from "@/components/ui/badge";
+    11→    11→import { Separator } from "@/components/ui/separator";
+    12→    12→import { Switch } from "@/components/ui/switch";
+    13→    13→import { Skeleton } from "@/components/ui/skeleton";
+    14→    14→import {
+    15→    15→  Collapsible,
+    16→    16→  CollapsibleContent,
+    17→    17→  CollapsibleTrigger,
+    18→    18→} from "@/components/ui/collapsible";
+    19→    19→import {
+    20→    20→  ChevronDown,
+    21→    21→  Loader2,
+    22→    22→  AlertCircle,
+    23→    23→  Save,
+    24→    24→  Plus,
+    25→    25→  Trash2,
+    26→    26→  ArrowUp,
+    27→    27→  ArrowDown,
+    28→    28→  ImageIcon,
+    29→    29→  Star,
+    30→    30→  HelpCircle,
+    31→    31→  LayoutGrid,
+    32→    32→  Shield,
+    33→    33→  Footprints,
+    34→    34→  Info,
+    35→    35→} from "lucide-react";
+    36→    36→
+    37→    37→// ─── Types ──────────────────────────────────────────────────────────────────
+    38→    38→
+    39→    39→interface Product {
+    40→    40→  id: number;
+    41→    41→  name: string;
+    42→    42→}
+    43→    43→
+    44→    44→interface Category {
+    45→    45→  id: number;
+    46→    46→  name: string;
+    47→    47→  _count: { products: number };
+    48→    48→}
+    49→    49→
+    50→    50→interface WhyChooseItem {
+    51→    51→  icon: string;
+    52→    52→  title: string;
+    53→    53→  description: string;
+    54→    54→}
+    55→    55→
+    56→    56→interface HomepageData {
+    57→    57→  id: number;
+    58→    58→  heroBanner: {
+    59→    59→    image_url: string;
+    60→    60→    text: string;
+    61→    61→    cta_text: string;
+    62→    62→    cta_link: string;
+    63→    63→  } | null;
+    64→    64→  featuredProductIds: number[] | null;
+    65→    65→  categoriesSection: {
+    66→    66→    display_categories: number[];
+    67→    67→  } | null;
+    68→    68→  whyChooseUs: WhyChooseItem[] | null;
+    69→    69→  customerReviews: {
+    70→    70→    max_reviews_to_show: number;
+    71→    71→  } | null;
+    72→    72→  footer: {
+    73→    73→    contact_text: string;
+    74→    74→    social_links: {
+    75→    75→      instagram: string;
+    76→    76→      facebook: string;
+    77→    77→    };
+    78→    78→    copyright_text: string;
+    79→    79→  } | null;
+    80→    80→  updatedAt: string;
+    81→    81→}
+    82→    82→
+    83→    83→// ─── Default values ─────────────────────────────────────────────────────────
+    84→    84→
+    85→    85→const DEFAULT_HERO = {
+    86→    86→  image_url: "",
+    87→    87→  text: "",
+    88→    88→  cta_text: "",
+    89→    89→  cta_link: "",
+    90→    90→};
+    91→    91→
+    92→    92→const DEFAULT_FOOTER = {
+    93→    93→  contact_text: "",
+    94→    94→  social_links: { instagram: "", facebook: "" },
+    95→    95→  copyright_text: "",
+    96→    96→};
+    97→    97→
+    98→    98→const DEFAULT_REVIEWS = { max_reviews_to_show: 6 };
+    99→    99→
+   100→   100→// ─── Component ──────────────────────────────────────────────────────────────
+   101→   101→
+   102→   102→export function HomepageEditor() {
+   103→   103→  const [data, setData] = useState<HomepageData | null>(null);
+   104→   104→  const [products, setProducts] = useState<Product[]>([]);
+   105→   105→  const [categories, setCategories] = useState<Category[]>([]);
+   106→   106→  const [isLoading, setIsLoading] = useState(true);
+   107→   107→  const [error, setError] = useState<string | null>(null);
+   108→   108→  const [isSaving, setIsSaving] = useState(false);
+   109→   109→  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+   110→   110→    hero: true,
+   111→   111→    featured: false,
+   112→   112→    categories: false,
+   113→   113→    whyChooseUs: false,
+   114→   114→    reviews: false,
+   115→   115→    faq: false,
+   116→   116→    footer: false,
+   117→   117→  });
+   118→   118→
+   119→   119→  // ── Fetch all data ─────────────────────────────────────────────────────────
+   120→   120→
+   121→   121→  const fetchAll = useCallback(async () => {
+   122→   122→    setIsLoading(true);
+   123→   123→    setError(null);
+   124→   124→    try {
+   125→   125→      const [hpRes, prodRes, catRes] = await Promise.all([
+   126→   126→        fetch("/api/admin/homepage"),
+   127→   127→        fetch("/api/admin/products?limit=100"),
+   128→   128→        fetch("/api/admin/categories"),
+   129→   129→      ]);
+   130→   130→
+   131→   131→      if (!hpRes.ok) throw new Error("Failed to fetch homepage content");
+   132→   132→
+   133→   133→      const hpData: HomepageData = await hpRes.json();
+   134→   134→      setData(hpData);
+   135→   135→
+   136→   136→      if (prodRes.ok) {
+   137→   137→        const prodJson = await prodRes.json();
+   138→   138→        setProducts(prodJson.products || []);
+   139→   139→      }
+   140→   140→
+   141→   141→      if (catRes.ok) {
+   142→   142→        const catJson = await catRes.json();
+   143→   143→        setCategories(catJson.categories || []);
+   144→   144→      }
+   145→   145→    } catch (err) {
+   146→   146→      setError(
+   147→   147→        err instanceof Error ? err.message : "Failed to load homepage data"
+   148→   148→      );
+   149→   149→    } finally {
+   150→   150→      setIsLoading(false);
+   151→   151→    }
+   152→   152→  }, []);
+   153→   153→
+   154→   154→  useEffect(() => {
+   155→   155→    fetchAll();
+   156→   156→  }, [fetchAll]);
+   157→   157→
+   158→   158→  // ── Helpers ───────────────────────────────────────────────────────────────
+   159→   159→
+   160→   160→  const toggleSection = (key: string) => {
+   161→   161→    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+   162→   162→  };
+   163→   163→
+   164→   164→  const updateHero = (field: string, value: string) => {
+   165→   165→    setData((prev) => {
+   166→   166→      if (!prev) return prev;
+   167→   167→      return {
+   168→   168→        ...prev,
+   169→   169→        heroBanner: { ...(prev.heroBanner || DEFAULT_HERO), [field]: value },
+   170→   170→      };
+   171→   171→    });
+   172→   172→  };
+   173→   173→
+   174→   174→  const toggleFeaturedProduct = (productId: number) => {
+   175→   175→    setData((prev) => {
+   176→   176→      if (!prev) return prev;
+   177→   177→      const current = prev.featuredProductIds || [];
+   178→   178→      const next = current.includes(productId)
+   179→   179→        ? current.filter((id) => id !== productId)
+   180→   180→        : [...current, productId];
+   181→   181→      return { ...prev, featuredProductIds: next };
+   182→   182→    });
+   183→   183→  };
+   184→   184→
+   185→   185→  const toggleCategoryDisplay = (categoryId: number) => {
+   186→   186→    setData((prev) => {
+   187→   187→      if (!prev) return prev;
+   188→   188→      const current = prev.categoriesSection?.display_categories || [];
+   189→   189→      const next = current.includes(categoryId)
+   190→   190→        ? current.filter((id) => id !== categoryId)
+   191→   191→        : [...current, categoryId];
+   192→   192→      return { ...prev, categoriesSection: { display_categories: next } };
+   193→   193→    });
+   194→   194→  };
+   195→   195→
+   196→   196→  const updateWhyChooseUs = (items: WhyChooseItem[]) => {
+   197→   197→    setData((prev) => (prev ? { ...prev, whyChooseUs: items } : prev));
+   198→   198→  };
+   199→   199→
+   200→   200→  const addWhyChooseItem = () => {
+   201→   201→    updateWhyChooseUs([
+   202→   202→      ...(data?.whyChooseUs || []),
+   203→   203→      { icon: "Star", title: "", description: "" },
+   204→   204→    ]);
+   205→   205→  };
+   206→   206→
+   207→   207→  const removeWhyChooseItem = (index: number) => {
+   208→   208→    const items = data?.whyChooseUs || [];
+   209→   209→    updateWhyChooseUs(items.filter((_, i) => i !== index));
+   210→   210→  };
+   211→   211→
+   212→   212→  const updateWhyChooseField = (
+   213→   213→    index: number,
+   214→   214→    field: keyof WhyChooseItem,
+   215→   215→    value: string
+   216→   216→  ) => {
+   217→   217→    const items = [...(data?.whyChooseUs || [])];
+   218→   218→    items[index] = { ...items[index], [field]: value };
+   219→   219→    updateWhyChooseUs(items);
+   220→   220→  };
+   221→   221→
+   222→   222→  const moveWhyChooseItem = (index: number, direction: "up" | "down") => {
+   223→   223→    const items = [...(data?.whyChooseUs || [])];
+   224→   224→    const targetIdx = direction === "up" ? index - 1 : index + 1;
+   225→   225→    if (targetIdx < 0 || targetIdx >= items.length) return;
+   226→   226→    [items[index], items[targetIdx]] = [items[targetIdx], items[index]];
+   227→   227→    updateWhyChooseUs(items);
+   228→   228→  };
+   229→   229→
+   230→   230→  const updateMaxReviews = (value: number) => {
+   231→   231→    const clamped = Math.max(1, Math.min(20, value));
+   232→   232→    setData((prev) => {
+   233→   233→      if (!prev) return prev;
+   234→   234→      return {
+   235→   235→        ...prev,
+   236→   236→        customerReviews: { max_reviews_to_show: clamped },
+   237→   237→      };
+   238→   238→    });
+   239→   239→  };
+   240→   240→
+   241→   241→  const updateFooter = (field: string, value: string) => {
+   242→   242→    setData((prev) => {
+   243→   243→      if (!prev) return prev;
+   244→   244→      return {
+   245→   245→        ...prev,
+   246→   246→        footer: { ...(prev.footer || DEFAULT_FOOTER), [field]: value },
+   247→   247→      };
+   248→   248→    });
+   249→   249→  };
+   250→   250→
+   251→   251→  const updateSocialLink = (platform: string, value: string) => {
+   252→   252→    setData((prev) => {
+   253→   253→      if (!prev) return prev;
+   254→   254→      const footer = prev.footer || DEFAULT_FOOTER;
+   255→   255→      return {
+   256→   256→        ...prev,
+   257→   257→        footer: {
+   258→   258→          ...footer,
+   259→   259→          social_links: {
+   260→   260→            ...(footer.social_links || { instagram: "", facebook: "" }),
+   261→   261→            [platform]: value,
+   262→   262→          },
+   263→   263→        },
+   264→   264→      };
+   265→   265→    });
+   266→   266→  };
+   267→   267→
+   268→   268→  // ── Save ──────────────────────────────────────────────────────────────────
+   269→   269→
+   270→   270→  const handleSave = async () => {
+   271→   271→    if (!data) return;
+   272→   272→    setIsSaving(true);
+   273→   273→    try {
+   274→   274→      const res = await fetch("/api/admin/homepage", {
+   275→   275→        method: "PUT",
+   276→   276→        headers: { "Content-Type": "application/json" },
+   277→   277→        body: JSON.stringify({
+   278→   278→          heroBanner: data.heroBanner,
+   279→   279→          featuredProductIds: data.featuredProductIds,
+   280→   280→          categoriesSection: data.categoriesSection,
+   281→   281→          whyChooseUs: data.whyChooseUs,
+   282→   282→          customerReviews: data.customerReviews || DEFAULT_REVIEWS,
+   283→   283→          footer: data.footer,
+   284→   284→        }),
+   285→   285→      });
+   286→   286→
+   287→   287→      if (!res.ok) {
+   288→   288→        const errData = await res.json();
+   289→   289→        throw new Error(errData.error || "Failed to save homepage content");
+   290→   290→      }
+   291→   291→
+   292→   292→      toast.success("Homepage content saved successfully");
+   293→   293→    } catch (err) {
+   294→   294→      toast.error(
+   295→   295→        err instanceof Error ? err.message : "Failed to save homepage content"
+   296→   296→      );
+   297→   297→    } finally {
+   298→   298→      setIsSaving(false);
+   299→   299→    }
+   300→   300→  };
+   301→   301→
+   302→   302→  // ── Loading skeleton ──────────────────────────────────────────────────────
+   303→   303→
+   304→   304→  if (isLoading) {
+   305→   305→    return (
+   306→   306→      <div className="space-y-4">
+   307→   307→        <Skeleton className="h-8 w-56" />
+   308→   308→        <div className="space-y-3">
+   309→   309→          {Array.from({ length: 4 }).map((_, i) => (
+   310→   310→            <Card key={i}>
+   311→   311→              <CardHeader className="pb-3">
+   312→   312→                <Skeleton className="h-6 w-40" />
+   313→   313→              </CardHeader>
+   314→   314→              <CardContent className="space-y-3">
+   315→   315→                <Skeleton className="h-10 w-full" />
+   316→   316→                <Skeleton className="h-10 w-full" />
+   317→   317→                <Skeleton className="h-20 w-full" />
+   318→   318→              </CardContent>
+   319→   319→            </Card>
+   320→   320→          ))}
+   321→   321→        </div>
+   322→   322→        <Skeleton className="h-11 w-32 ml-auto" />
+   323→   323→      </div>
+   324→   324→    );
+   325→   325→  }
+   326→   326→
+   327→   327→  if (error || !data) {
+   328→   328→    return (
+   329→   329→      <div className="flex flex-col items-center justify-center py-12 text-center">
+   330→   330→        <AlertCircle className="h-12 w-12 text-destructive/50 mb-4" />
+   331→   331→        <h3 className="text-lg font-medium">Failed to load homepage content</h3>
+   332→   332→        <p className="text-sm text-muted-foreground mt-1">
+   333→   333→          {error || "No data returned from the server"}
+   334→   334→        </p>
+   335→   335→        <Button onClick={fetchAll} className="mt-4 min-h-[44px]">
+   336→   336→          Try Again
+   337→   337→        </Button>
+   338→   338→      </div>
+   339→   339→    );
+   340→   340→  }
+   341→   341→
+   342→   342→  const hero = data.heroBanner || DEFAULT_HERO;
+   343→   343→  const featuredIds = data.featuredProductIds || [];
+   344→   344→  const displayCategories = data.categoriesSection?.display_categories || [];
+   345→   345→  const whyItems = data.whyChooseUs || [];
+   346→   346→  const maxReviews = data.customerReviews?.max_reviews_to_show ?? 6;
+   347→   347→  const footer = data.footer || DEFAULT_FOOTER;
+   348→   348→
+   349→   349→  // ── Render ────────────────────────────────────────────────────────────────
+   350→   350→
+   351→   351→  return (
+   352→   352→    <div className="space-y-4">
+   353→   353→      {/* Header */}
+   354→   354→      <div>
+   355→   355→        <h2 className="text-xl font-semibold tracking-tight">
+   356→   356→          Homepage Content Editor
+   357→   357→        </h2>
+   358→   358→        <p className="text-sm text-muted-foreground">
+   359→   359→          Configure the sections displayed on your storefront homepage
+   360→   360→        </p>
+   361→   361→      </div>
+   362→   362→
+   363→   363→      {/* Section A: Hero Banner */}
+   364→   364→      <Collapsible
+   365→   365→        open={openSections.hero}
+   366→   366→        onOpenChange={() => toggleSection("hero")}
+   367→   367→      >
+   368→   368→        <Card>
+   369→   369→          <CollapsibleTrigger className="w-full" asChild>
+   370→   370→            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+   371→   371→              <div className="flex items-center justify-between">
+   372→   372→                <div className="flex items-center gap-3">
+   373→   373→                  <ImageIcon className="h-5 w-5 text-primary shrink-0" />
+   374→   374→                  <div className="text-left">
+   375→   375→                    <CardTitle className="text-base">Hero Banner</CardTitle>
+   376→   376→                    <p className="text-xs text-muted-foreground mt-0.5">
+   377→   377→                      Main banner image, headline, and call-to-action
+   378→   378→                    </p>
+   379→   379→                  </div>
+   380→   380→                </div>
+   381→   381→                <ChevronDown
+   382→   382→                  className={`h-5 w-5 text-muted-foreground transition-transform ${
+   383→   383→                    openSections.hero ? "rotate-180" : ""
+   384→   384→                  }`}
+   385→   385→                />
+   386→   386→              </div>
+   387→   387→            </CardHeader>
+   388→   388→          </CollapsibleTrigger>
+   389→   389→          <CollapsibleContent>
+   390→   390→            <CardContent className="pt-0 space-y-4">
+   391→   391→              <Separator />
+   392→   392→              <div className="grid gap-4 sm:grid-cols-2">
+   393→   393→                <div className="sm:col-span-2 space-y-2">
+   394→   394→                  <Label htmlFor="hero-image">Image URL</Label>
+   395→   395→                  <Input
+   396→   396→                    id="hero-image"
+   397→   397→                    value={hero.image_url}
+   398→   398→                    onChange={(e) => updateHero("image_url", e.target.value)}
+   399→   399→                    placeholder="https://example.com/hero-banner.jpg"
+   400→   400→                    className="min-h-[44px]"
+   401→   401→                  />
+   402→   402→                </div>
+   403→   403→                <div className="space-y-2">
+   404→   404→                  <Label htmlFor="hero-text">Banner Text</Label>
+   405→   405→                  <Textarea
+   406→   406→                    id="hero-text"
+   407→   407→                    value={hero.text}
+   408→   408→                    onChange={(e) => updateHero("text", e.target.value)}
+   409→   409→                    placeholder="Welcome to our store"
+   410→   410→                    rows={3}
+   411→   411→                    className="min-h-[44px]"
+   412→   412→                  />
+   413→   413→                </div>
+   414→   414→                <div className="space-y-2">
+   415→   415→                  <Label htmlFor="hero-cta-text">CTA Button Text</Label>
+   416→   416→                  <Input
+   417→   417→                    id="hero-cta-text"
+   418→   418→                    value={hero.cta_text}
+   419→   419→                    onChange={(e) => updateHero("cta_text", e.target.value)}
+   420→   420→                    placeholder="Shop Now"
+   421→   421→                    className="min-h-[44px]"
+   422→   422→                  />
+   423→   423→                  <Label htmlFor="hero-cta-link" className="mt-3">
+   424→   424→                    CTA Button Link
+   425→   425→                  </Label>
+   426→   426→                  <Input
+   427→   427→                    id="hero-cta-link"
+   428→   428→                    value={hero.cta_link}
+   429→   429→                    onChange={(e) => updateHero("cta_link", e.target.value)}
+   430→   430→                    placeholder="/products"
+   431→   431→                    className="min-h-[44px]"
+   432→   432→                  />
+   433→   433→                </div>
+   434→   434→              </div>
+   435→   435→            </CardContent>
+   436→   436→          </CollapsibleContent>
+   437→   437→        </Card>
+   438→   438→      </Collapsible>
+   439→   439→
+   440→   440→      {/* Section B: Featured Products */}
+   441→   441→      <Collapsible
+   442→   442→        open={openSections.featured}
+   443→   443→        onOpenChange={() => toggleSection("featured")}
+   444→   444→      >
+   445→   445→        <Card>
+   446→   446→          <CollapsibleTrigger className="w-full" asChild>
+   447→   447→            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+   448→   448→              <div className="flex items-center justify-between">
+   449→   449→                <div className="flex items-center gap-3">
+   450→   450→                  <Star className="h-5 w-5 text-primary shrink-0" />
+   451→   451→                  <div className="text-left">
+   452→   452→                    <CardTitle className="text-base">Featured Products</CardTitle>
+   453→   453→                    <p className="text-xs text-muted-foreground mt-0.5">
+   454→   454→                      {featuredIds.length} product{featuredIds.length !== 1 ? "s" : ""}{" "}
+   455→   455→                      selected
+   456→   456→                    </p>
+   457→   457→                  </div>
+   458→   458→                </div>
+   459→   459→                <ChevronDown
+   460→   460→                  className={`h-5 w-5 text-muted-foreground transition-transform ${
+   461→   461→                    openSections.featured ? "rotate-180" : ""
+   462→   462→                  }`}
+   463→   463→                />
+   464→   464→              </div>
+   465→   465→            </CardHeader>
+   466→   466→          </CollapsibleTrigger>
+   467→   467→          <CollapsibleContent>
+   468→   468→            <CardContent className="pt-0">
+   469→   469→              <Separator className="mb-4" />
+   470→   470→              {products.length === 0 ? (
+   471→   471→                <p className="text-sm text-muted-foreground py-4 text-center">
+   472→   472→                  No products found. Create products first.
+   473→   473→                </p>
+   474→   474→              ) : (
+   475→   475→                <div className="max-h-64 overflow-y-auto space-y-1">
+   476→   476→                  {products.map((product) => {
+   477→   477→                    const isSelected = featuredIds.includes(product.id);
+   478→   478→                    return (
+   479→   479→                      <label
+   480→   480→                        key={product.id}
+   481→   481→                        className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 cursor-pointer min-h-[44px]"
+   482→   482→                      >
+   483→   483→                        <input
+   484→   484→                          type="checkbox"
+   485→   485→                          checked={isSelected}
+   486→   486→                          onChange={() => toggleFeaturedProduct(product.id)}
+   487→   487→                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+   488→   488→                          aria-label={`Select ${product.name}`}
+   489→   489→                        />
+   490→   490→                        <span className="text-sm font-medium flex-1">
+   491→   491→                          {product.name}
+   492→   492→                        </span>
+   493→   493→                        <Badge variant="secondary" className="text-xs">
+   494→   494→                          ID: {product.id}
+   495→   495→                        </Badge>
+   496→   496→                      </label>
+   497→   497→                    );
+   498→   498→                  })}
+   499→   499→                </div>
+   500→   500→              )}
+   501→   501→            </CardContent>
+   502→   502→          </CollapsibleContent>
+   503→   503→        </Card>
+   504→   504→      </Collapsible>
+   505→   505→
+   506→   506→      {/* Section C: Categories Section */}
+   507→   507→      <Collapsible
+   508→   508→        open={openSections.categories}
+   509→   509→        onOpenChange={() => toggleSection("categories")}
+   510→   510→      >
+   511→   511→        <Card>
+   512→   512→          <CollapsibleTrigger className="w-full" asChild>
+   513→   513→            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+   514→   514→              <div className="flex items-center justify-between">
+   515→   515→                <div className="flex items-center gap-3">
+   516→   516→                  <LayoutGrid className="h-5 w-5 text-primary shrink-0" />
+   517→   517→                  <div className="text-left">
+   518→   518→                    <CardTitle className="text-base">
+   519→   519→                      Categories Section
+   520→   520→                    </CardTitle>
+   521→   521→                    <p className="text-xs text-muted-foreground mt-0.5">
+   522→   522→                      Toggle categories to display on homepage
+   523→   523→                    </p>
+   524→   524→                  </div>
+   525→   525→                </div>
+   526→   526→                <ChevronDown
+   527→   527→                  className={`h-5 w-5 text-muted-foreground transition-transform ${
+   528→   528→                    openSections.categories ? "rotate-180" : ""
+   529→   529→                  }`}
+   530→   530→                />
+   531→   531→              </div>
+   532→   532→            </CardHeader>
+   533→   533→          </CollapsibleTrigger>
+   534→   534→          <CollapsibleContent>
+   535→   535→            <CardContent className="pt-0">
+   536→   536→              <Separator className="mb-4" />
+   537→   537→              {categories.length === 0 ? (
+   538→   538→                <p className="text-sm text-muted-foreground py-4 text-center">
+   539→   539→                  No categories found. Create categories first.
+   540→   540→                </p>
+   541→   541→              ) : (
+   542→   542→                <div className="max-h-64 overflow-y-auto space-y-1">
+   543→   543→                  {categories.map((category) => {
+   544→   544→                    const isVisible = displayCategories.includes(category.id);
+   545→   545→                    return (
+   546→   546→                      <div
+   547→   547→                        key={category.id}
+   548→   548→                        className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-muted/50 min-h-[44px]"
+   549→   549→                      >
+   550→   550→                        <div className="flex items-center gap-3">
+   551→   551→                          <Switch
+   552→   552→                            checked={isVisible}
+   553→   553→                            onCheckedChange={() =>
+   554→   554→                              toggleCategoryDisplay(category.id)
+   555→   555→                            }
+   556→   556→                            aria-label={`Show ${category.name} on homepage`}
+   557→   557→                          />
+   558→   558→                          <span className="text-sm font-medium">
+   559→   559→                            {category.name}
+   560→   560→                          </span>
+   561→   561→                        </div>
+   562→   562→                        <div className="flex items-center gap-2">
+   563→   563→                          <Badge variant="secondary" className="text-xs">
+   564→   564→                            ID: {category.id}
+   565→   565→                          </Badge>
+   566→   566→                          <span className="text-xs text-muted-foreground">
+   567→   567→                            {category._count.products} product
+   568→   568→                            {category._count.products !== 1 ? "s" : ""}
+   569→   569→                          </span>
+   570→   570→                        </div>
+   571→   571→                      </div>
+   572→   572→                    );
+   573→   573→                  })}
+   574→   574→                </div>
+   575→   575→              )}
+   576→   576→            </CardContent>
+   577→   577→          </CollapsibleContent>
+   578→   578→        </Card>
+   579→   579→      </Collapsible>
+   580→   580→
+   581→   581→      {/* Section D: Why Choose Us */}
+   582→   582→      <Collapsible
+   583→   583→        open={openSections.whyChooseUs}
+   584→   584→        onOpenChange={() => toggleSection("whyChooseUs")}
+   585→   585→      >
+   586→   586→        <Card>
+   587→   587→          <CollapsibleTrigger className="w-full" asChild>
+   588→   588→            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+   589→   589→              <div className="flex items-center justify-between">
+   590→   590→                <div className="flex items-center gap-3">
+   591→   591→                  <Shield className="h-5 w-5 text-primary shrink-0" />
+   592→   592→                  <div className="text-left">
+   593→   593→                    <CardTitle className="text-base">Why Choose Us</CardTitle>
+   594→   594→                    <p className="text-xs text-muted-foreground mt-0.5">
+   595→   595→                      {whyItems.length} item{whyItems.length !== 1 ? "s" : ""}{" "}
+   596→   596→                      configured
+   597→   597→                    </p>
+   598→   598→                  </div>
+   599→   599→                </div>
+   600→   600→                <ChevronDown
+   601→   601→                  className={`h-5 w-5 text-muted-foreground transition-transform ${
+   602→   602→                    openSections.whyChooseUs ? "rotate-180" : ""
+   603→   603→                  }`}
+   604→   604→                />
+   605→   605→              </div>
+   606→   606→            </CardHeader>
+   607→   607→          </CollapsibleTrigger>
+   608→   608→          <CollapsibleContent>
+   609→   609→            <CardContent className="pt-0 space-y-4">
+   610→   610→              <Separator />
+   611→   611→              {whyItems.length === 0 && (
+   612→   612→                <p className="text-sm text-muted-foreground py-2 text-center">
+   613→   613→                  No items yet. Add reasons why customers should choose you.
+   614→   614→                </p>
+   615→   615→              )}
+   616→   616→              <div className="max-h-96 overflow-y-auto space-y-4">
+   617→   617→                {whyItems.map((item, index) => (
+   618→   618→                  <div
+   619→   619→                    key={index}
+   620→   620→                    className="border rounded-md p-4 space-y-3"
+   621→   621→                  >
+   622→   622→                    <div className="flex items-center justify-between">
+   623→   623→                      <span className="text-sm font-medium text-muted-foreground">
+   624→   624→                        Item {index + 1}
+   625→   625→                      </span>
+   626→   626→                      <div className="flex items-center gap-1">
+   627→   627→                        <Button
+   628→   628→                          variant="ghost"
+   629→   629→                          size="sm"
+   630→   630→                          onClick={() => moveWhyChooseItem(index, "up")}
+   631→   631→                          disabled={index === 0}
+   632→   632→                          className="min-h-[36px] min-w-[36px] p-1"
+   633→   633→                          aria-label={`Move item ${index + 1} up`}
+   634→   634→                        >
+   635→   635→                          <ArrowUp className="h-4 w-4" />
+   636→   636→                        </Button>
+   637→   637→                        <Button
+   638→   638→                          variant="ghost"
+   639→   639→                          size="sm"
+   640→   640→                          onClick={() => moveWhyChooseItem(index, "down")}
+   641→   641→                          disabled={index === whyItems.length - 1}
+   642→   642→                          className="min-h-[36px] min-w-[36px] p-1"
+   643→   643→                          aria-label={`Move item ${index + 1} down`}
+   644→   644→                        >
+   645→   645→                          <ArrowDown className="h-4 w-4" />
+   646→   646→                        </Button>
+   647→   647→                        <Button
+   648→   648→                          variant="ghost"
+   649→   649→                          size="sm"
+   650→   650→                          onClick={() => removeWhyChooseItem(index)}
+   651→   651→                          className="min-h-[36px] min-w-[36px] p-1 text-destructive hover:text-destructive"
+   652→   652→                          aria-label={`Remove item ${index + 1}`}
+   653→   653→                        >
+   654→   654→                          <Trash2 className="h-4 w-4" />
+   655→   655→                        </Button>
+   656→   656→                      </div>
+   657→   657→                    </div>
+   658→   658→                    <div className="grid gap-3 sm:grid-cols-3">
+   659→   659→                      <div className="space-y-1.5">
+   660→   660→                        <Label>Icon Name</Label>
+   661→   661→                        <Input
+   662→   662→                          value={item.icon}
+   663→   663→                          onChange={(e) =>
+   664→   664→                            updateWhyChooseField(index, "icon", e.target.value)
+   665→   665→                          }
+   666→   666→                          placeholder="e.g. Truck, Shield, Star"
+   667→   667→                          className="min-h-[44px]"
+   668→   668→                        />
+   669→   669→                      </div>
+   670→   670→                      <div className="space-y-1.5">
+   671→   671→                        <Label>Title</Label>
+   672→   672→                        <Input
+   673→   673→                          value={item.title}
+   674→   674→                          onChange={(e) =>
+   675→   675→                            updateWhyChooseField(index, "title", e.target.value)
+   676→   676→                          }
+   677→   677→                          placeholder="e.g. Free Shipping"
+   678→   678→                          className="min-h-[44px]"
+   679→   679→                        />
+   680→   680→                      </div>
+   681→   681→                      <div className="space-y-1.5">
+   682→   682→                        <Label>Description</Label>
+   683→   683→                        <Input
+   684→   684→                          value={item.description}
+   685→   685→                          onChange={(e) =>
+   686→   686→                            updateWhyChooseField(
+   687→   687→                              index,
+   688→   688→                              "description",
+   689→   689→                              e.target.value
+   690→   690→                            )
+   691→   691→                          }
+   692→   692→                          placeholder="Brief description..."
+   693→   693→                          className="min-h-[44px]"
+   694→   694→                        />
+   695→   695→                      </div>
+   696→   696→                    </div>
+   697→   697→                  </div>
+   698→   698→                ))}
+   699→   699→              </div>
+   700→   700→              <Button
+   701→   701→                variant="outline"
+   702→   702→                onClick={addWhyChooseItem}
+   703→   703→                className="min-h-[44px]"
+   704→   704→              >
+   705→   705→                <Plus className="h-4 w-4 mr-2" />
+   706→   706→                Add Item
+   707→   707→              </Button>
+   708→   708→            </CardContent>
+   709→   709→          </CollapsibleContent>
+   710→   710→        </Card>
+   711→   711→      </Collapsible>
+   712→   712→
+   713→   713→      {/* Section E: Customer Reviews */}
+   714→   714→      <Collapsible
+   715→   715→        open={openSections.reviews}
+   716→   716→        onOpenChange={() => toggleSection("reviews")}
+   717→   717→      >
+   718→   718→        <Card>
+   719→   719→          <CollapsibleTrigger className="w-full" asChild>
+   720→   720→            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+   721→   721→              <div className="flex items-center justify-between">
+   722→   722→                <div className="flex items-center gap-3">
+   723→   723→                  <Star className="h-5 w-5 text-primary shrink-0" />
+   724→   724→                  <div className="text-left">
+   725→   725→                    <CardTitle className="text-base">Customer Reviews</CardTitle>
+   726→   726→                    <p className="text-xs text-muted-foreground mt-0.5">
+   727→   727→                      Showing up to {maxReviews} reviews
+   728→   728→                    </p>
+   729→   729→                  </div>
+   730→   730→                </div>
+   731→   731→                <ChevronDown
+   732→   732→                  className={`h-5 w-5 text-muted-foreground transition-transform ${
+   733→   733→                    openSections.reviews ? "rotate-180" : ""
+   734→   734→                  }`}
+   735→   735→                />
+   736→   736→              </div>
+   737→   737→            </CardHeader>
+   738→   738→          </CollapsibleTrigger>
+   739→   739→          <CollapsibleContent>
+   740→   740→            <CardContent className="pt-0">
+   741→   741→              <Separator className="mb-4" />
+   742→   742→              <div className="max-w-xs space-y-2">
+   743→   743→                <Label htmlFor="max-reviews">
+   744→   744→                  Max Reviews to Show
+   745→   745→                </Label>
+   746→   746→                <div className="flex items-center gap-2">
+   747→   747→                  <Input
+   748→   748→                    id="max-reviews"
+   749→   749→                    type="number"
+   750→   750→                    min={1}
+   751→   751→                    max={20}
+   752→   752→                    value={maxReviews}
+   753→   753→                    onChange={(e) => {
+   754→   754→                      const val = parseInt(e.target.value, 10);
+   755→   755→                      if (!isNaN(val)) updateMaxReviews(val);
+   756→   756→                    }}
+   757→   757→                    className="min-h-[44px] w-24"
+   758→   758→                  />
+   759→   759→                  <span className="text-sm text-muted-foreground">
+   760→   760→                    (1–20)
+   761→   761→                  </span>
+   762→   762→                </div>
+   763→   763→                <p className="text-xs text-muted-foreground">
+   764→   764→                  Customer reviews are pulled automatically from verified
+   765→   765→                  purchases.
+   766→   766→                </p>
+   767→   767→              </div>
+   768→   768→            </CardContent>
+   769→   769→          </CollapsibleContent>
+   770→   770→        </Card>
+   771→   771→      </Collapsible>
+   772→   772→
+   773→   773→      {/* Section F: FAQ Section (Read-Only Info) */}
+   774→   774→      <Collapsible
+   775→   775→        open={openSections.faq}
+   776→   776→        onOpenChange={() => toggleSection("faq")}
+   777→   777→      >
+   778→   778→        <Card>
+   779→   779→          <CollapsibleTrigger className="w-full" asChild>
+   780→   780→            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+   781→   781→              <div className="flex items-center justify-between">
+   782→   782→                <div className="flex items-center gap-3">
+   783→   783→                  <HelpCircle className="h-5 w-5 text-primary shrink-0" />
+   784→   784→                  <div className="text-left">
+   785→   785→                    <CardTitle className="text-base">FAQ Section</CardTitle>
+   786→   786→                    <p className="text-xs text-muted-foreground mt-0.5">
+   787→   787→                      Information only
+   788→   788→                    </p>
+   789→   789→                  </div>
+   790→   790→                </div>
+   791→   791→                <ChevronDown
+   792→   792→                  className={`h-5 w-5 text-muted-foreground transition-transform ${
+   793→   793→                    openSections.faq ? "rotate-180" : ""
+   794→   794→                  }`}
+   795→   795→                />
+   796→   796→              </div>
+   797→   797→            </CardHeader>
+   798→   798→          </CollapsibleTrigger>
+   799→   799→          <CollapsibleContent>
+   800→   800→            <CardContent className="pt-0">
+   801→   801→              <Separator className="mb-4" />
+   802→   802→              <div className="flex items-start gap-3 rounded-md bg-muted/50 p-4">
+   803→   803→                <Info className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+   804→   804→                <div>
+   805→   805→                  <p className="text-sm font-medium">
+   806→   806→                    FAQs are managed via the FAQ Manager
+   807→   807→                  </p>
+   808→   808→                  <p className="text-xs text-muted-foreground mt-1">
+   809→   809→                    Use the FAQ Manager in the admin panel to add, edit, reorder,
+   810→   810→                    and toggle frequently asked questions displayed on the
+   811→   811→                    homepage.
+   812→   812→                  </p>
+   813→   813→                </div>
+   814→   814→              </div>
+   815→   815→            </CardContent>
+   816→   816→          </CollapsibleContent>
+   817→   817→        </Card>
+   818→   818→      </Collapsible>
+   819→   819→
+   820→   820→      {/* Section G: Footer */}
+   821→   821→      <Collapsible
+   822→   822→        open={openSections.footer}
+   823→   823→        onOpenChange={() => toggleSection("footer")}
+   824→   824→      >
+   825→   825→        <Card>
+   826→   826→          <CollapsibleTrigger className="w-full" asChild>
+   827→   827→            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+   828→   828→              <div className="flex items-center justify-between">
+   829→   829→                <div className="flex items-center gap-3">
+   830→   830→                  <Footprints className="h-5 w-5 text-primary shrink-0" />
+   831→   831→                  <div className="text-left">
+   832→   832→                    <CardTitle className="text-base">Footer</CardTitle>
+   833→   833→                    <p className="text-xs text-muted-foreground mt-0.5">
+   834→   834→                      Contact info, social links, and copyright
+   835→   835→                    </p>
+   836→   836→                  </div>
+   837→   837→                </div>
+   838→   838→                <ChevronDown
+   839→   839→                  className={`h-5 w-5 text-muted-foreground transition-transform ${
+   840→   840→                    openSections.footer ? "rotate-180" : ""
+   841→   841→                  }`}
+   842→   842→                />
+   843→   843→              </div>
+   844→   844→            </CardHeader>
+   845→   845→          </CollapsibleTrigger>
+   846→   846→          <CollapsibleContent>
+   847→   847→            <CardContent className="pt-0 space-y-4">
+   848→   848→              <Separator />
+   849→   849→              <div className="grid gap-4 sm:grid-cols-2">
+   850→   850→                <div className="sm:col-span-2 space-y-2">
+   851→   851→                  <Label htmlFor="footer-contact">Contact Text</Label>
+   852→   852→                  <Textarea
+   853→   853→                    id="footer-contact"
+   854→   854→                    value={footer.contact_text}
+   855→   855→                    onChange={(e) =>
+   856→   856→                      updateFooter("contact_text", e.target.value)
+   857→   857→                    }
+   858→   858→                    placeholder="Reach us at support@example.com"
+   859→   859→                    rows={2}
+   860→   860→                    className="min-h-[44px]"
+   861→   861→                  />
+   862→   862→                </div>
+   863→   863→                <div className="space-y-2">
+   864→   864→                  <Label htmlFor="footer-instagram">Instagram URL</Label>
+   865→   865→                  <Input
+   866→   866→                    id="footer-instagram"
+   867→   867→                    value={footer.social_links?.instagram ?? ""}
+   868→   868→                    onChange={(e) =>
+   869→   869→                      updateSocialLink("instagram", e.target.value)
+   870→   870→                    }
+   871→   871→                    placeholder="https://instagram.com/yourstore"
+   872→   872→                    className="min-h-[44px]"
+   873→   873→                  />
+   874→   874→                </div>
+   875→   875→                <div className="space-y-2">
+   876→   876→                  <Label htmlFor="footer-facebook">Facebook URL</Label>
+   877→   877→                  <Input
+   878→   878→                    id="footer-facebook"
+   879→   879→                    value={footer.social_links?.facebook ?? ""}
+   880→   880→                    onChange={(e) =>
+   881→   881→                      updateSocialLink("facebook", e.target.value)
+   882→   882→                    }
+   883→   883→                    placeholder="https://facebook.com/yourstore"
+   884→   884→                    className="min-h-[44px]"
+   885→   885→                  />
+   886→   886→                </div>
+   887→   887→                <div className="sm:col-span-2 space-y-2">
+   888→   888→                  <Label htmlFor="footer-copyright">Copyright Text</Label>
+   889→   889→                  <Input
+   890→   890→                    id="footer-copyright"
+   891→   891→                    value={footer.copyright_text}
+   892→   892→                    onChange={(e) =>
+   893→   893→                      updateFooter("copyright_text", e.target.value)
+   894→   894→                    }
+   895→   895→                    placeholder="© 2025 Indicore Originals. All rights reserved."
+   896→   896→                    className="min-h-[44px]"
+   897→   897→                  />
+   898→   898→                </div>
+   899→   899→              </div>
+   900→   900→            </CardContent>
+   901→   901→          </CollapsibleContent>
+   902→   902→        </Card>
+   903→   903→      </Collapsible>
+   904→   904→
+   905→   905→      {/* Save Button */}
+   906→   906→      <div className="flex justify-end pt-2">
+   907→   907→        <Button
+   908→   908→          onClick={handleSave}
+   909→   909→          disabled={isSaving}
+   910→   910→          className="min-h-[44px] min-w-[120px]"
+   911→   911→        >
+   912→   912→          {isSaving ? (
+   913→   913→            <>
+   914→   914→              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+   915→   915→              Saving...
+   916→   916→            </>
+   917→   917→          ) : (
+   918→   918→            <>
+   919→   919→              <Save className="h-4 w-4 mr-2" />
+   920→   920→              Save Changes
+   921→   921→            </>
+   922→   922→          )}
+   923→   923→        </Button>
+   924→   924→      </div>
+   925→   925→    </div>
+   926→   926→  );
+   927→   927→}

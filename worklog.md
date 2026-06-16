@@ -895,3 +895,43 @@ Stage Summary:
 - Database: trigger, 2 partial indexes, HomepageContent.updatedAt fix
 - Compliance: DPDP email label fixed
 - 13 files changed, 7 new files created
+---
+Task ID: 7
+Agent: Main Agent
+Task: Phase 7 — Content Management & CMS
+
+Work Log:
+- Read the Implementation Plan to extract Phase 7 requirements (lines 888-971)
+- Phase 7 Objective: Homepage editor, FAQ management, global settings, SEO configuration
+- Verified all Phase 7 features were already implemented in Phases 3-6:
+  - Homepage Editor component (927 lines) with all 7 sections
+  - FAQ Manager component with CRUD, search, reorder, toggle active
+  - Settings Manager with COD min/max, store info, social links
+  - All 6 backend API routes (homepage, admin/homepage, faq, admin/faq, settings, admin/settings)
+  - Storefront homepage renders all 7 sections including Customer Reviews
+- Found 1 gap: Featured products selector showed ALL products instead of only published
+- Fixed: Added `isPublished` to Product interface and filtered with `publishedProducts` computed variable
+- Fixed: Prisma schema provider reverted from postgresql to sqlite (sandbox environment override)
+- Fixed: Regenerated Prisma client and pushed schema
+- Fixed: Cleared invalid hero image URL (/placeholder-hero.jpg → empty string) that was crashing the dev server
+- Made seed.ts idempotent (upsert for reviewer customer, skip reviews if exist)
+- Disabled Prisma query logging in dev mode to reduce resource usage
+- Ran ESLint — passed clean (0 errors, 0 warnings)
+- Browser verification: Storefront renders all 7 sections correctly
+  - Hero Banner with CTA
+  - Featured Products (4 products with prices)
+  - Shop by Category (4 categories with product counts)
+  - Why Choose Us (4 USP items)
+  - Customer Reviews (4 approved reviews with ratings)
+  - FAQ (6 accordion items)
+  - Footer with navigation
+- API verification: /api/homepage returns all expected data structures
+- Admin sidebar already includes CMS_ITEMS group (Homepage, FAQs, Settings)
+- page.tsx already integrates HomepageEditor, FaqManager, SettingsManager
+
+Stage Summary:
+- Phase 7 was already 95%+ implemented from prior phases
+- Only code change needed: Filter featured products selector by isPublished
+- Infrastructure fixes: Schema provider, hero image, seed idempotency, logging
+- All Phase 7 deliverables confirmed: Homepage editor, FAQ management, Global settings, Customer Reviews config
+- No new API routes, database tables, or major components were needed

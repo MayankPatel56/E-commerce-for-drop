@@ -311,8 +311,10 @@ async function seed() {
 
   // 9. Seed sample approved reviews (from "delivered" customers)
   // First create a sample customer
-  const reviewCustomer = await db.user.create({
-    data: {
+  const reviewCustomer = await db.user.upsert({
+    where: { email: "reviewer@example.com" },
+    update: {},
+    create: {
       email: "reviewer@example.com",
       name: "Priya Sharma",
       password: await bcrypt.hash("ReviewerPass123", 10),
@@ -332,55 +334,61 @@ async function seed() {
 
   const customerId = reviewCustomer.customer!.id;
 
-  // Create a delivered order for review validation
-  // Uses native Json type — no JSON.stringify needed
-  const sampleOrder = await db.order.create({
-    data: {
-      orderNumber: "ORD-1700000000-ABC123",
-      customerId: customerId,
-      status: "delivered",
-      cartTotal: 599,
-      shippingAddress: { street: "123 MG Road", city: "Mumbai", state: "Maharashtra", pincode: "400001" },
-      consentGiven: false,
-    },
-  });
-
-  // Create order item
-  const firstProduct = createdProducts[0];
-  const firstVariant = firstProduct.variants[0];
-  await db.orderItem.create({
-    data: {
-      orderId: sampleOrder.id,
-      variantId: firstVariant.id,
-      quantity: 1,
-      unitPrice: firstProduct.price,
-      variantSnapshot: { type: firstVariant.variantType, value: firstVariant.variantValue },
-    },
-  });
-
-  // Create sample reviews (one per product per customer due to unique constraint)
-  const sampleReviews = [
-    { productId: firstProduct.id, rating: 5, title: "Amazing quality!", comment: "The fabric is super soft and the fit is perfect. Will definitely buy more colors.", daysAgo: 2 },
-    { productId: createdProducts[1].id, rating: 5, title: "Perfect white tee", comment: "Finally found a white tee that doesn't become see-through after washing. The cotton quality is excellent.", daysAgo: 1 },
-    { productId: createdProducts[2].id, rating: 4, title: "Super cozy", comment: "The fleece lining makes it incredibly warm. Only wish it came in more colors.", daysAgo: 7 },
-    { productId: createdProducts[3].id, rating: 4, title: "Great oversized fit", comment: "Love the drop-shoulder design. The olive green color is beautiful in person.", daysAgo: 3 },
-  ];
-
-  for (const r of sampleReviews) {
-    await db.review.create({
+  // Check if sample data already exists
+  const existingReviews = await db.review.count({ where: { customerId } });
+  if (existingReviews > 0) {
+    console.log("✅ Sample reviews already exist — skipping");
+  } else {
+    // Create a delivered order for review validation
+    // Uses native Json type — no JSON.stringify needed
+    const sampleOrder = await db.order.create({
       data: {
-        productId: r.productId,
+        orderNumber: "ORD-1700000000-ABC123",
         customerId: customerId,
-        orderId: sampleOrder.id,
-        rating: r.rating,
-        title: r.title,
-        comment: r.comment,
-        status: "approved",
-        reviewedAt: new Date(Date.now() - r.daysAgo * 24 * 60 * 60 * 1000),
+        status: "delivered",
+        cartTotal: 599,
+        shippingAddress: { street: "123 MG Road", city: "Mumbai", state: "Maharashtra", pincode: "400001" },
+        consentGiven: false,
       },
     });
+
+    // Create order item
+    const firstProduct = createdProducts[0];
+    const firstVariant = firstProduct.variants[0];
+    await db.orderItem.create({
+      data: {
+        orderId: sampleOrder.id,
+        variantId: firstVariant.id,
+        quantity: 1,
+        unitPrice: firstProduct.price,
+        variantSnapshot: { type: firstVariant.variantType, value: firstVariant.variantValue },
+      },
+    });
+
+    // Create sample reviews (one per product per customer due to unique constraint)
+    const sampleReviews = [
+      { productId: firstProduct.id, rating: 5, title: "Amazing quality!", comment: "The fabric is super soft and the fit is perfect. Will definitely buy more colors.", daysAgo: 2 },
+      { productId: createdProducts[1].id, rating: 5, title: "Perfect white tee", comment: "Finally found a white tee that doesn't become see-through after washing. The cotton quality is excellent.", daysAgo: 1 },
+      { productId: createdProducts[2].id, rating: 4, title: "Super cozy", comment: "The fleece lining makes it incredibly warm. Only wish it came in more colors.", daysAgo: 7 },
+      { productId: createdProducts[3].id, rating: 4, title: "Great oversized fit", comment: "Love the drop-shoulder design. The olive green color is beautiful in person.", daysAgo: 3 },
+    ];
+
+    for (const r of sampleReviews) {
+      await db.review.create({
+        data: {
+          productId: r.productId,
+          customerId: customerId,
+          orderId: sampleOrder.id,
+          rating: r.rating,
+          title: r.title,
+          comment: r.comment,
+          status: "approved",
+          reviewedAt: new Date(Date.now() - r.daysAgo * 24 * 60 * 60 * 1000),
+        },
+      });
+    }
+    console.log(`✅ Sample reviews seeded (${sampleReviews.length})`);
   }
-  console.log(`✅ Sample reviews seeded (${sampleReviews.length})`);
 
   console.log("🎉 Seed complete!");
   console.log("");

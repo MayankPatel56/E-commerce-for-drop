@@ -39,6 +39,7 @@ import {
 interface Product {
   id: number;
   name: string;
+  isPublished: boolean;
 }
 
 interface Category {
@@ -346,6 +347,9 @@ export function HomepageEditor() {
   const maxReviews = data.customerReviews?.max_reviews_to_show ?? 6;
   const footer = data.footer || DEFAULT_FOOTER;
 
+  // Only show published products in the featured products selector
+  const publishedProducts = products.filter((p) => p.isPublished);
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -467,13 +471,13 @@ export function HomepageEditor() {
           <CollapsibleContent>
             <CardContent className="pt-0">
               <Separator className="mb-4" />
-              {products.length === 0 ? (
+              {publishedProducts.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">
-                  No products found. Create products first.
+                  No published products found. Publish products first.
                 </p>
               ) : (
                 <div className="max-h-64 overflow-y-auto space-y-1">
-                  {products.map((product) => {
+                  {publishedProducts.map((product) => {
                     const isSelected = featuredIds.includes(product.id);
                     return (
                       <label

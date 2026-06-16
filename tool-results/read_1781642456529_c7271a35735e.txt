@@ -1,0 +1,824 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useCallback } from "react";
+     4→import { signIn, signOut } from "next-auth/react";
+     5→import { useRouter, useSearchParams } from "next/navigation";
+     6→import {
+     7→  Card,
+     8→  CardContent,
+     9→  CardDescription,
+    10→  CardFooter,
+    11→  CardHeader,
+    12→  CardTitle,
+    13→} from "@/components/ui/card";
+    14→import { Input } from "@/components/ui/input";
+    15→import { Label } from "@/components/ui/label";
+    16→import { Button } from "@/components/ui/button";
+    17→import { Alert, AlertDescription } from "@/components/ui/alert";
+    18→import { Separator } from "@/components/ui/separator";
+    19→import {
+    20→  Eye,
+    21→  EyeOff,
+    22→  Loader2,
+    23→  ShieldCheck,
+    24→  Store,
+    25→  AlertTriangle,
+    26→} from "lucide-react";
+    27→
+    28→import { AdminSidebar } from "@/components/admin/admin-sidebar";
+    29→import { ProductsTable } from "@/components/admin/products-table";
+    30→import { ProductForm } from "@/components/admin/product-form";
+    31→import { VariantManager } from "@/components/admin/variant-manager";
+    32→import { CategoriesManager } from "@/components/admin/categories-manager";
+    33→import { TagsManager } from "@/components/admin/tags-manager";
+    34→import { OrdersTable } from "@/components/admin/orders-table";
+    35→import { OrderDetail } from "@/components/admin/order-detail";
+    36→
+    37→import { StoreHeader } from "@/components/store/store-header";
+    38→import StorefrontHomepage from "@/components/store/storefront-homepage";
+    39→import { ProductListing } from "@/components/store/product-listing";
+    40→import ProductDetail from "@/components/store/product-detail";
+    41→import { CartDrawer } from "@/components/store/cart-drawer";
+    42→import { CheckoutPage } from "@/components/store/checkout-page";
+    43→import { OrderConfirmation } from "@/components/store/order-confirmation";
+    44→import { TrackOrderPage } from "@/components/store/track-order-page";
+    45→import { CustomerDashboard } from "@/components/store/customer-dashboard";
+    46→import { CustomerProfile } from "@/components/store/customer-profile";
+    47→import { CustomerWishlist } from "@/components/store/customer-wishlist";
+    48→import { CustomerReviews } from "@/components/store/customer-reviews";
+    49→import { CustomerOrders } from "@/components/store/customer-orders";
+    50→import { AdminReviewsTable } from "@/components/admin/admin-reviews-table";
+    51→import { AdminDashboard } from "@/components/admin/admin-dashboard";
+    52→import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard";
+    53→import { HomepageEditor } from "@/components/admin/homepage-editor";
+    54→import { FaqManager } from "@/components/admin/faq-manager";
+    55→import { SettingsManager } from "@/components/admin/settings-manager";
+    56→import { CustomersTable } from "@/components/admin/customers-table";
+    57→import { useCart } from "@/context/cart-context";
+    58→import {
+    59→  PrivacyPolicyPage,
+    60→  TermsPage,
+    61→  ReturnPolicyPage,
+    62→  AboutPage,
+    63→  ContactPage,
+    64→  FaqPage,
+    65→} from "@/components/store/compliance-pages";
+    66→
+    67→// ─── Types ──────────────────────────────────────────────────────────────────
+    68→
+    69→type AppView =
+    70→  | "home"
+    71→  | "shop"
+    72→  | "product"
+    73→  | "search"
+    74→  | "track-order"
+    75→  | "checkout"
+    76→  | "order-confirmation"
+    77→  | "login"
+    78→  | "signup"
+    79→  | "admin"
+    80→  | "customer-dashboard"
+    81→  | "customer-profile"
+    82→  | "customer-wishlist"
+    83→  | "customer-orders"
+    84→  | "customer-reviews"
+    85→  | "privacy"
+    86→  | "terms"
+    87→  | "returns"
+    88→  | "about"
+    89→  | "contact"
+    90→  | "faq";
+    91→
+    92→type AdminPanel =
+    93→  | "dashboard"
+    94→  | "orders"
+    95→  | "order-detail"
+    96→  | "products"
+    97→  | "categories"
+    98→  | "tags"
+    99→  | "reviews"
+   100→  | "product-edit"
+   101→  | "product-new"
+   102→  | "product-variants"
+   103→  | "homepage"
+   104→  | "faq"
+   105→  | "settings"
+   106→  | "analytics"
+   107→  | "customers";
+   108→
+   109→interface UserInfo {
+   110→  id: string;
+   111→  email: string;
+   112→  name: string;
+   113→  role: string;
+   114→}
+   115→
+   116→interface FormErrors {
+   117→  email?: string;
+   118→  password?: string;
+   119→  name?: string;
+   120→  phone?: string;
+   121→  general?: string;
+   122→}
+   123→
+   124→// ─── Page Component ─────────────────────────────────────────────────────────
+   125→
+   126→export default function HomePage() {
+   127→  const router = useRouter();
+   128→  const searchParams = useSearchParams();
+   129→  const errorParam = searchParams.get("error");
+   130→
+   131→  // Navigation state
+   132→  const [appView, setAppView] = useState<AppView>("home");
+   133→  const [productSlug, setProductSlug] = useState<string | null>(null);
+   134→  const [initialCategory, setInitialCategory] = useState<string | undefined>();
+   135→
+   136→  // Auth state
+   137→  const [user, setUser] = useState<UserInfo | null>(null);
+   138→  const [showLoginModal, setShowLoginModal] = useState(false);
+   139→
+   140→  // Cart drawer state
+   141→  const [cartOpen, setCartOpen] = useState(false);
+   142→  const { totalItems } = useCart();
+   143→
+   144→  // Checkout state
+   145→  const [orderNumber, setOrderNumber] = useState<string | null>(null);
+   146→
+   147→  // Admin state
+   148→  const [adminPanel, setAdminPanel] = useState<AdminPanel>("dashboard");
+   149→  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+   150→  const [variantProductId, setVariantProductId] = useState<number | null>(null);
+   151→  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+   152→  const [refreshKey, setRefreshKey] = useState(0);
+   153→
+   154→  // Login form
+   155→  const [loginEmail, setLoginEmail] = useState("");
+   156→  const [loginPassword, setLoginPassword] = useState("");
+   157→
+   158→  // Signup form
+   159→  const [signupName, setSignupName] = useState("");
+   160→  const [signupEmail, setSignupEmail] = useState("");
+   161→  const [signupPassword, setSignupPassword] = useState("");
+   162→  const [signupPhone, setSignupPhone] = useState("");
+   163→
+   164→  // Shared UI state
+   165→  const [showPassword, setShowPassword] = useState(false);
+   166→  const [isLoading, setIsLoading] = useState(false);
+   167→  const [formErrors, setFormErrors] = useState<FormErrors>({});
+   168→  const [lockoutInfo, setLockoutInfo] = useState<{ locked: boolean; remainingMinutes: number } | null>(null);
+   169→  const [generalError, setGeneralError] = useState<string | null>(null);
+   170→
+   171→  // Check session on mount
+   172→  useEffect(() => {
+   173→    checkSession();
+   174→    if (errorParam === "access_denied") {
+   175→      setGeneralError("You do not have permission to access that page.");
+   176→    }
+   177→  }, [errorParam]);
+   178→
+   179→  const checkSession = async () => {
+   180→    try {
+   181→      const res = await fetch("/api/auth/session");
+   182→      const data = await res.json();
+   183→      if (data.authenticated && data.user) {
+   184→        setUser(data.user as UserInfo);
+   185→        if (data.user.role === "admin") {
+   186→          setAppView("admin");
+   187→        }
+   188→      }
+   189→    } catch {
+   190→      // Not authenticated
+   191→    }
+   192→  };
+   193→
+   194→  // ─── Navigation Handler ─────────────────────────────────────────────────
+   195→
+   196→  const handleNavigate = useCallback((view: string, data?: Record<string, unknown>) => {
+   197→    window.scrollTo(0, 0);
+   198→    if (view === "admin") {
+   199→      // Only admin can go to admin
+   200→      if (user?.role === "admin") {
+   201→        setAppView("admin");
+   202→      }
+   203→      return;
+   204→    }
+   205→    if (view === "login") {
+   206→      if (user) return; // Already logged in
+   207→      setShowLoginModal(true);
+   208→      return;
+   209→    }
+   210→    if (view === "product") {
+   211→      const slug = data?.slug as string;
+   212→      if (slug) {
+   213→        setProductSlug(slug);
+   214→        setAppView("product");
+   215→      }
+   216→      return;
+   217→    }
+   218→    if (view === "shop") {
+   219→      setInitialCategory(data?.category as string | undefined);
+   220→      setAppView("shop");
+   221→      return;
+   222→    }
+   223→    if (view === "search") {
+   224→      setAppView("search");
+   225→      return;
+   226→    }
+   227→    if (view === "track-order") {
+   228→      setAppView("track-order");
+   229→      return;
+   230→    }
+   231→    if (view === "checkout") {
+   232→      setOrderNumber(null);
+   233→      setAppView("checkout");
+   234→      return;
+   235→    }
+   236→    // Customer views
+   237→    if (view === "customer-dashboard" || view === "customer-profile" || view === "customer-wishlist" || view === "customer-reviews" || view === "customer-orders") {
+   238→      if (!user) {
+   239→        setShowLoginModal(true);
+   240→        return;
+   241→      }
+   242→      setAppView(view as AppView);
+   243→      return;
+   244→    }
+   245→    // Default: home
+   246→    setAppView(view as AppView);
+   247→  }, [user]);
+   248→
+   249→  // ─── Auth Handlers ──────────────────────────────────────────────────────
+   250→
+   251→  const validateLogin = (): boolean => {
+   252→    const errors: FormErrors = {};
+   253→    if (!loginEmail.trim()) errors.email = "Email is required";
+   254→    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail))
+   255→      errors.email = "Enter a valid email address";
+   256→    if (!loginPassword) errors.password = "Password is required";
+   257→    setFormErrors(errors);
+   258→    return Object.keys(errors).length === 0;
+   259→  };
+   260→
+   261→  const validateSignup = (): boolean => {
+   262→    const errors: FormErrors = {};
+   263→    if (!signupName.trim()) errors.name = "Name is required";
+   264→    else if (signupName.trim().length < 2) errors.name = "Name must be at least 2 characters";
+   265→    if (!signupEmail.trim()) errors.email = "Email is required";
+   266→    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupEmail))
+   267→      errors.email = "Enter a valid email address";
+   268→    if (!signupPassword) errors.password = "Password is required";
+   269→    else if (signupPassword.length < 8) errors.password = "Password must be at least 8 characters";
+   270→    if (!signupPhone.trim()) errors.phone = "Phone number is required";
+   271→    else if (!/^[0-9]{10}$/.test(signupPhone.trim()))
+   272→      errors.phone = "Enter a valid 10-digit phone number";
+   273→    setFormErrors(errors);
+   274→    return Object.keys(errors).length === 0;
+   275→  };
+   276→
+   277→  const handleLogin = async (e: React.FormEvent) => {
+   278→    e.preventDefault();
+   279→    setGeneralError(null);
+   280→    setLockoutInfo(null);
+   281→    if (!validateLogin()) return;
+   282→    setIsLoading(true);
+   283→    try {
+   284→      const result = await signIn("credentials", {
+   285→        email: loginEmail.trim().toLowerCase(),
+   286→        password: loginPassword,
+   287→        redirect: false,
+   288→      });
+   289→      if (result?.error) {
+   290→        if (result.error.includes("ACCOUNT_LOCKED")) {
+   291→          const minutes = parseInt(result.error.split(":")[1]) || 15;
+   292→          setLockoutInfo({ locked: true, remainingMinutes: minutes });
+   293→          setGeneralError(
+   294→            `Account locked due to too many failed attempts. Please try again in ${minutes} minutes.`
+   295→          );
+   296→        } else {
+   297→          setGeneralError("Invalid email or password");
+   298→        }
+   299→      } else if (result?.ok) {
+   300→        const sessionRes = await fetch("/api/auth/session");
+   301→        const sessionData = await sessionRes.json();
+   302→        if (sessionData.authenticated && sessionData.user) {
+   303→          setUser(sessionData.user as UserInfo);
+   304→          setShowLoginModal(false);
+   305→          if (sessionData.user.role === "admin") {
+   306→            setAppView("admin");
+   307→          }
+   308→        }
+   309→      }
+   310→    } catch {
+   311→      setGeneralError("An unexpected error occurred. Please try again.");
+   312→    } finally {
+   313→      setIsLoading(false);
+   314→    }
+   315→  };
+   316→
+   317→  const handleSignup = async (e: React.FormEvent) => {
+   318→    e.preventDefault();
+   319→    setGeneralError(null);
+   320→    if (!validateSignup()) return;
+   321→    setIsLoading(true);
+   322→    try {
+   323→      const res = await fetch("/api/auth/signup", {
+   324→        method: "POST",
+   325→        headers: { "Content-Type": "application/json" },
+   326→        body: JSON.stringify({
+   327→          name: signupName.trim(),
+   328→          email: signupEmail.trim().toLowerCase(),
+   329→          password: signupPassword,
+   330→          phone: signupPhone.trim(),
+   331→        }),
+   332→      });
+   333→      const data = await res.json();
+   334→      if (!res.ok) {
+   335→        setGeneralError(data.error || "Signup failed");
+   336→        return;
+   337→      }
+   338→      // Auto-signin
+   339→      const result = await signIn("credentials", {
+   340→        email: signupEmail.trim().toLowerCase(),
+   341→        password: signupPassword,
+   342→        redirect: false,
+   343→      });
+   344→      if (result?.ok) {
+   345→        const sessionRes = await fetch("/api/auth/session");
+   346→        const sessionData = await sessionRes.json();
+   347→        if (sessionData.authenticated) {
+   348→          setUser(sessionData.user as UserInfo);
+   349→        }
+   350→      }
+   351→      setShowLoginModal(false);
+   352→      setLoginEmail(signupEmail);
+   353→    } catch {
+   354→      setGeneralError("An unexpected error occurred. Please try again.");
+   355→    } finally {
+   356→      setIsLoading(false);
+   357→    }
+   358→  };
+   359→
+   360→  const handleLogout = async () => {
+   361→    await signOut({ redirect: false });
+   362→    setUser(null);
+   363→    setAppView("home");
+   364→    setAdminPanel("products");
+   365→    setEditingProductId(null);
+   366→    setVariantProductId(null);
+   367→    setLoginEmail("");
+   368→    setLoginPassword("");
+   369→    setShowLoginModal(false);
+   370→  };
+   371→
+   372→  // ─── Admin Panel Handlers ────────────────────────────────────────────────
+   373→
+   374→  const handleViewChange = useCallback((view: string) => {
+   375→    setEditingProductId(null);
+   376→    setVariantProductId(null);
+   377→    setAdminPanel(view as AdminPanel);
+   378→    setSelectedOrderId(null);
+   379→  }, []);
+   380→
+   381→  const handleEditProduct = useCallback((id: number) => {
+   382→    setEditingProductId(id);
+   383→    setAdminPanel("product-edit");
+   384→  }, []);
+   385→
+   386→  const handleCreateProduct = useCallback(() => {
+   387→    setEditingProductId(null);
+   388→    setAdminPanel("product-new");
+   389→  }, []);
+   390→
+   391→  const handleManageVariants = useCallback((id: number) => {
+   392→    setVariantProductId(id);
+   393→    setAdminPanel("product-variants");
+   394→  }, []);
+   395→
+   396→  const handleFormSuccess = useCallback(() => {
+   397→    setAdminPanel("products");
+   398→    setEditingProductId(null);
+   399→    setRefreshKey((k) => k + 1);
+   400→  }, []);
+   401→
+   402→  const handleFormCancel = useCallback(() => {
+   403→    setAdminPanel("products");
+   404→    setEditingProductId(null);
+   405→  }, []);
+   406→
+   407→  const triggerRefresh = useCallback(() => {
+   408→    setRefreshKey((k) => k + 1);
+   409→  }, []);
+   410→
+   411→  // ─── Admin Order Handlers ──────────────────────────────────────────────
+   412→
+   413→  const handleViewOrder = useCallback((orderId: number) => {
+   414→    setSelectedOrderId(orderId);
+   415→    setAdminPanel("order-detail");
+   416→  }, []);
+   417→
+   418→  const handleBackToOrders = useCallback(() => {
+   419→    setSelectedOrderId(null);
+   420→    setAdminPanel("orders");
+   421→    setRefreshKey((k) => k + 1);
+   422→  }, []);
+   423→
+   424→  // ─── Checkout Handlers ────────────────────────────────────────────────────
+   425→
+   426→  const handleOrderSuccess = useCallback((successOrderNumber: string) => {
+   427→    setOrderNumber(successOrderNumber);
+   428→    setAppView("order-confirmation");
+   429→  }, []);
+   430→
+   431→  // ─── Render: Login / Signup Modal ───────────────────────────────────────
+   432→
+   433→  const renderLoginModal = () => {
+   434→    if (!showLoginModal) return null;
+   435→
+   436→    return (
+   437→      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+   438→        {/* Backdrop */}
+   439→        <div
+   440→          className="absolute inset-0 bg-black/50"
+   441→          onClick={() => { setShowLoginModal(false); setFormErrors({}); setGeneralError(null); setLockoutInfo(null); }}
+   442→        />
+   443→        {/* Modal */}
+   444→        <Card className="relative w-full max-w-md shadow-xl z-10">
+   445→          <CardHeader className="text-center space-y-2 pb-4">
+   446→            <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+   447→              <ShieldCheck className="h-6 w-6 text-primary" />
+   448→            </div>
+   449→            <CardTitle className="text-2xl font-bold">
+   450→              {appView === "login" ? "Welcome Back" : "Create Account"}
+   451→            </CardTitle>
+   452→            <CardDescription>
+   453→              {appView === "login"
+   454→                ? "Enter your credentials to access your account"
+   455→                : "Join Indicore Originals today"}
+   456→            </CardDescription>
+   457→          </CardHeader>
+   458→          <CardContent>
+   459→            {lockoutInfo?.locked && (
+   460→              <Alert variant="destructive" className="mb-4">
+   461→                <AlertTriangle className="h-4 w-4" />
+   462→                <AlertDescription>{generalError}</AlertDescription>
+   463→              </Alert>
+   464→            )}
+   465→            {generalError && !lockoutInfo?.locked && (
+   466→              <Alert variant="destructive" className="mb-4">
+   467→                <AlertTriangle className="h-4 w-4" />
+   468→                <AlertDescription>{generalError}</AlertDescription>
+   469→              </Alert>
+   470→            )}
+   471→            {appView === "login" ? (
+   472→              <form onSubmit={handleLogin} className="space-y-4">
+   473→                <div className="space-y-2">
+   474→                  <Label htmlFor="login-email">Email</Label>
+   475→                  <Input id="login-email" type="email" placeholder="you@example.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} disabled={isLoading || !!lockoutInfo?.locked} autoComplete="email" autoFocus />
+   476→                  {formErrors.email && <p className="text-sm text-destructive">{formErrors.email}</p>}
+   477→                </div>
+   478→                <div className="space-y-2">
+   479→                  <Label htmlFor="login-password">Password</Label>
+   480→                  <div className="relative">
+   481→                    <Input id="login-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} disabled={isLoading || !!lockoutInfo?.locked} autoComplete="current-password" className="pr-10" />
+   482→                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1} aria-label={showPassword ? "Hide password" : "Show password"}>
+   483→                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+   484→                    </button>
+   485→                  </div>
+   486→                  {formErrors.password && <p className="text-sm text-destructive">{formErrors.password}</p>}
+   487→                </div>
+   488→                <Button type="submit" className="w-full" disabled={isLoading || !!lockoutInfo?.locked}>
+   489→                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</> : lockoutInfo?.locked ? `Locked — Try in ${lockoutInfo.remainingMinutes} min` : "Sign In"}
+   490→                </Button>
+   491→              </form>
+   492→            ) : (
+   493→              <form onSubmit={handleSignup} className="space-y-4">
+   494→                <div className="space-y-2">
+   495→                  <Label htmlFor="signup-name">Full Name</Label>
+   496→                  <Input id="signup-name" type="text" placeholder="Rahul Sharma" value={signupName} onChange={(e) => setSignupName(e.target.value)} disabled={isLoading} autoComplete="name" autoFocus />
+   497→                  {formErrors.name && <p className="text-sm text-destructive">{formErrors.name}</p>}
+   498→                </div>
+   499→                <div className="space-y-2">
+   500→                  <Label htmlFor="signup-email">Email</Label>
+   501→                  <Input id="signup-email" type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} disabled={isLoading} autoComplete="email" />
+   502→                  {formErrors.email && <p className="text-sm text-destructive">{formErrors.email}</p>}
+   503→                </div>
+   504→                <div className="space-y-2">
+   505→                  <Label htmlFor="signup-phone">Phone Number</Label>
+   506→                  <Input id="signup-phone" type="tel" placeholder="9876543210" value={signupPhone} onChange={(e) => setSignupPhone(e.target.value)} disabled={isLoading} autoComplete="tel" maxLength={10} />
+   507→                  {formErrors.phone && <p className="text-sm text-destructive">{formErrors.phone}</p>}
+   508→                </div>
+   509→                <div className="space-y-2">
+   510→                  <Label htmlFor="signup-password">Password</Label>
+   511→                  <div className="relative">
+   512→                    <Input id="signup-password" type={showPassword ? "text" : "password"} placeholder="Min 8 characters" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} disabled={isLoading} autoComplete="new-password" className="pr-10" />
+   513→                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1} aria-label={showPassword ? "Hide password" : "Show password"}>
+   514→                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+   515→                    </button>
+   516→                  </div>
+   517→                  {formErrors.password && <p className="text-sm text-destructive">{formErrors.password}</p>}
+   518→                </div>
+   519→                <Button type="submit" className="w-full" disabled={isLoading}>
+   520→                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating account...</> : "Create Account"}
+   521→                </Button>
+   522→              </form>
+   523→            )}
+   524→          </CardContent>
+   525→          <CardFooter className="flex flex-col gap-4">
+   526→            <Separator />
+   527→            <p className="text-sm text-muted-foreground text-center">
+   528→              {appView === "login" ? (
+   529→                <>Don&apos;t have an account?{" "}
+   530→                  <button type="button" onClick={() => { setAppView("signup"); setFormErrors({}); setGeneralError(null); setLockoutInfo(null); }} className="text-primary font-medium hover:underline">Sign up</button></>
+   531→              ) : (
+   532→                <>Already have an account?{" "}
+   533→                  <button type="button" onClick={() => { setAppView("login"); setFormErrors({}); setGeneralError(null); setLockoutInfo(null); }} className="text-primary font-medium hover:underline">Sign in</button></>
+   534→              )}
+   535→            </p>
+   536→          </CardFooter>
+   537→        </Card>
+   538→      </div>
+   539→    );
+   540→  };
+   541→
+   542→  // ─── Render: Storefront Views ───────────────────────────────────────────
+   543→
+   544→  const renderStorefront = () => (
+   545→    <div className="min-h-screen flex flex-col bg-background">
+   546→      <StoreHeader
+   547→        onNavigate={handleNavigate}
+   548→        onOpenCart={() => setCartOpen(true)}
+   549→        cartCount={totalItems}
+   550→        onOpenLogin={() => { setAppView("login"); setShowLoginModal(true); setFormErrors({}); setGeneralError(null); setLockoutInfo(null); }}
+   551→        isAuthenticated={!!user}
+   552→        userName={user?.name}
+   553→        onLogout={handleLogout}
+   554→      />
+   555→
+   556→      <main className="flex-1">
+   557→        {appView === "home" && (
+   558→          <StorefrontHomepage onNavigate={handleNavigate} />
+   559→        )}
+   560→        {appView === "shop" && (
+   561→          <div className="pt-4">
+   562→            <ProductListing
+   563→              key={`shop-${initialCategory || "all"}`}
+   564→              initialCategory={initialCategory}
+   565→              onNavigate={handleNavigate}
+   566→            />
+   567→          </div>
+   568→        )}
+   569→        {appView === "product" && productSlug && (
+   570→          <div className="pt-4">
+   571→            <ProductDetail
+   572→              key={productSlug}
+   573→              slug={productSlug}
+   574→              onNavigate={handleNavigate}
+   575→              isAuthenticated={!!user}
+   576→            />
+   577→          </div>
+   578→        )}
+   579→        {appView === "search" && (
+   580→          <div className="pt-4">
+   581→            <ProductListing onNavigate={handleNavigate} />
+   582→          </div>
+   583→        )}
+   584→        {appView === "checkout" && (
+   585→          <div className="pt-4">
+   586→            <CheckoutPage
+   587→              onOrderSuccess={handleOrderSuccess}
+   588→              onNavigate={handleNavigate}
+   589→            />
+   590→          </div>
+   591→        )}
+   592→        {appView === "order-confirmation" && orderNumber && (
+   593→          <div className="pt-4">
+   594→            <OrderConfirmation
+   595→              orderNumber={orderNumber}
+   596→              onNavigate={handleNavigate}
+   597→            />
+   598→          </div>
+   599→        )}
+   600→        {appView === "track-order" && (
+   601→          <div className="pt-4">
+   602→            <TrackOrderPage onNavigate={handleNavigate} />
+   603→          </div>
+   604→        )}
+   605→        {appView === "customer-dashboard" && (
+   606→          <div className="px-4 py-6">
+   607→            <CustomerDashboard onNavigate={handleNavigate} />
+   608→          </div>
+   609→        )}
+   610→        {appView === "customer-profile" && (
+   611→          <div className="pt-4">
+   612→            <CustomerProfile />
+   613→          </div>
+   614→        )}
+   615→        {appView === "customer-wishlist" && (
+   616→          <CustomerWishlist onNavigate={handleNavigate} />
+   617→        )}
+   618→        {appView === "customer-orders" && (
+   619→          <CustomerOrders onNavigate={handleNavigate} />
+   620→        )}
+   621→        {appView === "customer-reviews" && (
+   622→          <CustomerReviews onNavigate={handleNavigate} />
+   623→        )}
+   624→        {appView === "privacy" && (
+   625→          <PrivacyPolicyPage onNavigate={handleNavigate} />
+   626→        )}
+   627→        {appView === "terms" && (
+   628→          <TermsPage onNavigate={handleNavigate} />
+   629→        )}
+   630→        {appView === "returns" && (
+   631→          <ReturnPolicyPage onNavigate={handleNavigate} />
+   632→        )}
+   633→        {appView === "about" && (
+   634→          <AboutPage onNavigate={handleNavigate} />
+   635→        )}
+   636→        {appView === "contact" && (
+   637→          <ContactPage onNavigate={handleNavigate} />
+   638→        )}
+   639→        {appView === "faq" && (
+   640→          <FaqPage onNavigate={handleNavigate} />
+   641→        )}
+   642→      </main>
+   643→
+   644→      {/* Footer is rendered by StorefrontHomepage for the home view */}
+   645→      {appView !== "home" && (
+   646→        <footer className="w-full border-t bg-white py-4 mt-auto">
+   647→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
+   648→            © {new Date().getFullYear()} Indicore Originals. All rights reserved.
+   649→          </div>
+   650→        </footer>
+   651→      )}
+   652→
+   653→      {/* Cart Drawer */}
+   654→      <CartDrawer
+   655→        open={cartOpen}
+   656→        onOpenChange={setCartOpen}
+   657→        onNavigate={handleNavigate}
+   658→      />
+   659→    </div>
+   660→  );
+   661→
+   662→  // ─── Render: Admin Dashboard ─────────────────────────────────────────────
+   663→
+   664→  const renderAdminPanel = () => {
+   665→    const sidebarView = adminPanel === "product-edit" || adminPanel === "product-new" || adminPanel === "product-variants" ? "products" : adminPanel === "order-detail" ? "orders" : adminPanel;
+   666→
+   667→    return (
+   668→      <div className="min-h-screen flex bg-muted/30">
+   669→        <AdminSidebar activeView={sidebarView} onViewChange={handleViewChange} onLogout={handleLogout} />
+   670→
+   671→        <div className="flex-1 flex flex-col min-w-0">
+   672→          {/* Top bar */}
+   673→          <header className="h-16 border-b bg-white flex items-center px-4 sm:px-6 gap-4">
+   674→            <button
+   675→              type="button"
+   676→              onClick={() => handleNavigate("home")}
+   677→              className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center gap-1"
+   678→            >
+   679→              <Store className="h-4 w-4" />
+   680→              <span className="hidden sm:inline">Store</span>
+   681→            </button>
+   682→            <h1 className="text-lg font-semibold capitalize hidden sm:block">
+   683→              {adminPanel === "product-edit" ? "Edit Product" :
+   684→               adminPanel === "product-new" ? "New Product" :
+   685→               adminPanel === "product-variants" ? "Manage Variants" :
+   686→               adminPanel === "order-detail" ? "Order Detail" :
+   687→               adminPanel === "dashboard" ? "Dashboard" :
+   688→               adminPanel === "homepage" ? "Homepage Editor" :
+   689→               adminPanel === "faq" ? "FAQ Manager" :
+   690→               adminPanel === "settings" ? "Settings" :
+   691→               adminPanel === "analytics" ? "Analytics" :
+   692→               adminPanel === "customers" ? "Customers" :
+   693→               adminPanel.charAt(0).toUpperCase() + adminPanel.slice(1)}
+   694→            </h1>
+   695→            <div className="ml-auto flex items-center gap-3">
+   696→              <span className="text-sm text-muted-foreground hidden sm:inline">
+   697→                {user?.name}
+   698→              </span>
+   699→              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+   700→                Admin
+   701→              </span>
+   702→            </div>
+   703→          </header>
+   704→
+   705→          {/* Panel content */}
+   706→          <main className="flex-1 p-4 sm:p-6 overflow-auto">
+   707→            {adminPanel === "reviews" && (
+   708→              <AdminReviewsTable
+   709→                key={refreshKey}
+   710→                onRefresh={triggerRefresh}
+   711→              />
+   712→            )}
+   713→            {adminPanel === "orders" && (
+   714→              <OrdersTable
+   715→                key={refreshKey}
+   716→                onViewOrder={handleViewOrder}
+   717→                onRefresh={triggerRefresh}
+   718→              />
+   719→            )}
+   720→            {adminPanel === "order-detail" && selectedOrderId != null && (
+   721→              <OrderDetail
+   722→                key={selectedOrderId}
+   723→                orderId={selectedOrderId}
+   724→                onBack={handleBackToOrders}
+   725→                onRefresh={triggerRefresh}
+   726→              />
+   727→            )}
+   728→            {adminPanel === "products" && (
+   729→              <ProductsTable
+   730→                key={refreshKey}
+   731→                onEdit={handleEditProduct}
+   732→                onCreate={handleCreateProduct}
+   733→                onRefresh={triggerRefresh}
+   734→              />
+   735→            )}
+   736→            {adminPanel === "product-new" && (
+   737→              <div className="max-w-3xl">
+   738→                <ProductForm
+   739→                  onSuccess={handleFormSuccess}
+   740→                  onCancel={handleFormCancel}
+   741→                />
+   742→              </div>
+   743→            )}
+   744→            {adminPanel === "product-edit" && editingProductId != null && (
+   745→              <div className="max-w-3xl">
+   746→                <ProductForm
+   747→                  productId={editingProductId}
+   748→                  onSuccess={handleFormSuccess}
+   749→                  onCancel={handleFormCancel}
+   750→                />
+   751→                <div className="mt-6">
+   752→                  <VariantManager
+   753→                    key={`vm-${editingProductId}-${refreshKey}`}
+   754→                    productId={editingProductId}
+   755→                    onVariantChange={triggerRefresh}
+   756→                  />
+   757→                </div>
+   758→              </div>
+   759→            )}
+   760→            {adminPanel === "product-variants" && variantProductId != null && (
+   761→              <div className="max-w-3xl">
+   762→                <VariantManager
+   763→                  key={`vm-${variantProductId}-${refreshKey}`}
+   764→                  productId={variantProductId}
+   765→                  onVariantChange={triggerRefresh}
+   766→                />
+   767→              </div>
+   768→            )}
+   769→            {adminPanel === "categories" && (
+   770→              <div className="max-w-2xl">
+   771→                <CategoriesManager />
+   772→              </div>
+   773→            )}
+   774→            {adminPanel === "tags" && (
+   775→              <div className="max-w-2xl">
+   776→                <TagsManager />
+   777→              </div>
+   778→            )}
+   779→            {adminPanel === "dashboard" && (
+   780→              <AdminDashboard
+   781→                onNavigate={handleNavigate}
+   782→                onViewOrder={handleViewOrder}
+   783→              />
+   784→            )}
+   785→            {adminPanel === "homepage" && (
+   786→              <div className="max-w-3xl">
+   787→                <HomepageEditor />
+   788→              </div>
+   789→            )}
+   790→            {adminPanel === "faq" && (
+   791→              <div className="max-w-3xl">
+   792→                <FaqManager />
+   793→              </div>
+   794→            )}
+   795→            {adminPanel === "settings" && (
+   796→              <div className="max-w-2xl">
+   797→                <SettingsManager />
+   798→              </div>
+   799→            )}
+   800→            {adminPanel === "analytics" && (
+   801→              <AnalyticsDashboard />
+   802→            )}
+   803→            {adminPanel === "customers" && (
+   804→              <CustomersTable />
+   805→            )}
+   806→          </main>
+   807→        </div>
+   808→      </div>
+   809→    );
+   810→  };
+   811→
+   812→  // ─── Main Render ─────────────────────────────────────────────────────────
+   813→
+   814→  if (appView === "admin" && user?.role === "admin") {
+   815→    return renderAdminPanel();
+   816→  }
+   817→
+   818→  return (
+   819→    <>
+   820→      {renderStorefront()}
+   821→      {renderLoginModal()}
+   822→    </>
+   823→  );
+   824→}
