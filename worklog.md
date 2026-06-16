@@ -558,3 +558,121 @@ Stage Summary:
 - Guest checkout supported with auto customer creation
 - All Phase 1, 2, and 3 functionality preserved
 - Zero lint errors
+
+---
+Task ID: 5-a
+Agent: Main Agent
+Task: Phase 5 — Order Management & Tracking Backend API Routes
+
+Work Log:
+- Created 7 API route files for order management and tracking
+- GET /api/orders/track — Guest tracking by order number + email, rate limited (10/15min/IP via checkTrackingRateLimit), returns order with items (variant snapshot), address (with State), no internal notes
+- GET /api/orders/guest-history — List all orders by email, returns orders with items and item counts
+- GET /api/admin/orders — Admin order list with status filter, search by order number, sort (newest/oldest), pagination, and pendingCount for badge (Resolution #11)
+- GET /api/admin/orders/[id] — Full order detail with customer info, shipping address, items with variant+product, internal notes
+- PATCH /api/admin/orders/[id]/status — Status update with valid transition checking (pending→confirmed→shipped→delivered, cancelled/return_requested/returned paths)
+- POST /api/admin/orders/[id]/verify-cod — Manual COD verification (Resolution #11), only for pending orders, optional internal notes
+- POST /api/admin/orders/[id]/return — Process return request, only for return_requested orders, required notes
+- All admin routes protected with requireAdmin()
+- Updated signup route for guest-to-registered account linking: detects existing guest Customer, deletes placeholder User, creates real User with same ID, marks isRegistered=true, links existing orders
+
+Stage Summary:
+- 7 API routes + 1 modified route (signup) for account linking
+- Valid status transition state machine enforced server-side
+- Rate limiting for tracking via existing checkTrackingRateLimit
+
+---
+Task ID: 5-b
+Agent: Frontend Styling Expert
+Task: Phase 5 — Track Order Page Component
+
+Work Log:
+- Created /src/components/store/track-order-page.tsx
+- Two-tab layout using shadcn Tabs: "Track Order" + "Order History"
+- Track tab: Order Number + Email inputs, client-side validation, 429 rate limit alert, 404 not found alert, success card with status badge (7 colors), formatted date, ₹ total, shipping address with State, items list with variant snapshot
+- History tab: Email-only search, clickable order cards that auto-fill Track tab
+- Named export: TrackOrderPage
+
+Stage Summary:
+- Professional mobile-first guest tracking with rate limit handling
+
+---
+Task ID: 5-c
+Agent: Frontend Styling Expert
+Task: Phase 5 — Admin Orders Table Component
+
+Work Log:
+- Created /src/components/admin/orders-table.tsx
+- Prominent pending count badge with Clock icon (Resolution #11)
+- Debounced search (400ms), status filter (7 statuses + All), sort (newest/oldest)
+- Responsive: desktop Table, mobile Card layout
+- 7-color status badge system
+- Pagination with "Showing X-Y of Z"
+- Named export: OrdersTable
+
+Stage Summary:
+- Full admin orders list with filters, search, pending badge
+
+---
+Task ID: 5-d
+Agent: Frontend Styling Expert
+Task: Phase 5 — Admin Order Detail Component
+
+Work Log:
+- Created /src/components/admin/order-detail.tsx
+- Two-column layout (lg:grid-cols-[2fr_1fr]) with sticky right sidebar
+- Left: order header, customer card (with Registered badge), shipping address (with State), items table with variant details, read-only internal notes
+- Right sidebar: contextual action panels based on status:
+  - pending: COD verification (phone link, notes, "Mark as Confirmed")
+  - confirmed/shipped/delivered: status transition buttons + Cancel
+  - return_requested: return processing with required notes
+  - cancelled/returned: notes only
+- Notes save via PATCH with current status echoed back
+- Fixed export from default to named: OrderDetail
+
+Stage Summary:
+- Complete admin order management with COD verification workflow
+
+---
+Task ID: 5-e
+Agent: Main Agent
+Task: Phase 5 — Integration into page.tsx + Admin Sidebar
+
+Work Log:
+- Added "orders" and "order-detail" to AdminPanel type
+- Added selectedOrderId state and handleViewOrder/handleBackToOrders callbacks
+- Updated handleViewChange to reset selectedOrderId
+- Updated sidebar view mapping: order-detail → "orders" for sidebar highlight
+- Imported OrdersTable, OrderDetail, TrackOrderPage
+- Added Orders panel and OrderDetail panel to admin rendering
+- Replaced track-order placeholder with TrackOrderPage component
+- Updated AdminSidebar: added "Orders" with ClipboardList icon as first nav item
+
+Stage Summary:
+- Admin sidebar: Orders → Products → Categories → Tags
+- Storefront: Track Order page fully functional (was placeholder)
+- State machine: orders list → order detail → back to orders
+
+---
+Task ID: 5-f
+Agent: Main Agent
+Task: Phase 5 — Testing & Verification
+
+Work Log:
+- Lint passes clean with zero errors
+- Verified via curl:
+  - GET /api/orders/track (correct email) → 200 with full order data, items, address with State
+  - GET /api/orders/track (wrong email) → 404 Order not found
+  - GET /api/orders/guest-history → 200 with orders list and item counts
+  - GET /api/admin/orders (no auth) → 401 Unauthorized
+- Page compilation verified (200 OK for homepage after clean .next)
+- Total files created in Phase 5: 7 API routes + 3 UI components + 2 modified files (page.tsx, admin-sidebar.tsx, signup/route.ts) = 12 operations
+
+Stage Summary:
+- Phase 5 (Order Management & Tracking) is fully complete
+- 7 backend API routes: guest tracking (rate limited), guest history, admin list/detail/status/verify-cod/return
+- Guest-to-registered account linking in signup route
+- 3 frontend components: track order page, admin orders table, admin order detail
+- Admin sidebar updated with Orders as first navigation item
+- All Phase 1-4 functionality preserved
+- Zero lint errors

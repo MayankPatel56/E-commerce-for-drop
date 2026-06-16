@@ -31,6 +31,8 @@ import { ProductForm } from "@/components/admin/product-form";
 import { VariantManager } from "@/components/admin/variant-manager";
 import { CategoriesManager } from "@/components/admin/categories-manager";
 import { TagsManager } from "@/components/admin/tags-manager";
+import { OrdersTable } from "@/components/admin/orders-table";
+import { OrderDetail } from "@/components/admin/order-detail";
 
 import { StoreHeader } from "@/components/store/store-header";
 import StorefrontHomepage from "@/components/store/storefront-homepage";
@@ -39,6 +41,7 @@ import ProductDetail from "@/components/store/product-detail";
 import { CartDrawer } from "@/components/store/cart-drawer";
 import { CheckoutPage } from "@/components/store/checkout-page";
 import { OrderConfirmation } from "@/components/store/order-confirmation";
+import { TrackOrderPage } from "@/components/store/track-order-page";
 import { useCart } from "@/context/cart-context";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -56,6 +59,8 @@ type AppView =
   | "admin";
 
 type AdminPanel =
+  | "orders"
+  | "order-detail"
   | "products"
   | "categories"
   | "tags"
@@ -105,6 +110,7 @@ export default function HomePage() {
   const [adminPanel, setAdminPanel] = useState<AdminPanel>("products");
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [variantProductId, setVariantProductId] = useState<number | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Login form
@@ -322,6 +328,7 @@ export default function HomePage() {
     setEditingProductId(null);
     setVariantProductId(null);
     setAdminPanel(view as AdminPanel);
+    setSelectedOrderId(null);
   }, []);
 
   const handleEditProduct = useCallback((id: number) => {
@@ -351,6 +358,19 @@ export default function HomePage() {
   }, []);
 
   const triggerRefresh = useCallback(() => {
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  // ─── Admin Order Handlers ──────────────────────────────────────────────
+
+  const handleViewOrder = useCallback((orderId: number) => {
+    setSelectedOrderId(orderId);
+    setAdminPanel("order-detail");
+  }, []);
+
+  const handleBackToOrders = useCallback(() => {
+    setSelectedOrderId(null);
+    setAdminPanel("orders");
     setRefreshKey((k) => k + 1);
   }, []);
 
@@ -530,19 +550,8 @@ export default function HomePage() {
           </div>
         )}
         {appView === "track-order" && (
-          <div className="max-w-lg mx-auto px-4 py-16 text-center">
-            <Store className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Track Your Order</h2>
-            <p className="text-muted-foreground">
-              Order tracking will be available in a future update. Please contact us for order updates.
-            </p>
-            <Button
-              variant="outline"
-              className="mt-6"
-              onClick={() => handleNavigate("home")}
-            >
-              Back to Home
-            </Button>
+          <div className="pt-4">
+            <TrackOrderPage onNavigate={handleNavigate} />
           </div>
         )}
       </main>
@@ -568,7 +577,7 @@ export default function HomePage() {
   // ─── Render: Admin Dashboard ─────────────────────────────────────────────
 
   const renderAdminPanel = () => {
-    const sidebarView = adminPanel === "product-edit" || adminPanel === "product-new" || adminPanel === "product-variants" ? "products" : adminPanel;
+    const sidebarView = adminPanel === "product-edit" || adminPanel === "product-new" || adminPanel === "product-variants" ? "products" : adminPanel === "order-detail" ? "orders" : adminPanel;
 
     return (
       <div className="min-h-screen flex bg-muted/30">
@@ -589,6 +598,8 @@ export default function HomePage() {
               {adminPanel === "product-edit" ? "Edit Product" :
                adminPanel === "product-new" ? "New Product" :
                adminPanel === "product-variants" ? "Manage Variants" :
+               adminPanel === "orders" ? "Orders" :
+               adminPanel === "order-detail" ? "Order Detail" :
                adminPanel === "products" ? "Products" :
                adminPanel === "categories" ? "Categories" :
                "Tags"}
@@ -605,6 +616,21 @@ export default function HomePage() {
 
           {/* Panel content */}
           <main className="flex-1 p-4 sm:p-6 overflow-auto">
+            {adminPanel === "orders" && (
+              <OrdersTable
+                key={refreshKey}
+                onViewOrder={handleViewOrder}
+                onRefresh={triggerRefresh}
+              />
+            )}
+            {adminPanel === "order-detail" && selectedOrderId != null && (
+              <OrderDetail
+                key={selectedOrderId}
+                orderId={selectedOrderId}
+                onBack={handleBackToOrders}
+                onRefresh={triggerRefresh}
+              />
+            )}
             {adminPanel === "products" && (
               <ProductsTable
                 key={refreshKey}

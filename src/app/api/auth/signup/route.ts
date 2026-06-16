@@ -27,9 +27,10 @@ export async function POST(req: NextRequest) {
     }
 
     const { name, email, password, phone } = parsed.data;
+    const normalizedEmail = email.toLowerCase().trim();
 
-    // Check if email already exists
-    const existingUser = await db.user.findUnique({ where: { email } });
+    // Check if email already exists as a registered User
+    const existingUser = await db.user.findUnique({ where: { email: normalizedEmail } });
     if (existingUser) {
       return NextResponse.json(
         { error: "An account with this email already exists" },
@@ -40,15 +41,73 @@ export async function POST(req: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create User (auth layer) + Customer (business layer) in transaction
+    // Check if there's a guest Customer with this email (for account linking)
+    const guestCustomer = await db.customer.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    let linkedOrders = 0;
+
+    if (guestCustomer && !guestCustomer.isRegistered) {
+      // Guest-to-registered account linking (Phase 5)
+      // 1. Delete the old guest User (placeholder password) and Customer
+      // 2. Create new User with real password, reusing the same Customer ID
+      const guestUserId = guestCustomer.id;
+
+      await db.$transaction(async (tx) => {
+        // Delete the placeholder User
+        await tx.user.delete({ where: { id: guestUserId } });
+
+        // Create new User with the same ID (so the existing Customer relation stays intact)
+        await tx.user.create({
+          data: {
+            id: guestUserId,
+            email: normalizedEmail,
+            name,
+            password: hashedPassword,
+          },
+        });
+
+        // Update the Customer to registered status
+        await tx.customer.update({
+          where: { id: guestUserId },
+          data: {
+            name,
+            phone,
+            isRegistered: true,
+          },
+        });
+
+        // Count linked orders
+        linkedOrders = await tx.order.count({
+          where: { customerId: guestUserId },
+        });
+      });
+
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: guestCustomer.id,
+          email: normalizedEmail,
+          name,
+          role: "customer",
+        },
+        message: linkedOrders > 0
+          ? `Account created successfully. ${linkedOrders} existing order(s) linked to your account.`
+          : "Account created successfully. Please sign in.",
+        linkedOrders,
+      });
+    }
+
+    // Normal registration: no existing guest account
     const user = await db.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         name,
         customer: {
           create: {
-            email,
+            email: normalizedEmail,
             name,
             phone,
             role: "customer",

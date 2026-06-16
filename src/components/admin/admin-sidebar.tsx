@@ -15,6 +15,7 @@ import {
   Package,
   FolderTree,
   Tag,
+  ClipboardList,
   LogOut,
   Menu,
   Store,
@@ -27,7 +28,7 @@ interface AdminSidebarProps {
 }
 
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "orders", label: "Orders", icon: ClipboardList },
   { id: "products", label: "Products", icon: Package },
   { id: "categories", label: "Categories", icon: FolderTree },
   { id: "tags", label: "Tags", icon: Tag },
