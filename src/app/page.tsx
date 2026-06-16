@@ -42,6 +42,11 @@ import { CartDrawer } from "@/components/store/cart-drawer";
 import { CheckoutPage } from "@/components/store/checkout-page";
 import { OrderConfirmation } from "@/components/store/order-confirmation";
 import { TrackOrderPage } from "@/components/store/track-order-page";
+import { CustomerDashboard } from "@/components/store/customer-dashboard";
+import { CustomerProfile } from "@/components/store/customer-profile";
+import { CustomerWishlist } from "@/components/store/customer-wishlist";
+import { CustomerReviews } from "@/components/store/customer-reviews";
+import { AdminReviewsTable } from "@/components/admin/admin-reviews-table";
 import { useCart } from "@/context/cart-context";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -56,7 +61,11 @@ type AppView =
   | "order-confirmation"
   | "login"
   | "signup"
-  | "admin";
+  | "admin"
+  | "customer-dashboard"
+  | "customer-profile"
+  | "customer-wishlist"
+  | "customer-reviews";
 
 type AdminPanel =
   | "orders"
@@ -64,6 +73,7 @@ type AdminPanel =
   | "products"
   | "categories"
   | "tags"
+  | "reviews"
   | "product-edit"
   | "product-new"
   | "product-variants";
@@ -193,6 +203,15 @@ export default function HomePage() {
     if (view === "checkout") {
       setOrderNumber(null);
       setAppView("checkout");
+      return;
+    }
+    // Customer views
+    if (view === "customer-dashboard" || view === "customer-profile" || view === "customer-wishlist" || view === "customer-reviews") {
+      if (!user) {
+        setShowLoginModal(true);
+        return;
+      }
+      setAppView(view as AppView);
       return;
     }
     // Default: home
@@ -525,6 +544,7 @@ export default function HomePage() {
               key={productSlug}
               slug={productSlug}
               onNavigate={handleNavigate}
+              isAuthenticated={!!user}
             />
           </div>
         )}
@@ -553,6 +573,22 @@ export default function HomePage() {
           <div className="pt-4">
             <TrackOrderPage onNavigate={handleNavigate} />
           </div>
+        )}
+        {appView === "customer-dashboard" && (
+          <div className="px-4 py-6">
+            <CustomerDashboard onNavigate={handleNavigate} />
+          </div>
+        )}
+        {appView === "customer-profile" && (
+          <div className="pt-4">
+            <CustomerProfile />
+          </div>
+        )}
+        {appView === "customer-wishlist" && (
+          <CustomerWishlist onNavigate={handleNavigate} />
+        )}
+        {appView === "customer-reviews" && (
+          <CustomerReviews onNavigate={handleNavigate} />
         )}
       </main>
 
@@ -602,6 +638,7 @@ export default function HomePage() {
                adminPanel === "order-detail" ? "Order Detail" :
                adminPanel === "products" ? "Products" :
                adminPanel === "categories" ? "Categories" :
+               adminPanel === "reviews" ? "Reviews" :
                "Tags"}
             </h1>
             <div className="ml-auto flex items-center gap-3">
@@ -616,6 +653,12 @@ export default function HomePage() {
 
           {/* Panel content */}
           <main className="flex-1 p-4 sm:p-6 overflow-auto">
+            {adminPanel === "reviews" && (
+              <AdminReviewsTable
+                key={refreshKey}
+                onRefresh={triggerRefresh}
+              />
+            )}
             {adminPanel === "orders" && (
               <OrdersTable
                 key={refreshKey}

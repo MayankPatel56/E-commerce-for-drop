@@ -19,6 +19,9 @@ import {
   LogOut,
   User,
   X,
+  LayoutDashboard,
+  Heart,
+  Star,
 } from "lucide-react";
 
 interface StoreHeaderProps {
@@ -35,6 +38,13 @@ const NAV_LINKS = [
   { id: "home", label: "Home" },
   { id: "shop", label: "Shop" },
   { id: "track-order", label: "Track Order" },
+] as const;
+
+const CUSTOMER_NAV_LINKS = [
+  { id: "customer-dashboard", label: "My Account", icon: LayoutDashboard },
+  { id: "customer-wishlist", label: "Wishlist", icon: Heart },
+  { id: "customer-reviews", label: "My Reviews", icon: Star },
+  { id: "customer-profile", label: "Profile", icon: User },
 ] as const;
 
 function MobileNav({
@@ -122,6 +132,20 @@ function MobileNav({
               <User className="h-4 w-4" />
               <span className="truncate">{userName ?? "Account"}</span>
             </div>
+            {CUSTOMER_NAV_LINKS.map((link) => {
+              const Icon = link.icon;
+              return (
+                <button
+                  key={link.id}
+                  type="button"
+                  onClick={() => handleNav(link.id)}
+                  className="flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] text-left text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span>{link.label}</span>
+                </button>
+              );
+            })}
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 min-h-[44px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
@@ -225,10 +249,15 @@ export function StoreHeader({
           <div className="hidden md:flex items-center gap-1">
             {isAuthenticated ? (
               <>
-                <span className="flex items-center gap-1.5 px-2 text-sm text-muted-foreground min-h-[44px]">
-                  <User className="h-4 w-4" />
-                  <span className="max-w-[120px] truncate">{userName}</span>
-                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="min-h-[44px] gap-1.5 px-2"
+                  onClick={() => onNavigate("customer-dashboard")}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span className="max-w-[100px] truncate text-xs">{userName}</span>
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"

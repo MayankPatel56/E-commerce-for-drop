@@ -21,7 +21,13 @@ import {
   Package,
   Check,
   Loader2,
+  PenSquare,
+  LogIn,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -72,6 +78,7 @@ interface Product {
 interface ProductDetailProps {
   slug: string;
   onNavigate: (view: string, data?: Record<string, unknown>) => void;
+  isAuthenticated?: boolean;
 }
 
 // ─── Helper ─────────────────────────────────────────────────────────────────
@@ -195,9 +202,179 @@ function ProductNotFound({ onNavigate }: { onNavigate: (view: string) => void })
   );
 }
 
+// ─── Review Form ────────────────────────────────────────────────────────────
+
+function ReviewForm({ productId, onSubmitted }: { productId: number; onSubmitted: () => void }) {
+  const [rating, setRating] = useState(0);
+  const [hoveredStar, setHoveredStar] = useState(0);
+  const [title, setTitle] = useState("");
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [eligibilityChecked, setEligibilityChecked] = useState(false);
+  const [eligible, setEligible] = useState(false);
+  const [ineligibleReason, setIneligibleReason] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    async function check() {
+      try {
+        const res = await fetch("/api/reviews/check-eligibility", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId }),
+        });
+        const data = await res.json();
+        setEligibilityChecked(true);
+        if (data.eligible) {
+          setEligible(true);
+        } else {
+          setEligible(false);
+          setIneligibleReason(data.reason || "You cannot review this product");
+        }
+      } catch {
+        setIneligibleReason("Failed to check eligibility");
+        setEligibilityChecked(true);
+      }
+    }
+    check();
+  }, [productId]);
+
+  const handleSubmit = async () => {
+    if (rating === 0) { setFormError("Please select a rating"); return; }
+    if (!comment.trim()) { setFormError("Please write a comment"); return; }
+    setFormError(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId,
+          rating,
+          title: title.trim() || undefined,
+          comment: comment.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFormError(data.error || "Failed to submit review");
+        return;
+      }
+      setSuccess(true);
+      setTimeout(() => onSubmitted(), 2000);
+    } catch {
+      setFormError("Failed to submit review");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!eligibilityChecked) {
+    return (
+      <div className="rounded-lg border p-6 flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!eligible) {
+    return (
+      <Alert variant="destructive" className="mb-4">
+        <AlertDescription>{ineligibleReason}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (success) {
+    return (
+      <Alert className="mb-4 border-green-200 bg-green-50">
+        <AlertDescription className="text-green-700">
+          Review submitted successfully! It will appear after admin approval.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4 mb-4">
+      <h3 className="text-base font-semibold">Write Your Review</h3>
+
+      {formError && (
+        <p className="text-sm text-destructive">{formError}</p>
+      )}
+
+      {/* Star rating */}
+      <div className="space-y-1.5">
+        <Label>Rating</Label>
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              className="p-0.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md hover:bg-yellow-50 transition-colors"
+              onMouseEnter={() => setHoveredStar(star)}
+              onMouseLeave={() => setHoveredStar(0)}
+              onClick={() => setRating(star)}
+              aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+            >
+              <Star
+                size={24}
+                className={
+                  star <= (hoveredStar || rating)
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "fill-muted text-muted"
+                }
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Title */}
+      <div className="space-y-1.5">
+        <Label htmlFor="review-title">Title (optional)</Label>
+        <Input
+          id="review-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Summarize your experience"
+          maxLength={100}
+        />
+      </div>
+
+      {/* Comment */}
+      <div className="space-y-1.5">
+        <Label htmlFor="review-comment">Comment</Label>
+        <Textarea
+          id="review-comment"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Tell us about your experience with this product..."
+          rows={4}
+          maxLength={1000}
+        />
+        <p className="text-xs text-muted-foreground text-right">
+          {comment.length}/1000
+        </p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Button onClick={handleSubmit} disabled={submitting} className="min-h-[44px]">
+          {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          {submitting ? "Submitting..." : "Submit Review"}
+        </Button>
+        <Button variant="ghost" onClick={onSubmitted} className="min-h-[44px]">
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────
 
-export default function ProductDetail({ slug, onNavigate }: ProductDetailProps) {
+export default function ProductDetail({ slug, onNavigate, isAuthenticated }: ProductDetailProps) {
   // ── State ──
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -217,6 +394,7 @@ export default function ProductDetail({ slug, onNavigate }: ProductDetailProps) 
     >
   >({});
   const [isAddingToCart, setIsAddingToCart] = useState<boolean>(false);
+  const [showReviewForm, setShowReviewForm] = useState<boolean>(false);
 
   const { addItem } = useCart();
 
@@ -639,9 +817,42 @@ export default function ProductDetail({ slug, onNavigate }: ProductDetailProps) 
       <Separator className="my-8 md:my-10" />
 
       <section className="space-y-6">
-        <h2 className="text-xl font-bold">
-          Customer Reviews ({product.reviewCount})
-        </h2>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h2 className="text-xl font-bold">
+            Customer Reviews ({product.reviewCount})
+          </h2>
+          {isAuthenticated ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-[44px] gap-1.5"
+              onClick={() => setShowReviewForm(true)}
+            >
+              <PenSquare className="h-4 w-4" />
+              Write a Review
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-[44px] gap-1.5"
+              onClick={() => onNavigate("login")}
+            >
+              <LogIn className="h-4 w-4" />
+              Login to Review
+            </Button>
+          )}
+        </div>
+
+        {/* Review Form (for authenticated users) */}
+        {showReviewForm && (
+          <ReviewForm
+            productId={product.id}
+            onSubmitted={() => {
+              setShowReviewForm(false);
+            }}
+          />
+        )}
 
         {product.reviews.length > 0 ? (
           <div className="space-y-4">

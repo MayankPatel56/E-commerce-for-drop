@@ -676,3 +676,48 @@ Stage Summary:
 - Admin sidebar updated with Orders as first navigation item
 - All Phase 1-4 functionality preserved
 - Zero lint errors
+
+---
+Task ID: 6
+Agent: Main Agent
+Task: Phase 6 — Customer Features & Reviews
+
+Work Log:
+- Read and analyzed Phase 6 requirements from implementation plan (pages 23-25)
+- Created customer auth helper at `/src/lib/customer-auth.ts` (requireCustomer, getCustomerSession)
+- Created 8 backend API routes:
+  - `GET/PUT /api/customer/profile` — Profile management with name, phone, address (with State), consent withdrawal
+  - `GET/POST /api/customer/wishlist` — Wishlist get/add with product validation
+  - `DELETE /api/customer/wishlist/[productId]` — Remove from wishlist
+  - `POST /api/reviews` — Submit review (purchase-validated, registered only, status=pending)
+  - `POST /api/reviews/check-eligibility` — Check if customer can review a product
+  - `PUT /api/reviews/[id]` — Edit review (own reviews only, status returns to pending)
+  - `GET /api/admin/reviews` — List reviews with filters, search, pagination, status counts
+  - `PATCH /api/admin/reviews/[id]/moderate` — Approve/reject/hide/delete with state machine validation
+- Created `GET /api/customer/dashboard` — Dashboard overview with recent orders, wishlist preview, pending review count
+- Created `GET /api/customer/reviews` — Customer's own reviews list
+- Review moderation state machine: pending→approved/rejected, approved→hidden, rejected→[], hidden→approved
+- Created 5 frontend components:
+  - `customer-dashboard.tsx` — Overview cards (orders, wishlist, pending reviews), recent orders table, wishlist preview grid
+  - `customer-profile.tsx` — Edit name, phone, address (street, city, state, pincode), consent withdrawal
+  - `customer-wishlist.tsx` — Grid of wishlisted products with remove and view product buttons
+  - `customer-reviews.tsx` — Review list with status badges, edit dialog with interactive star rating
+  - `admin-reviews-table.tsx` (in admin/) — Filter tabs with counts, search, table with status-dependent actions
+- Updated `product-detail.tsx` — Added ReviewForm component with eligibility check, star rating, title/comment, success state
+- Updated `store-header.tsx` — Added customer nav links (My Account, Wishlist, My Reviews, Profile) in mobile menu; desktop user button links to dashboard
+- Updated `admin-sidebar.tsx` — Added Reviews nav item with MessageSquare icon
+- Updated `page.tsx`:
+  - Added 4 new AppView types: customer-dashboard, customer-profile, customer-wishlist, customer-reviews
+  - Added "reviews" AdminPanel type
+  - Added customer view routing with auth check (redirects to login if not authenticated)
+  - Integrated all 4 customer components and AdminReviewsTable
+  - Passed isAuthenticated to ProductDetail for review form visibility
+- All 7 new API endpoints verified via curl (401 for unauthenticated — correct behavior)
+- Zero lint errors
+
+Stage Summary:
+- Phase 6 fully implemented: Customer Dashboard, Profile, Wishlist, Reviews, Admin Review Moderation
+- Purchase-validated review system with state machine moderation
+- All endpoints properly authenticated via NextAuth session
+- No password_hash exposed in any customer response
+- Review form on product detail checks eligibility before showing

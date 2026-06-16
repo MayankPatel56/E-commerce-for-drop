@@ -16,6 +16,7 @@ import {
   FolderTree,
   Tag,
   ClipboardList,
+  MessageSquare,
   LogOut,
   Menu,
   Store,
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { id: "products", label: "Products", icon: Package },
   { id: "categories", label: "Categories", icon: FolderTree },
   { id: "tags", label: "Tags", icon: Tag },
+  { id: "reviews", label: "Reviews", icon: MessageSquare },
 ] as const;
 
 function NavContent({
