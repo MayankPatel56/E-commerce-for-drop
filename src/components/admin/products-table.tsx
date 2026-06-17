@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -340,9 +341,11 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
                       <div className="flex items-center gap-3">
                         {product.primaryImage ? (
                           <div className="h-9 w-9 rounded-md overflow-hidden bg-muted shrink-0">
-                            <img
+                            <Image
                               src={product.primaryImage}
                               alt={product.name}
+                              width={36}
+                              height={36}
                               className="h-full w-full object-cover"
                             />
                           </div>

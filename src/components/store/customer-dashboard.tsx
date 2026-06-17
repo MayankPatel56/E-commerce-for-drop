@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -422,9 +423,11 @@ export function CustomerDashboard({
                 aria-label={item.product.name}
               >
                 <div className="aspect-square overflow-hidden bg-muted">
-                  <img
+                  <Image
                     src={item.product.primaryImage}
                     alt={item.product.name}
+                    width={400}
+                    height={400}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>

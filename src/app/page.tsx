@@ -25,14 +25,69 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
-import { ProductsTable } from "@/components/admin/products-table";
-import { ProductForm } from "@/components/admin/product-form";
-import { VariantManager } from "@/components/admin/variant-manager";
-import { CategoriesManager } from "@/components/admin/categories-manager";
-import { TagsManager } from "@/components/admin/tags-manager";
-import { OrdersTable } from "@/components/admin/orders-table";
-import { OrderDetail } from "@/components/admin/order-detail";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const AdminSidebar = dynamic(
+  () => import("@/components/admin/admin-sidebar").then((mod) => ({ default: mod.AdminSidebar })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const ProductsTable = dynamic(
+  () => import("@/components/admin/products-table").then((mod) => ({ default: mod.ProductsTable })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const ProductForm = dynamic(
+  () => import("@/components/admin/product-form").then((mod) => ({ default: mod.ProductForm })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const VariantManager = dynamic(
+  () => import("@/components/admin/variant-manager").then((mod) => ({ default: mod.VariantManager })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const CategoriesManager = dynamic(
+  () => import("@/components/admin/categories-manager").then((mod) => ({ default: mod.CategoriesManager })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const TagsManager = dynamic(
+  () => import("@/components/admin/tags-manager").then((mod) => ({ default: mod.TagsManager })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const OrdersTable = dynamic(
+  () => import("@/components/admin/orders-table").then((mod) => ({ default: mod.OrdersTable })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const OrderDetail = dynamic(
+  () => import("@/components/admin/order-detail").then((mod) => ({ default: mod.OrderDetail })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const AdminReviewsTable = dynamic(
+  () => import("@/components/admin/admin-reviews-table").then((mod) => ({ default: mod.AdminReviewsTable })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const AdminDashboard = dynamic(
+  () => import("@/components/admin/admin-dashboard").then((mod) => ({ default: mod.AdminDashboard })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const AnalyticsDashboard = dynamic(
+  () => import("@/components/admin/analytics-dashboard").then((mod) => ({ default: mod.AnalyticsDashboard })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const HomepageEditor = dynamic(
+  () => import("@/components/admin/homepage-editor").then((mod) => ({ default: mod.HomepageEditor })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const FaqManager = dynamic(
+  () => import("@/components/admin/faq-manager").then((mod) => ({ default: mod.FaqManager })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const SettingsManager = dynamic(
+  () => import("@/components/admin/settings-manager").then((mod) => ({ default: mod.SettingsManager })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const CustomersTable = dynamic(
+  () => import("@/components/admin/customers-table").then((mod) => ({ default: mod.CustomersTable })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
 
 import { StoreHeader } from "@/components/store/store-header";
 import StorefrontHomepage from "@/components/store/storefront-homepage";
@@ -47,13 +102,6 @@ import { CustomerProfile } from "@/components/store/customer-profile";
 import { CustomerWishlist } from "@/components/store/customer-wishlist";
 import { CustomerReviews } from "@/components/store/customer-reviews";
 import { CustomerOrders } from "@/components/store/customer-orders";
-import { AdminReviewsTable } from "@/components/admin/admin-reviews-table";
-import { AdminDashboard } from "@/components/admin/admin-dashboard";
-import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard";
-import { HomepageEditor } from "@/components/admin/homepage-editor";
-import { FaqManager } from "@/components/admin/faq-manager";
-import { SettingsManager } from "@/components/admin/settings-manager";
-import { CustomersTable } from "@/components/admin/customers-table";
 import { useCart } from "@/context/cart-context";
 import {
   PrivacyPolicyPage,

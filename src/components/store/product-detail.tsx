@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Image from "next/image";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -587,10 +588,13 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
           {/* Main image */}
           <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-muted">
             {mainImage ? (
-              <img
+              <Image
                 src={mainImage}
                 alt={product.name}
+                width={800}
+                height={800}
                 className="size-full object-cover transition-opacity"
+                priority
               />
             ) : (
               <div className="flex size-full items-center justify-center">
@@ -613,9 +617,11 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                       : "border-transparent hover:border-muted-foreground/30"
                   }`}
                 >
-                  <img
+                  <Image
                     src={img}
                     alt={`${product.name} image ${idx + 1}`}
+                    width={64}
+                    height={64}
                     className="size-full object-cover"
                   />
                 </button>

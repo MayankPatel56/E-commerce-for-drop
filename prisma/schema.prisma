@@ -218,6 +218,7 @@ model Review {
   @@index([customerId], map: "idx_reviews_customer_id")
   @@index([status], map: "idx_reviews_status")
   @@index([productId, status], map: "idx_reviews_product_status")
+  // idx_reviews_pending: partial index (createdAt WHERE status = 'pending') — exists in DB, not in Prisma
 }
 
 /// Wishlist table

@@ -1,0 +1,824 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useState, useEffect, useCallback } from "react";
+     4→     4→import { signIn, signOut } from "next-auth/react";
+     5→     5→import { useRouter, useSearchParams } from "next/navigation";
+     6→     6→import {
+     7→     7→  Card,
+     8→     8→  CardContent,
+     9→     9→  CardDescription,
+    10→    10→  CardFooter,
+    11→    11→  CardHeader,
+    12→    12→  CardTitle,
+    13→    13→} from "@/components/ui/card";
+    14→    14→import { Input } from "@/components/ui/input";
+    15→    15→import { Label } from "@/components/ui/label";
+    16→    16→import { Button } from "@/components/ui/button";
+    17→    17→import { Alert, AlertDescription } from "@/components/ui/alert";
+    18→    18→import { Separator } from "@/components/ui/separator";
+    19→    19→import {
+    20→    20→  Eye,
+    21→    21→  EyeOff,
+    22→    22→  Loader2,
+    23→    23→  ShieldCheck,
+    24→    24→  Store,
+    25→    25→  AlertTriangle,
+    26→    26→} from "lucide-react";
+    27→    27→
+    28→    28→import { AdminSidebar } from "@/components/admin/admin-sidebar";
+    29→    29→import { ProductsTable } from "@/components/admin/products-table";
+    30→    30→import { ProductForm } from "@/components/admin/product-form";
+    31→    31→import { VariantManager } from "@/components/admin/variant-manager";
+    32→    32→import { CategoriesManager } from "@/components/admin/categories-manager";
+    33→    33→import { TagsManager } from "@/components/admin/tags-manager";
+    34→    34→import { OrdersTable } from "@/components/admin/orders-table";
+    35→    35→import { OrderDetail } from "@/components/admin/order-detail";
+    36→    36→
+    37→    37→import { StoreHeader } from "@/components/store/store-header";
+    38→    38→import StorefrontHomepage from "@/components/store/storefront-homepage";
+    39→    39→import { ProductListing } from "@/components/store/product-listing";
+    40→    40→import ProductDetail from "@/components/store/product-detail";
+    41→    41→import { CartDrawer } from "@/components/store/cart-drawer";
+    42→    42→import { CheckoutPage } from "@/components/store/checkout-page";
+    43→    43→import { OrderConfirmation } from "@/components/store/order-confirmation";
+    44→    44→import { TrackOrderPage } from "@/components/store/track-order-page";
+    45→    45→import { CustomerDashboard } from "@/components/store/customer-dashboard";
+    46→    46→import { CustomerProfile } from "@/components/store/customer-profile";
+    47→    47→import { CustomerWishlist } from "@/components/store/customer-wishlist";
+    48→    48→import { CustomerReviews } from "@/components/store/customer-reviews";
+    49→    49→import { CustomerOrders } from "@/components/store/customer-orders";
+    50→    50→import { AdminReviewsTable } from "@/components/admin/admin-reviews-table";
+    51→    51→import { AdminDashboard } from "@/components/admin/admin-dashboard";
+    52→    52→import { AnalyticsDashboard } from "@/components/admin/analytics-dashboard";
+    53→    53→import { HomepageEditor } from "@/components/admin/homepage-editor";
+    54→    54→import { FaqManager } from "@/components/admin/faq-manager";
+    55→    55→import { SettingsManager } from "@/components/admin/settings-manager";
+    56→    56→import { CustomersTable } from "@/components/admin/customers-table";
+    57→    57→import { useCart } from "@/context/cart-context";
+    58→    58→import {
+    59→    59→  PrivacyPolicyPage,
+    60→    60→  TermsPage,
+    61→    61→  ReturnPolicyPage,
+    62→    62→  AboutPage,
+    63→    63→  ContactPage,
+    64→    64→  FaqPage,
+    65→    65→} from "@/components/store/compliance-pages";
+    66→    66→
+    67→    67→// ─── Types ──────────────────────────────────────────────────────────────────
+    68→    68→
+    69→    69→type AppView =
+    70→    70→  | "home"
+    71→    71→  | "shop"
+    72→    72→  | "product"
+    73→    73→  | "search"
+    74→    74→  | "track-order"
+    75→    75→  | "checkout"
+    76→    76→  | "order-confirmation"
+    77→    77→  | "login"
+    78→    78→  | "signup"
+    79→    79→  | "admin"
+    80→    80→  | "customer-dashboard"
+    81→    81→  | "customer-profile"
+    82→    82→  | "customer-wishlist"
+    83→    83→  | "customer-orders"
+    84→    84→  | "customer-reviews"
+    85→    85→  | "privacy"
+    86→    86→  | "terms"
+    87→    87→  | "returns"
+    88→    88→  | "about"
+    89→    89→  | "contact"
+    90→    90→  | "faq";
+    91→    91→
+    92→    92→type AdminPanel =
+    93→    93→  | "dashboard"
+    94→    94→  | "orders"
+    95→    95→  | "order-detail"
+    96→    96→  | "products"
+    97→    97→  | "categories"
+    98→    98→  | "tags"
+    99→    99→  | "reviews"
+   100→   100→  | "product-edit"
+   101→   101→  | "product-new"
+   102→   102→  | "product-variants"
+   103→   103→  | "homepage"
+   104→   104→  | "faq"
+   105→   105→  | "settings"
+   106→   106→  | "analytics"
+   107→   107→  | "customers";
+   108→   108→
+   109→   109→interface UserInfo {
+   110→   110→  id: string;
+   111→   111→  email: string;
+   112→   112→  name: string;
+   113→   113→  role: string;
+   114→   114→}
+   115→   115→
+   116→   116→interface FormErrors {
+   117→   117→  email?: string;
+   118→   118→  password?: string;
+   119→   119→  name?: string;
+   120→   120→  phone?: string;
+   121→   121→  general?: string;
+   122→   122→}
+   123→   123→
+   124→   124→// ─── Page Component ─────────────────────────────────────────────────────────
+   125→   125→
+   126→   126→export default function HomePage() {
+   127→   127→  const router = useRouter();
+   128→   128→  const searchParams = useSearchParams();
+   129→   129→  const errorParam = searchParams.get("error");
+   130→   130→
+   131→   131→  // Navigation state
+   132→   132→  const [appView, setAppView] = useState<AppView>("home");
+   133→   133→  const [productSlug, setProductSlug] = useState<string | null>(null);
+   134→   134→  const [initialCategory, setInitialCategory] = useState<string | undefined>();
+   135→   135→
+   136→   136→  // Auth state
+   137→   137→  const [user, setUser] = useState<UserInfo | null>(null);
+   138→   138→  const [showLoginModal, setShowLoginModal] = useState(false);
+   139→   139→
+   140→   140→  // Cart drawer state
+   141→   141→  const [cartOpen, setCartOpen] = useState(false);
+   142→   142→  const { totalItems } = useCart();
+   143→   143→
+   144→   144→  // Checkout state
+   145→   145→  const [orderNumber, setOrderNumber] = useState<string | null>(null);
+   146→   146→
+   147→   147→  // Admin state
+   148→   148→  const [adminPanel, setAdminPanel] = useState<AdminPanel>("dashboard");
+   149→   149→  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+   150→   150→  const [variantProductId, setVariantProductId] = useState<number | null>(null);
+   151→   151→  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+   152→   152→  const [refreshKey, setRefreshKey] = useState(0);
+   153→   153→
+   154→   154→  // Login form
+   155→   155→  const [loginEmail, setLoginEmail] = useState("");
+   156→   156→  const [loginPassword, setLoginPassword] = useState("");
+   157→   157→
+   158→   158→  // Signup form
+   159→   159→  const [signupName, setSignupName] = useState("");
+   160→   160→  const [signupEmail, setSignupEmail] = useState("");
+   161→   161→  const [signupPassword, setSignupPassword] = useState("");
+   162→   162→  const [signupPhone, setSignupPhone] = useState("");
+   163→   163→
+   164→   164→  // Shared UI state
+   165→   165→  const [showPassword, setShowPassword] = useState(false);
+   166→   166→  const [isLoading, setIsLoading] = useState(false);
+   167→   167→  const [formErrors, setFormErrors] = useState<FormErrors>({});
+   168→   168→  const [lockoutInfo, setLockoutInfo] = useState<{ locked: boolean; remainingMinutes: number } | null>(null);
+   169→   169→  const [generalError, setGeneralError] = useState<string | null>(null);
+   170→   170→
+   171→   171→  // Check session on mount
+   172→   172→  useEffect(() => {
+   173→   173→    checkSession();
+   174→   174→    if (errorParam === "access_denied") {
+   175→   175→      setGeneralError("You do not have permission to access that page.");
+   176→   176→    }
+   177→   177→  }, [errorParam]);
+   178→   178→
+   179→   179→  const checkSession = async () => {
+   180→   180→    try {
+   181→   181→      const res = await fetch("/api/auth/session");
+   182→   182→      const data = await res.json();
+   183→   183→      if (data.authenticated && data.user) {
+   184→   184→        setUser(data.user as UserInfo);
+   185→   185→        if (data.user.role === "admin") {
+   186→   186→          setAppView("admin");
+   187→   187→        }
+   188→   188→      }
+   189→   189→    } catch {
+   190→   190→      // Not authenticated
+   191→   191→    }
+   192→   192→  };
+   193→   193→
+   194→   194→  // ─── Navigation Handler ─────────────────────────────────────────────────
+   195→   195→
+   196→   196→  const handleNavigate = useCallback((view: string, data?: Record<string, unknown>) => {
+   197→   197→    window.scrollTo(0, 0);
+   198→   198→    if (view === "admin") {
+   199→   199→      // Only admin can go to admin
+   200→   200→      if (user?.role === "admin") {
+   201→   201→        setAppView("admin");
+   202→   202→      }
+   203→   203→      return;
+   204→   204→    }
+   205→   205→    if (view === "login") {
+   206→   206→      if (user) return; // Already logged in
+   207→   207→      setShowLoginModal(true);
+   208→   208→      return;
+   209→   209→    }
+   210→   210→    if (view === "product") {
+   211→   211→      const slug = data?.slug as string;
+   212→   212→      if (slug) {
+   213→   213→        setProductSlug(slug);
+   214→   214→        setAppView("product");
+   215→   215→      }
+   216→   216→      return;
+   217→   217→    }
+   218→   218→    if (view === "shop") {
+   219→   219→      setInitialCategory(data?.category as string | undefined);
+   220→   220→      setAppView("shop");
+   221→   221→      return;
+   222→   222→    }
+   223→   223→    if (view === "search") {
+   224→   224→      setAppView("search");
+   225→   225→      return;
+   226→   226→    }
+   227→   227→    if (view === "track-order") {
+   228→   228→      setAppView("track-order");
+   229→   229→      return;
+   230→   230→    }
+   231→   231→    if (view === "checkout") {
+   232→   232→      setOrderNumber(null);
+   233→   233→      setAppView("checkout");
+   234→   234→      return;
+   235→   235→    }
+   236→   236→    // Customer views
+   237→   237→    if (view === "customer-dashboard" || view === "customer-profile" || view === "customer-wishlist" || view === "customer-reviews" || view === "customer-orders") {
+   238→   238→      if (!user) {
+   239→   239→        setShowLoginModal(true);
+   240→   240→        return;
+   241→   241→      }
+   242→   242→      setAppView(view as AppView);
+   243→   243→      return;
+   244→   244→    }
+   245→   245→    // Default: home
+   246→   246→    setAppView(view as AppView);
+   247→   247→  }, [user]);
+   248→   248→
+   249→   249→  // ─── Auth Handlers ──────────────────────────────────────────────────────
+   250→   250→
+   251→   251→  const validateLogin = (): boolean => {
+   252→   252→    const errors: FormErrors = {};
+   253→   253→    if (!loginEmail.trim()) errors.email = "Email is required";
+   254→   254→    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail))
+   255→   255→      errors.email = "Enter a valid email address";
+   256→   256→    if (!loginPassword) errors.password = "Password is required";
+   257→   257→    setFormErrors(errors);
+   258→   258→    return Object.keys(errors).length === 0;
+   259→   259→  };
+   260→   260→
+   261→   261→  const validateSignup = (): boolean => {
+   262→   262→    const errors: FormErrors = {};
+   263→   263→    if (!signupName.trim()) errors.name = "Name is required";
+   264→   264→    else if (signupName.trim().length < 2) errors.name = "Name must be at least 2 characters";
+   265→   265→    if (!signupEmail.trim()) errors.email = "Email is required";
+   266→   266→    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupEmail))
+   267→   267→      errors.email = "Enter a valid email address";
+   268→   268→    if (!signupPassword) errors.password = "Password is required";
+   269→   269→    else if (signupPassword.length < 8) errors.password = "Password must be at least 8 characters";
+   270→   270→    if (!signupPhone.trim()) errors.phone = "Phone number is required";
+   271→   271→    else if (!/^[0-9]{10}$/.test(signupPhone.trim()))
+   272→   272→      errors.phone = "Enter a valid 10-digit phone number";
+   273→   273→    setFormErrors(errors);
+   274→   274→    return Object.keys(errors).length === 0;
+   275→   275→  };
+   276→   276→
+   277→   277→  const handleLogin = async (e: React.FormEvent) => {
+   278→   278→    e.preventDefault();
+   279→   279→    setGeneralError(null);
+   280→   280→    setLockoutInfo(null);
+   281→   281→    if (!validateLogin()) return;
+   282→   282→    setIsLoading(true);
+   283→   283→    try {
+   284→   284→      const result = await signIn("credentials", {
+   285→   285→        email: loginEmail.trim().toLowerCase(),
+   286→   286→        password: loginPassword,
+   287→   287→        redirect: false,
+   288→   288→      });
+   289→   289→      if (result?.error) {
+   290→   290→        if (result.error.includes("ACCOUNT_LOCKED")) {
+   291→   291→          const minutes = parseInt(result.error.split(":")[1]) || 15;
+   292→   292→          setLockoutInfo({ locked: true, remainingMinutes: minutes });
+   293→   293→          setGeneralError(
+   294→   294→            `Account locked due to too many failed attempts. Please try again in ${minutes} minutes.`
+   295→   295→          );
+   296→   296→        } else {
+   297→   297→          setGeneralError("Invalid email or password");
+   298→   298→        }
+   299→   299→      } else if (result?.ok) {
+   300→   300→        const sessionRes = await fetch("/api/auth/session");
+   301→   301→        const sessionData = await sessionRes.json();
+   302→   302→        if (sessionData.authenticated && sessionData.user) {
+   303→   303→          setUser(sessionData.user as UserInfo);
+   304→   304→          setShowLoginModal(false);
+   305→   305→          if (sessionData.user.role === "admin") {
+   306→   306→            setAppView("admin");
+   307→   307→          }
+   308→   308→        }
+   309→   309→      }
+   310→   310→    } catch {
+   311→   311→      setGeneralError("An unexpected error occurred. Please try again.");
+   312→   312→    } finally {
+   313→   313→      setIsLoading(false);
+   314→   314→    }
+   315→   315→  };
+   316→   316→
+   317→   317→  const handleSignup = async (e: React.FormEvent) => {
+   318→   318→    e.preventDefault();
+   319→   319→    setGeneralError(null);
+   320→   320→    if (!validateSignup()) return;
+   321→   321→    setIsLoading(true);
+   322→   322→    try {
+   323→   323→      const res = await fetch("/api/auth/signup", {
+   324→   324→        method: "POST",
+   325→   325→        headers: { "Content-Type": "application/json" },
+   326→   326→        body: JSON.stringify({
+   327→   327→          name: signupName.trim(),
+   328→   328→          email: signupEmail.trim().toLowerCase(),
+   329→   329→          password: signupPassword,
+   330→   330→          phone: signupPhone.trim(),
+   331→   331→        }),
+   332→   332→      });
+   333→   333→      const data = await res.json();
+   334→   334→      if (!res.ok) {
+   335→   335→        setGeneralError(data.error || "Signup failed");
+   336→   336→        return;
+   337→   337→      }
+   338→   338→      // Auto-signin
+   339→   339→      const result = await signIn("credentials", {
+   340→   340→        email: signupEmail.trim().toLowerCase(),
+   341→   341→        password: signupPassword,
+   342→   342→        redirect: false,
+   343→   343→      });
+   344→   344→      if (result?.ok) {
+   345→   345→        const sessionRes = await fetch("/api/auth/session");
+   346→   346→        const sessionData = await sessionRes.json();
+   347→   347→        if (sessionData.authenticated) {
+   348→   348→          setUser(sessionData.user as UserInfo);
+   349→   349→        }
+   350→   350→      }
+   351→   351→      setShowLoginModal(false);
+   352→   352→      setLoginEmail(signupEmail);
+   353→   353→    } catch {
+   354→   354→      setGeneralError("An unexpected error occurred. Please try again.");
+   355→   355→    } finally {
+   356→   356→      setIsLoading(false);
+   357→   357→    }
+   358→   358→  };
+   359→   359→
+   360→   360→  const handleLogout = async () => {
+   361→   361→    await signOut({ redirect: false });
+   362→   362→    setUser(null);
+   363→   363→    setAppView("home");
+   364→   364→    setAdminPanel("products");
+   365→   365→    setEditingProductId(null);
+   366→   366→    setVariantProductId(null);
+   367→   367→    setLoginEmail("");
+   368→   368→    setLoginPassword("");
+   369→   369→    setShowLoginModal(false);
+   370→   370→  };
+   371→   371→
+   372→   372→  // ─── Admin Panel Handlers ────────────────────────────────────────────────
+   373→   373→
+   374→   374→  const handleViewChange = useCallback((view: string) => {
+   375→   375→    setEditingProductId(null);
+   376→   376→    setVariantProductId(null);
+   377→   377→    setAdminPanel(view as AdminPanel);
+   378→   378→    setSelectedOrderId(null);
+   379→   379→  }, []);
+   380→   380→
+   381→   381→  const handleEditProduct = useCallback((id: number) => {
+   382→   382→    setEditingProductId(id);
+   383→   383→    setAdminPanel("product-edit");
+   384→   384→  }, []);
+   385→   385→
+   386→   386→  const handleCreateProduct = useCallback(() => {
+   387→   387→    setEditingProductId(null);
+   388→   388→    setAdminPanel("product-new");
+   389→   389→  }, []);
+   390→   390→
+   391→   391→  const handleManageVariants = useCallback((id: number) => {
+   392→   392→    setVariantProductId(id);
+   393→   393→    setAdminPanel("product-variants");
+   394→   394→  }, []);
+   395→   395→
+   396→   396→  const handleFormSuccess = useCallback(() => {
+   397→   397→    setAdminPanel("products");
+   398→   398→    setEditingProductId(null);
+   399→   399→    setRefreshKey((k) => k + 1);
+   400→   400→  }, []);
+   401→   401→
+   402→   402→  const handleFormCancel = useCallback(() => {
+   403→   403→    setAdminPanel("products");
+   404→   404→    setEditingProductId(null);
+   405→   405→  }, []);
+   406→   406→
+   407→   407→  const triggerRefresh = useCallback(() => {
+   408→   408→    setRefreshKey((k) => k + 1);
+   409→   409→  }, []);
+   410→   410→
+   411→   411→  // ─── Admin Order Handlers ──────────────────────────────────────────────
+   412→   412→
+   413→   413→  const handleViewOrder = useCallback((orderId: number) => {
+   414→   414→    setSelectedOrderId(orderId);
+   415→   415→    setAdminPanel("order-detail");
+   416→   416→  }, []);
+   417→   417→
+   418→   418→  const handleBackToOrders = useCallback(() => {
+   419→   419→    setSelectedOrderId(null);
+   420→   420→    setAdminPanel("orders");
+   421→   421→    setRefreshKey((k) => k + 1);
+   422→   422→  }, []);
+   423→   423→
+   424→   424→  // ─── Checkout Handlers ────────────────────────────────────────────────────
+   425→   425→
+   426→   426→  const handleOrderSuccess = useCallback((successOrderNumber: string) => {
+   427→   427→    setOrderNumber(successOrderNumber);
+   428→   428→    setAppView("order-confirmation");
+   429→   429→  }, []);
+   430→   430→
+   431→   431→  // ─── Render: Login / Signup Modal ───────────────────────────────────────
+   432→   432→
+   433→   433→  const renderLoginModal = () => {
+   434→   434→    if (!showLoginModal) return null;
+   435→   435→
+   436→   436→    return (
+   437→   437→      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+   438→   438→        {/* Backdrop */}
+   439→   439→        <div
+   440→   440→          className="absolute inset-0 bg-black/50"
+   441→   441→          onClick={() => { setShowLoginModal(false); setFormErrors({}); setGeneralError(null); setLockoutInfo(null); }}
+   442→   442→        />
+   443→   443→        {/* Modal */}
+   444→   444→        <Card className="relative w-full max-w-md shadow-xl z-10">
+   445→   445→          <CardHeader className="text-center space-y-2 pb-4">
+   446→   446→            <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+   447→   447→              <ShieldCheck className="h-6 w-6 text-primary" />
+   448→   448→            </div>
+   449→   449→            <CardTitle className="text-2xl font-bold">
+   450→   450→              {appView === "login" ? "Welcome Back" : "Create Account"}
+   451→   451→            </CardTitle>
+   452→   452→            <CardDescription>
+   453→   453→              {appView === "login"
+   454→   454→                ? "Enter your credentials to access your account"
+   455→   455→                : "Join Indicore Originals today"}
+   456→   456→            </CardDescription>
+   457→   457→          </CardHeader>
+   458→   458→          <CardContent>
+   459→   459→            {lockoutInfo?.locked && (
+   460→   460→              <Alert variant="destructive" className="mb-4">
+   461→   461→                <AlertTriangle className="h-4 w-4" />
+   462→   462→                <AlertDescription>{generalError}</AlertDescription>
+   463→   463→              </Alert>
+   464→   464→            )}
+   465→   465→            {generalError && !lockoutInfo?.locked && (
+   466→   466→              <Alert variant="destructive" className="mb-4">
+   467→   467→                <AlertTriangle className="h-4 w-4" />
+   468→   468→                <AlertDescription>{generalError}</AlertDescription>
+   469→   469→              </Alert>
+   470→   470→            )}
+   471→   471→            {appView === "login" ? (
+   472→   472→              <form onSubmit={handleLogin} className="space-y-4">
+   473→   473→                <div className="space-y-2">
+   474→   474→                  <Label htmlFor="login-email">Email</Label>
+   475→   475→                  <Input id="login-email" type="email" placeholder="you@example.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} disabled={isLoading || !!lockoutInfo?.locked} autoComplete="email" autoFocus />
+   476→   476→                  {formErrors.email && <p className="text-sm text-destructive">{formErrors.email}</p>}
+   477→   477→                </div>
+   478→   478→                <div className="space-y-2">
+   479→   479→                  <Label htmlFor="login-password">Password</Label>
+   480→   480→                  <div className="relative">
+   481→   481→                    <Input id="login-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} disabled={isLoading || !!lockoutInfo?.locked} autoComplete="current-password" className="pr-10" />
+   482→   482→                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1} aria-label={showPassword ? "Hide password" : "Show password"}>
+   483→   483→                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+   484→   484→                    </button>
+   485→   485→                  </div>
+   486→   486→                  {formErrors.password && <p className="text-sm text-destructive">{formErrors.password}</p>}
+   487→   487→                </div>
+   488→   488→                <Button type="submit" className="w-full" disabled={isLoading || !!lockoutInfo?.locked}>
+   489→   489→                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</> : lockoutInfo?.locked ? `Locked — Try in ${lockoutInfo.remainingMinutes} min` : "Sign In"}
+   490→   490→                </Button>
+   491→   491→              </form>
+   492→   492→            ) : (
+   493→   493→              <form onSubmit={handleSignup} className="space-y-4">
+   494→   494→                <div className="space-y-2">
+   495→   495→                  <Label htmlFor="signup-name">Full Name</Label>
+   496→   496→                  <Input id="signup-name" type="text" placeholder="Rahul Sharma" value={signupName} onChange={(e) => setSignupName(e.target.value)} disabled={isLoading} autoComplete="name" autoFocus />
+   497→   497→                  {formErrors.name && <p className="text-sm text-destructive">{formErrors.name}</p>}
+   498→   498→                </div>
+   499→   499→                <div className="space-y-2">
+   500→   500→                  <Label htmlFor="signup-email">Email</Label>
+   501→   501→                  <Input id="signup-email" type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} disabled={isLoading} autoComplete="email" />
+   502→   502→                  {formErrors.email && <p className="text-sm text-destructive">{formErrors.email}</p>}
+   503→   503→                </div>
+   504→   504→                <div className="space-y-2">
+   505→   505→                  <Label htmlFor="signup-phone">Phone Number</Label>
+   506→   506→                  <Input id="signup-phone" type="tel" placeholder="9876543210" value={signupPhone} onChange={(e) => setSignupPhone(e.target.value)} disabled={isLoading} autoComplete="tel" maxLength={10} />
+   507→   507→                  {formErrors.phone && <p className="text-sm text-destructive">{formErrors.phone}</p>}
+   508→   508→                </div>
+   509→   509→                <div className="space-y-2">
+   510→   510→                  <Label htmlFor="signup-password">Password</Label>
+   511→   511→                  <div className="relative">
+   512→   512→                    <Input id="signup-password" type={showPassword ? "text" : "password"} placeholder="Min 8 characters" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} disabled={isLoading} autoComplete="new-password" className="pr-10" />
+   513→   513→                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1} aria-label={showPassword ? "Hide password" : "Show password"}>
+   514→   514→                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+   515→   515→                    </button>
+   516→   516→                  </div>
+   517→   517→                  {formErrors.password && <p className="text-sm text-destructive">{formErrors.password}</p>}
+   518→   518→                </div>
+   519→   519→                <Button type="submit" className="w-full" disabled={isLoading}>
+   520→   520→                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating account...</> : "Create Account"}
+   521→   521→                </Button>
+   522→   522→              </form>
+   523→   523→            )}
+   524→   524→          </CardContent>
+   525→   525→          <CardFooter className="flex flex-col gap-4">
+   526→   526→            <Separator />
+   527→   527→            <p className="text-sm text-muted-foreground text-center">
+   528→   528→              {appView === "login" ? (
+   529→   529→                <>Don&apos;t have an account?{" "}
+   530→   530→                  <button type="button" onClick={() => { setAppView("signup"); setFormErrors({}); setGeneralError(null); setLockoutInfo(null); }} className="text-primary font-medium hover:underline">Sign up</button></>
+   531→   531→              ) : (
+   532→   532→                <>Already have an account?{" "}
+   533→   533→                  <button type="button" onClick={() => { setAppView("login"); setFormErrors({}); setGeneralError(null); setLockoutInfo(null); }} className="text-primary font-medium hover:underline">Sign in</button></>
+   534→   534→              )}
+   535→   535→            </p>
+   536→   536→          </CardFooter>
+   537→   537→        </Card>
+   538→   538→      </div>
+   539→   539→    );
+   540→   540→  };
+   541→   541→
+   542→   542→  // ─── Render: Storefront Views ───────────────────────────────────────────
+   543→   543→
+   544→   544→  const renderStorefront = () => (
+   545→   545→    <div className="min-h-screen flex flex-col bg-background">
+   546→   546→      <StoreHeader
+   547→   547→        onNavigate={handleNavigate}
+   548→   548→        onOpenCart={() => setCartOpen(true)}
+   549→   549→        cartCount={totalItems}
+   550→   550→        onOpenLogin={() => { setAppView("login"); setShowLoginModal(true); setFormErrors({}); setGeneralError(null); setLockoutInfo(null); }}
+   551→   551→        isAuthenticated={!!user}
+   552→   552→        userName={user?.name}
+   553→   553→        onLogout={handleLogout}
+   554→   554→      />
+   555→   555→
+   556→   556→      <main className="flex-1">
+   557→   557→        {appView === "home" && (
+   558→   558→          <StorefrontHomepage onNavigate={handleNavigate} />
+   559→   559→        )}
+   560→   560→        {appView === "shop" && (
+   561→   561→          <div className="pt-4">
+   562→   562→            <ProductListing
+   563→   563→              key={`shop-${initialCategory || "all"}`}
+   564→   564→              initialCategory={initialCategory}
+   565→   565→              onNavigate={handleNavigate}
+   566→   566→            />
+   567→   567→          </div>
+   568→   568→        )}
+   569→   569→        {appView === "product" && productSlug && (
+   570→   570→          <div className="pt-4">
+   571→   571→            <ProductDetail
+   572→   572→              key={productSlug}
+   573→   573→              slug={productSlug}
+   574→   574→              onNavigate={handleNavigate}
+   575→   575→              isAuthenticated={!!user}
+   576→   576→            />
+   577→   577→          </div>
+   578→   578→        )}
+   579→   579→        {appView === "search" && (
+   580→   580→          <div className="pt-4">
+   581→   581→            <ProductListing onNavigate={handleNavigate} />
+   582→   582→          </div>
+   583→   583→        )}
+   584→   584→        {appView === "checkout" && (
+   585→   585→          <div className="pt-4">
+   586→   586→            <CheckoutPage
+   587→   587→              onOrderSuccess={handleOrderSuccess}
+   588→   588→              onNavigate={handleNavigate}
+   589→   589→            />
+   590→   590→          </div>
+   591→   591→        )}
+   592→   592→        {appView === "order-confirmation" && orderNumber && (
+   593→   593→          <div className="pt-4">
+   594→   594→            <OrderConfirmation
+   595→   595→              orderNumber={orderNumber}
+   596→   596→              onNavigate={handleNavigate}
+   597→   597→            />
+   598→   598→          </div>
+   599→   599→        )}
+   600→   600→        {appView === "track-order" && (
+   601→   601→          <div className="pt-4">
+   602→   602→            <TrackOrderPage onNavigate={handleNavigate} />
+   603→   603→          </div>
+   604→   604→        )}
+   605→   605→        {appView === "customer-dashboard" && (
+   606→   606→          <div className="px-4 py-6">
+   607→   607→            <CustomerDashboard onNavigate={handleNavigate} />
+   608→   608→          </div>
+   609→   609→        )}
+   610→   610→        {appView === "customer-profile" && (
+   611→   611→          <div className="pt-4">
+   612→   612→            <CustomerProfile />
+   613→   613→          </div>
+   614→   614→        )}
+   615→   615→        {appView === "customer-wishlist" && (
+   616→   616→          <CustomerWishlist onNavigate={handleNavigate} />
+   617→   617→        )}
+   618→   618→        {appView === "customer-orders" && (
+   619→   619→          <CustomerOrders onNavigate={handleNavigate} />
+   620→   620→        )}
+   621→   621→        {appView === "customer-reviews" && (
+   622→   622→          <CustomerReviews onNavigate={handleNavigate} />
+   623→   623→        )}
+   624→   624→        {appView === "privacy" && (
+   625→   625→          <PrivacyPolicyPage onNavigate={handleNavigate} />
+   626→   626→        )}
+   627→   627→        {appView === "terms" && (
+   628→   628→          <TermsPage onNavigate={handleNavigate} />
+   629→   629→        )}
+   630→   630→        {appView === "returns" && (
+   631→   631→          <ReturnPolicyPage onNavigate={handleNavigate} />
+   632→   632→        )}
+   633→   633→        {appView === "about" && (
+   634→   634→          <AboutPage onNavigate={handleNavigate} />
+   635→   635→        )}
+   636→   636→        {appView === "contact" && (
+   637→   637→          <ContactPage onNavigate={handleNavigate} />
+   638→   638→        )}
+   639→   639→        {appView === "faq" && (
+   640→   640→          <FaqPage onNavigate={handleNavigate} />
+   641→   641→        )}
+   642→   642→      </main>
+   643→   643→
+   644→   644→      {/* Footer is rendered by StorefrontHomepage for the home view */}
+   645→   645→      {appView !== "home" && (
+   646→   646→        <footer className="w-full border-t bg-white py-4 mt-auto">
+   647→   647→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
+   648→   648→            © {new Date().getFullYear()} Indicore Originals. All rights reserved.
+   649→   649→          </div>
+   650→   650→        </footer>
+   651→   651→      )}
+   652→   652→
+   653→   653→      {/* Cart Drawer */}
+   654→   654→      <CartDrawer
+   655→   655→        open={cartOpen}
+   656→   656→        onOpenChange={setCartOpen}
+   657→   657→        onNavigate={handleNavigate}
+   658→   658→      />
+   659→   659→    </div>
+   660→   660→  );
+   661→   661→
+   662→   662→  // ─── Render: Admin Dashboard ─────────────────────────────────────────────
+   663→   663→
+   664→   664→  const renderAdminPanel = () => {
+   665→   665→    const sidebarView = adminPanel === "product-edit" || adminPanel === "product-new" || adminPanel === "product-variants" ? "products" : adminPanel === "order-detail" ? "orders" : adminPanel;
+   666→   666→
+   667→   667→    return (
+   668→   668→      <div className="min-h-screen flex bg-muted/30">
+   669→   669→        <AdminSidebar activeView={sidebarView} onViewChange={handleViewChange} onLogout={handleLogout} />
+   670→   670→
+   671→   671→        <div className="flex-1 flex flex-col min-w-0">
+   672→   672→          {/* Top bar */}
+   673→   673→          <header className="h-16 border-b bg-white flex items-center px-4 sm:px-6 gap-4">
+   674→   674→            <button
+   675→   675→              type="button"
+   676→   676→              onClick={() => handleNavigate("home")}
+   677→   677→              className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center gap-1"
+   678→   678→            >
+   679→   679→              <Store className="h-4 w-4" />
+   680→   680→              <span className="hidden sm:inline">Store</span>
+   681→   681→            </button>
+   682→   682→            <h1 className="text-lg font-semibold capitalize hidden sm:block">
+   683→   683→              {adminPanel === "product-edit" ? "Edit Product" :
+   684→   684→               adminPanel === "product-new" ? "New Product" :
+   685→   685→               adminPanel === "product-variants" ? "Manage Variants" :
+   686→   686→               adminPanel === "order-detail" ? "Order Detail" :
+   687→   687→               adminPanel === "dashboard" ? "Dashboard" :
+   688→   688→               adminPanel === "homepage" ? "Homepage Editor" :
+   689→   689→               adminPanel === "faq" ? "FAQ Manager" :
+   690→   690→               adminPanel === "settings" ? "Settings" :
+   691→   691→               adminPanel === "analytics" ? "Analytics" :
+   692→   692→               adminPanel === "customers" ? "Customers" :
+   693→   693→               adminPanel.charAt(0).toUpperCase() + adminPanel.slice(1)}
+   694→   694→            </h1>
+   695→   695→            <div className="ml-auto flex items-center gap-3">
+   696→   696→              <span className="text-sm text-muted-foreground hidden sm:inline">
+   697→   697→                {user?.name}
+   698→   698→              </span>
+   699→   699→              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+   700→   700→                Admin
+   701→   701→              </span>
+   702→   702→            </div>
+   703→   703→          </header>
+   704→   704→
+   705→   705→          {/* Panel content */}
+   706→   706→          <main className="flex-1 p-4 sm:p-6 overflow-auto">
+   707→   707→            {adminPanel === "reviews" && (
+   708→   708→              <AdminReviewsTable
+   709→   709→                key={refreshKey}
+   710→   710→                onRefresh={triggerRefresh}
+   711→   711→              />
+   712→   712→            )}
+   713→   713→            {adminPanel === "orders" && (
+   714→   714→              <OrdersTable
+   715→   715→                key={refreshKey}
+   716→   716→                onViewOrder={handleViewOrder}
+   717→   717→                onRefresh={triggerRefresh}
+   718→   718→              />
+   719→   719→            )}
+   720→   720→            {adminPanel === "order-detail" && selectedOrderId != null && (
+   721→   721→              <OrderDetail
+   722→   722→                key={selectedOrderId}
+   723→   723→                orderId={selectedOrderId}
+   724→   724→                onBack={handleBackToOrders}
+   725→   725→                onRefresh={triggerRefresh}
+   726→   726→              />
+   727→   727→            )}
+   728→   728→            {adminPanel === "products" && (
+   729→   729→              <ProductsTable
+   730→   730→                key={refreshKey}
+   731→   731→                onEdit={handleEditProduct}
+   732→   732→                onCreate={handleCreateProduct}
+   733→   733→                onRefresh={triggerRefresh}
+   734→   734→              />
+   735→   735→            )}
+   736→   736→            {adminPanel === "product-new" && (
+   737→   737→              <div className="max-w-3xl">
+   738→   738→                <ProductForm
+   739→   739→                  onSuccess={handleFormSuccess}
+   740→   740→                  onCancel={handleFormCancel}
+   741→   741→                />
+   742→   742→              </div>
+   743→   743→            )}
+   744→   744→            {adminPanel === "product-edit" && editingProductId != null && (
+   745→   745→              <div className="max-w-3xl">
+   746→   746→                <ProductForm
+   747→   747→                  productId={editingProductId}
+   748→   748→                  onSuccess={handleFormSuccess}
+   749→   749→                  onCancel={handleFormCancel}
+   750→   750→                />
+   751→   751→                <div className="mt-6">
+   752→   752→                  <VariantManager
+   753→   753→                    key={`vm-${editingProductId}-${refreshKey}`}
+   754→   754→                    productId={editingProductId}
+   755→   755→                    onVariantChange={triggerRefresh}
+   756→   756→                  />
+   757→   757→                </div>
+   758→   758→              </div>
+   759→   759→            )}
+   760→   760→            {adminPanel === "product-variants" && variantProductId != null && (
+   761→   761→              <div className="max-w-3xl">
+   762→   762→                <VariantManager
+   763→   763→                  key={`vm-${variantProductId}-${refreshKey}`}
+   764→   764→                  productId={variantProductId}
+   765→   765→                  onVariantChange={triggerRefresh}
+   766→   766→                />
+   767→   767→              </div>
+   768→   768→            )}
+   769→   769→            {adminPanel === "categories" && (
+   770→   770→              <div className="max-w-2xl">
+   771→   771→                <CategoriesManager />
+   772→   772→              </div>
+   773→   773→            )}
+   774→   774→            {adminPanel === "tags" && (
+   775→   775→              <div className="max-w-2xl">
+   776→   776→                <TagsManager />
+   777→   777→              </div>
+   778→   778→            )}
+   779→   779→            {adminPanel === "dashboard" && (
+   780→   780→              <AdminDashboard
+   781→   781→                onNavigate={handleNavigate}
+   782→   782→                onViewOrder={handleViewOrder}
+   783→   783→              />
+   784→   784→            )}
+   785→   785→            {adminPanel === "homepage" && (
+   786→   786→              <div className="max-w-3xl">
+   787→   787→                <HomepageEditor />
+   788→   788→              </div>
+   789→   789→            )}
+   790→   790→            {adminPanel === "faq" && (
+   791→   791→              <div className="max-w-3xl">
+   792→   792→                <FaqManager />
+   793→   793→              </div>
+   794→   794→            )}
+   795→   795→            {adminPanel === "settings" && (
+   796→   796→              <div className="max-w-2xl">
+   797→   797→                <SettingsManager />
+   798→   798→              </div>
+   799→   799→            )}
+   800→   800→            {adminPanel === "analytics" && (
+   801→   801→              <AnalyticsDashboard />
+   802→   802→            )}
+   803→   803→            {adminPanel === "customers" && (
+   804→   804→              <CustomersTable />
+   805→   805→            )}
+   806→   806→          </main>
+   807→   807→        </div>
+   808→   808→      </div>
+   809→   809→    );
+   810→   810→  };
+   811→   811→
+   812→   812→  // ─── Main Render ─────────────────────────────────────────────────────────
+   813→   813→
+   814→   814→  if (appView === "admin" && user?.role === "admin") {
+   815→   815→    return renderAdminPanel();
+   816→   816→  }
+   817→   817→
+   818→   818→  return (
+   819→   819→    <>
+   820→   820→      {renderStorefront()}
+   821→   821→      {renderLoginModal()}
+   822→   822→    </>
+   823→   823→  );
+   824→   824→}

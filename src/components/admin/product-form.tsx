@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -495,9 +496,11 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
           {primaryPreview ? (
             <div className="relative group">
               <div className="h-32 w-32 rounded-md overflow-hidden border bg-muted">
-                <img
+                <Image
                   src={primaryPreview}
                   alt="Primary preview"
+                  width={128}
+                  height={128}
                   className="h-full w-full object-cover"
                 />
               </div>
@@ -569,9 +572,11 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
             {galleryPreviews.map((src, index) => (
               <div key={index} className="relative group">
                 <div className="aspect-square rounded-md overflow-hidden border bg-muted">
-                  <img
+                  <Image
                     src={src}
                     alt={`Gallery ${index + 1}`}
+                    width={128}
+                    height={128}
                     className="h-full w-full object-cover"
                   />
                 </div>

@@ -1,6 +1,17 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+/**
+ * Admin password policy: minimum 16 characters (Plan: Phase 9 §Security Hardening).
+ * Use this schema when creating or changing admin passwords.
+ * Seed enforcement: admin account uses "IndicoreAdmin2024!Secure" (22 chars).
+ */
+export const adminPasswordSchema = z
+  .string()
+  .min(16, "Admin password must be at least 16 characters")
+  .max(128, "Password must not exceed 128 characters");
 
 /**
  * Server-side admin authentication check.

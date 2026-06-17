@@ -1,6 +1,7 @@
 "use client";
 
 import { ShoppingCart, ShoppingBag, Minus, Plus, Trash2, ArrowRight } from "lucide-react";
+import Image from "next/image";
 import {
   Sheet,
   SheetContent,
@@ -76,9 +77,11 @@ export function CartDrawer({ open, onOpenChange, onNavigate }: CartDrawerProps) 
                 <div key={item.variantId}>
                   <div className="flex items-start gap-3 py-3">
                     {/* Thumbnail */}
-                    <img
+                    <Image
                       src={item.imageUrl}
                       alt={item.productName}
+                      width={64}
+                      height={64}
                       className="size-16 shrink-0 rounded-md object-cover"
                     />
 

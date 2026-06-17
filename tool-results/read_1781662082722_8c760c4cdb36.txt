@@ -710,7 +710,7 @@
    710→                {/* Email */}
    711→                <div className="space-y-2">
    712→                  <Label htmlFor="email">
-   713→                    Email Address <span className="text-destructive">*</span>
+   713→                    Email Address (For order updates) <span className="text-destructive">*</span>
    714→                  </Label>
    715→                  <Input
    716→                    id="email"

@@ -35,6 +35,7 @@ import {
   ChevronRight,
   Filter,
 } from "lucide-react";
+import Image from "next/image";
 
 // --- Interfaces ---
 
@@ -774,11 +775,12 @@ export function ProductListing({
                     {/* Image */}
                     <div className="relative aspect-square bg-muted overflow-hidden">
                       {product.primaryImage ? (
-                        <img
+                        <Image
                           src={product.primaryImage}
                           alt={product.name}
+                          width={400}
+                          height={400}
                           className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                          loading="lazy"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-muted">

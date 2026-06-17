@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/card";
 
 import { useCart } from "@/context/cart-context";
+import Image from "next/image";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -429,12 +430,12 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                   <React.Fragment key={item.variantId}>
                     <div className="flex items-start gap-3">
                       {/* Thumbnail 64x64 */}
-                      <img
+                      <Image
                         src={item.imageUrl}
                         alt={item.productName}
-                        className="size-16 shrink-0 rounded-md object-cover"
                         width={64}
                         height={64}
+                        className="size-16 shrink-0 rounded-md object-cover"
                       />
 
                       {/* Product details */}
@@ -746,8 +747,8 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                     htmlFor="consent"
                     className="text-sm font-normal leading-relaxed text-muted-foreground cursor-pointer"
                   >
-                    I agree to receive order updates and marketing communications
-                    from Indicore
+                    I agree to receive marketing communications from Indicore
+                    Originals
                   </Label>
                 </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -218,9 +219,11 @@ export function CustomerWishlist({ onNavigate }: CustomerWishlistProps) {
                   aria-label={`View ${item.product.name}`}
                 >
                   {item.product.primaryImage ? (
-                    <img
+                    <Image
                       src={item.product.primaryImage}
                       alt={item.product.name}
+                      width={400}
+                      height={400}
                       className="aspect-square w-full rounded-lg object-cover transition-transform duration-200 group-hover:scale-105"
                     />
                   ) : (
