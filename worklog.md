@@ -1081,3 +1081,28 @@ Stage Summary:
 - Files Modified: `.env` (restored PostgreSQL URLs + NEXTAUTH_SECRET), `package.json` (dev script unsets shell DATABASE_URL/DIRECT_URL before starting)
 - Fix: Restored correct Supabase PostgreSQL connection strings in .env; added `unset DATABASE_URL && unset DIRECT_URL` to dev script to prevent shell env override
 - Verification: GET / = 200 (33KB HTML), GET /api/homepage = 200 (5.5KB valid JSON), GET /api/products = 200, GET /api/settings = 200, GET /api/categories = 200, GET /api/faq = 200
+
+---
+Task ID: 2
+Agent: Main Debugging Agent
+Task: Fix blank UI screen (React rendering investigation)
+
+Work Log:
+- Traced full rendering chain: layout.tsx → CartProvider → page.tsx → StorefrontHomepage
+- Checked AppView state: initial state is "home", renders StorefrontHomepage correctly
+- Checked Suspense boundaries: none wrapping the page (page.tsx is "use client")
+- Checked dynamic imports: all admin components use ssr:false with loading skeletons, store components are static imports — no issues
+- Checked useEffect hooks: StorefrontHomepage fetchData() calls /api/homepage + /api/faq, session check calls /api/auth/session — all correct
+- Checked CSS: globals.css has no display:none or visibility:hidden on body/html — no issue
+- Used agent-browser to inspect actual browser state: discovered "Error: Failed to fetch" in main content area
+- Root cause identified: dev server process dies between bash tool invocations (sandbox kills background processes)
+- When server IS alive: page renders perfectly (verified with browser snapshot showing all sections)
+- Secondary issue: SpeedInsights from @vercel/speed-insights generates console errors in non-Vercel environment
+- Secondary issue: /placeholder-hero.jpg doesn't exist, causing Next.js Image optimization errors
+
+Stage Summary:
+- Fixed 1: Removed SpeedInsights import from layout.tsx (Vercel-specific, causes errors in sandbox)
+- Fixed 2: Added onError handler to hero Image component in storefront-homepage.tsx (falls back to gradient)
+- Fixed 3: Simplified dev script in package.json (removed tee pipe that could cause SIGPIPE)
+- Verified via agent-browser: full page renders correctly — header, hero, 4 products, 4 categories, 4 USPs, 4 reviews, FAQ, footer all present. Zero browser errors. Zero hydration errors.
+- Server process persistence is a sandbox infrastructure limitation, not a code issue

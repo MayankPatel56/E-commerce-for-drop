@@ -110,6 +110,7 @@ export default function StorefrontHomepage({
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [heroImageError, setHeroImageError] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -170,13 +171,14 @@ export default function StorefrontHomepage({
     <div className="min-h-screen bg-white">
       {/* ── Section 1: Hero Banner ─────────────────────────────────────── */}
       <section className="relative flex min-h-[300px] items-center justify-center md:min-h-[400px] lg:min-h-[480px]">
-        {data.heroBanner?.image_url ? (
+        {data.heroBanner?.image_url && !heroImageError ? (
           <Image
             src={data.heroBanner.image_url}
             alt={data.heroBanner.text || storeName}
             fill
             className="object-cover"
             priority
+            onError={() => setHeroImageError(true)}
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-neutral-200 to-neutral-300" />
