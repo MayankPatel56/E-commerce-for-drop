@@ -1058,3 +1058,26 @@ Stage Summary:
 - Admin password policy: reusable Zod schema exported from admin-auth.ts
 - Performance monitoring: @vercel/speed-insights integrated
 - Consent label: now says "marketing communications" only (transactional emails are separate)
+
+---
+Task ID: 1
+Agent: Main Debugging Agent
+Task: Fix blank screen / 502 Bad Gateway
+
+Work Log:
+- STEP 1: Reproduced — dev server starts, serves GET / 200, but all API routes fail with 500
+- STEP 2: Tested GET / (200), GET /api/homepage (500), GET /api/products (500), GET /api/settings (500), GET /api/categories (500), GET /api/faq (500)
+- STEP 3: Inspected dev.log — all 500s caused by: `Error validating datasource 'db': the URL must start with the protocol 'postgresql://' or 'postgres://'`
+- STEP 4: Audited prisma/schema.prisma (provider=postgresql ✓), .env (DATABASE_URL=file:/home/z/my-project/db/custom.db ✗ — SQLite URL). prisma validate passed, prisma generate passed.
+- STEP 5: Discovered shell env DATABASE_URL=file:/home/z/my-project/db/custom.db was overriding .env file. Confirmed DB connectivity works with correct URL: 15 tables, 2 users, 8 products.
+- STEP 6: Verified middleware.ts — only guards /admin/* and /customer/*, no impact on public routes.
+- STEP 7: Verified dynamic imports — all use ssr:false with loading skeletons, no SSR crashes.
+- STEP 8: Identified missing env vars: DIRECT_URL, NEXTAUTH_SECRET, NEXTAUTH_URL.
+- STEP 9: Root cause: .env had SQLite URL + shell env override. Two-layer fix applied.
+- STEP 10: Verified all routes return 200. Homepage renders 33KB HTML with full content. API returns valid JSON.
+
+Stage Summary:
+- Root Cause: `.env` file contained `DATABASE_URL=file:/home/z/my-project/db/custom.db` (SQLite protocol) while `prisma/schema.prisma` declared `provider = "postgresql"`. Additionally, the sandbox shell environment had `DATABASE_URL` set to the same SQLite value, which overrides `.env` files (dotenv never overrides existing env vars).
+- Files Modified: `.env` (restored PostgreSQL URLs + NEXTAUTH_SECRET), `package.json` (dev script unsets shell DATABASE_URL/DIRECT_URL before starting)
+- Fix: Restored correct Supabase PostgreSQL connection strings in .env; added `unset DATABASE_URL && unset DIRECT_URL` to dev script to prevent shell env override
+- Verification: GET / = 200 (33KB HTML), GET /api/homepage = 200 (5.5KB valid JSON), GET /api/products = 200, GET /api/settings = 200, GET /api/categories = 200, GET /api/faq = 200
