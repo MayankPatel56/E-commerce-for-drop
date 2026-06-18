@@ -1106,3 +1106,19 @@ Stage Summary:
 - Fixed 3: Simplified dev script in package.json (removed tee pipe that could cause SIGPIPE)
 - Verified via agent-browser: full page renders correctly — header, hero, 4 products, 4 categories, 4 USPs, 4 reviews, FAQ, footer all present. Zero browser errors. Zero hydration errors.
 - Server process persistence is a sandbox infrastructure limitation, not a code issue
+---
+Task ID: 1
+Agent: Main
+Task: Start the Next.js dev server
+
+Work Log:
+- Checked port 3000 — was free
+- Started dev server with `unset DATABASE_URL && unset DIRECT_URL && bun run dev`
+- Confirmed process running (PID via node)
+- Server ready in 939ms on Turbopack
+
+Stage Summary:
+- Dev server running on port 3000
+- Next.js 16.1.3 (Turbopack) ready
+- Known non-blocking warning: middleware deprecated (use proxy instead)
+
