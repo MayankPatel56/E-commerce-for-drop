@@ -1148,3 +1148,25 @@ Stage Summary:
 - Affected files: prisma/schema.prisma
 - Both /api/homepage and /api/faq now return HTTP 200
 - Full homepage renders correctly in browser with zero errors
+---
+Task ID: 3
+Agent: Main
+Task: Investigate HTTP 429 Too Many Requests errors
+
+Work Log:
+- Task 1: Rapid-fired 10 concurrent requests to /api/homepage, /api/faq, /, and /api/auth/session — all returned 200
+- Task 1b: Tested same through Caddy proxy (:81) — all 200 (40 requests)
+- Task 2: Browser network log showed 129×200, 4×500, 0×429 across full page load
+- Task 3: Inspected storefront-homepage.tsx useEffect — dependency array [], single fetch of /api/homepage + /api/faq on mount
+- Task 3: Inspected cart-context.tsx useEffects — both with [], localStorage only, no API calls
+- Task 4: Searched entire src/ for setInterval, router.refresh, recursive fetches — none found
+- Task 5: Found 3 routes with 429 responses: /api/auth/login (5 attempts/15min), /api/orders/track (10/15min), /api/reviews POST (5/hour). None called on homepage.
+- Task 5: Middleware only matches /admin/* and /customer/* — no rate limiting in middleware
+- Task 6: Stress tested 150 concurrent requests (100 API + 50 HTML) — zero 429s
+- Task 7: Browser network log showed zero 429 across multiple page loads
+
+Stage Summary:
+- No 429 is produced by the application at any layer
+- The previously reported "429" for CSS was likely a misidentification of 502 (server-killed) errors from the sandbox
+- Application has no request amplification: useEffect hooks have [] deps, no setInterval, no recursive fetches
+- The only non-200 responses found were 500s from /api/homepage and /api/faq (Prisma provider mismatch, now fixed) and 502s from the sandbox killing the server process
