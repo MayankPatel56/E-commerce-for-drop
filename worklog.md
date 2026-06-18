@@ -1122,3 +1122,29 @@ Stage Summary:
 - Next.js 16.1.3 (Turbopack) ready
 - Known non-blocking warning: middleware deprecated (use proxy instead)
 
+---
+Task ID: 2
+Agent: Main
+Task: Investigate and fix Prisma/homepage 500 error
+
+Work Log:
+- Reproduced: curl /api/homepage → 500, /api/faq → 500
+- Extracted full Prisma error from dev.log: "Error validating datasource 'db': the URL must start with the protocol 'postgresql://' or 'postgres://'"
+- Read .env: DATABASE_URL=file:/home/z/my-project/db/custom.db (SQLite URL)
+- Read schema.prisma: provider = "postgresql" (MISMATCH)
+- Confirmed via dotenv test: DATABASE_URL resolves to SQLite file path
+- Root cause: schema.prisma declared postgresql provider but .env had SQLite URL
+- Fix: Changed provider from "postgresql" to "sqlite" in schema.prisma
+- Fix: Removed directUrl = env("DIRECT_URL") (SQLite doesn't use it)
+- Ran prisma db push → "Your database is now in sync"
+- Ran prisma generate → regenerated Prisma Client
+- Ran seed → all data seeded successfully
+- Verified: /api/homepage → 200, /api/faq → 200
+- Browser verified: full homepage renders with hero, 4 products, 4 categories, 4 USPs, 4 reviews, FAQ, footer
+
+Stage Summary:
+- Root cause: provider="postgresql" in schema.prisma vs DATABASE_URL=file:... (SQLite) in .env
+- Fix: Changed provider to "sqlite", removed directUrl line in prisma/schema.prisma
+- Affected files: prisma/schema.prisma
+- Both /api/homepage and /api/faq now return HTTP 200
+- Full homepage renders correctly in browser with zero errors
