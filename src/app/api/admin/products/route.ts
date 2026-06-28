@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
 import { generateSlug } from "@/lib/slug";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 
 // ─── Validation Schemas ───────────────────────────────────────────────────────
@@ -64,10 +65,12 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get("sort") || "newest";
 
     // Build where clause
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {
+      deletedAt: null,
+    };
     if (categoryId) where.categoryId = parseInt(categoryId, 10);
     if (search) {
-      where.name = { contains: search };
+      where.name = { contains: search, mode: "insensitive" };
     }
     if (inStock !== null && inStock !== undefined && inStock !== "") {
       const wantInStock = inStock === "true";
@@ -91,7 +94,7 @@ export async function GET(request: NextRequest) {
         take: limit,
         include: {
           category: { select: { name: true } },
-          variants: { select: { id: true } },
+          variants: {select: {id: true,stockQuantity: true,isOutOfStock: true,},},
           productTags: {
             include: { tag: { select: { name: true } } },
           },
@@ -114,6 +117,7 @@ export async function GET(request: NextRequest) {
       categoryId: p.categoryId,
       categoryName: p.category.name,
       variantCount: p.variants.length,
+      inStock: p.variants.some((v) => !v.isOutOfStock && v.stockQuantity > 0),totalStock: p.variants.reduce((sum, v) => sum + v.stockQuantity,0),
       tagNames: p.productTags.map((pt) => pt.tag.name),
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
@@ -209,7 +213,7 @@ export async function POST(request: NextRequest) {
         price: data.price,
         categoryId: data.categoryId,
         primaryImage: data.primaryImage ?? null,
-        galleryImages: data.galleryImages.length > 0 ? data.galleryImages : null,
+        galleryImages: (data.galleryImages.length > 0 ? data.galleryImages : null) as any,
         seoTitle: data.seoTitle ?? null,
         seoDescription: data.seoDescription ?? null,
         isPublished: data.isPublished,
@@ -233,6 +237,9 @@ export async function POST(request: NextRequest) {
         productTags: { include: { tag: true } },
       },
     });
+
+    // ✅ Invalidate products cache only after successful creation
+    revalidateTag("products",  { expire: 0 });
 
     return NextResponse.json(product, { status: 201 });
   } catch (err) {

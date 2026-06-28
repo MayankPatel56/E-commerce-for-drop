@@ -280,7 +280,7 @@ export function CategoriesManager() {
 
       {/* Table */}
       {categories.length > 0 && (
-        <div className="max-h-96 md:max-h-none overflow-y-auto rounded-md border">
+        <div className="max-h-96 md:max-h-none overflow-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>

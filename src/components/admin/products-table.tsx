@@ -65,7 +65,8 @@ interface Product {
   categoryId: number;
   createdAt: string;
   category: { id: number; name: string; slug: string };
-  _count: { variants: number; productTags: number };
+  variantCount: number;
+  tagNames: string[];
 }
 
 interface ProductsResponse {
@@ -182,22 +183,20 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
 
   // Check if any variant has stock
   const hasStock = (product: Product): boolean => {
-    // We determine stock from the count info — if variants exist, we check via the API data
-    // For listing, we'll consider a product in stock if it has variants (real check done server-side)
-    return product._count.variants > 0;
+    return (product.variantCount ?? 0) > 0;
   };
 
   // Skeleton for loading
   const TableSkeleton = () => (
-    <div className="space-y-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3">
-          <Skeleton className="h-4 w-[140px]" />
-          <Skeleton className="h-4 w-[80px]" />
-          <Skeleton className="h-4 w-[60px]" />
-          <Skeleton className="h-4 w-[40px]" />
-          <Skeleton className="h-5 w-[70px]" />
-          <Skeleton className="h-5 w-[60px]" />
+    <div className="space-y-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 border-b">
+          <Skeleton className="h-5 w-full sm:w-[140px]" />
+          <Skeleton className="h-5 w-full sm:w-[80px]" />
+          <Skeleton className="h-5 w-full sm:w-[60px]" />
+          <Skeleton className="h-5 w-full sm:w-[40px]" />
+          <Skeleton className="h-5 w-full sm:w-[70px]" />
+          <Skeleton className="h-5 w-full sm:w-[60px]" />
         </div>
       ))}
     </div>
@@ -213,7 +212,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
             {isLoading ? "Loading..." : `${total} product${total !== 1 ? "s" : ""} found`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -223,26 +222,26 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
             }}
             className="min-h-[44px] min-w-[44px]"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+            <RefreshCw className="h-4 w-4 mr-2 sm:mr-2" />
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
           <Button onClick={onCreate} className="min-h-[44px] min-w-[44px]">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
+            <Plus className="h-4 w-4 mr-2 sm:mr-2" />
+            <span className="hidden sm:inline">Add Product</span>
           </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
         {/* Search */}
-        <form onSubmit={handleSearchSubmit} className="flex-1 relative">
+        <form onSubmit={handleSearchSubmit} className="flex-1 min-w-[200px] relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search products..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-9 min-h-[44px]"
+            className="pl-9 min-h-[44px] w-full"
           />
         </form>
 
@@ -274,7 +273,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
         </Select>
 
         {/* In Stock Toggle */}
-        <div className="flex items-center gap-2 px-3 min-h-[44px] border rounded-md">
+        <div className="flex items-center gap-2 px-3 min-h-[44px] border rounded-md bg-background">
           <Switch
             id="in-stock-toggle"
             checked={inStockOnly}
@@ -299,16 +298,16 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
 
       {/* Empty State */}
       {!isLoading && !error && products.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="flex flex-col items-center justify-center py-12 text-center px-4">
           <Package className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <h3 className="text-lg font-medium">No products found</h3>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1 max-w-md">
             {search || categoryFilter !== "all"
               ? "Try adjusting your search or filters"
               : "Get started by adding your first product"}
           </p>
           {!search && categoryFilter === "all" && (
-            <Button onClick={onCreate} className="mt-4 min-h-[44px]">
+            <Button onClick={onCreate} className="mt-4 min-h-[44px] w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Button>
@@ -319,116 +318,118 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
       {/* Table */}
       {!isLoading && !error && products.length > 0 && (
         <>
-          <div className="max-h-96 md:max-h-none overflow-y-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[160px]">Name</TableHead>
-                  <TableHead className="min-w-[100px]">Category</TableHead>
-                  <TableHead className="min-w-[80px]">Price</TableHead>
-                  <TableHead className="min-w-[60px] text-center">Variants</TableHead>
-                  <TableHead className="min-w-[90px]">Stock</TableHead>
-                  <TableHead className="min-w-[90px]">Status</TableHead>
-                  <TableHead className="min-w-[44px]">
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {product.primaryImage ? (
-                          <div className="h-9 w-9 rounded-md overflow-hidden bg-muted shrink-0">
-                            <Image
-                              src={product.primaryImage}
-                              alt={product.name}
-                              width={36}
-                              height={36}
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                        ) : (
-                          <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center shrink-0">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        )}
-                        <span className="font-medium truncate max-w-[200px]">{product.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {product.category?.name || "—"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-medium">
-                        ₹{product.price.toLocaleString("en-IN")}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="text-sm text-muted-foreground">
-                        {product._count.variants}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={hasStock(product) ? "default" : "destructive"}
-                        className="text-xs"
-                      >
-                        {hasStock(product) ? "In Stock" : "Out of Stock"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={product.isPublished ? "default" : "secondary"} className="text-xs">
-                        {product.isPublished ? "Published" : "Draft"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="min-h-[44px] min-w-[44px] p-2"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => onEdit(product.id)}
-                            className="min-h-[44px] cursor-pointer"
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(product.id)}
-                            className="min-h-[44px] text-destructive focus:text-destructive cursor-pointer"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          <div className="max-h-[50vh] sm:max-h-none overflow-auto rounded-md border">
+            <div className="min-w-[640px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[160px]">Name</TableHead>
+                    <TableHead className="min-w-[100px]">Category</TableHead>
+                    <TableHead className="min-w-[80px]">Price</TableHead>
+                    <TableHead className="min-w-[60px] text-center">Variants</TableHead>
+                    <TableHead className="min-w-[90px]">Stock</TableHead>
+                    <TableHead className="min-w-[90px]">Status</TableHead>
+                    <TableHead className="min-w-[44px]">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {products.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="min-w-[250px]">
+                        <div className="flex items-center gap-3">
+                          {product.primaryImage ? (
+                            <div className="h-9 w-9 rounded-md overflow-hidden bg-muted shrink-0">
+                              <Image
+                                src={product.primaryImage}
+                                alt={product.name}
+                                width={36}
+                                height={36}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                              <Package className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
+                          <span className="font-medium block max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">{product.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {product.category?.name || "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm font-medium">
+                          ₹{product.price.toLocaleString("en-IN")}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-sm text-muted-foreground">
+                          {product. variantCount ?? 0}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={hasStock(product) ? "default" : "destructive"}
+                          className="text-xs"
+                        >
+                          {hasStock(product) ? "In Stock" : "Out of Stock"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={product.isPublished ? "default" : "secondary"} className="text-xs">
+                          {product.isPublished ? "Published" : "Draft"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="min-h-[44px] min-w-[44px] p-2"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => onEdit(product.id)}
+                              className="min-h-[44px] cursor-pointer"
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(product.id)}
+                              className="min-h-[44px] text-destructive focus:text-destructive cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground order-2 sm:order-1">
                 Page {page} of {totalPages}
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 order-1 sm:order-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -437,7 +438,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
                   className="min-h-[44px] min-w-[44px]"
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  <span className="sm:sr-only">Previous</span>
+                  <span className="sr-only sm:not-sr-only">Previous</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -446,7 +447,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
                   disabled={page >= totalPages}
                   className="min-h-[44px] min-w-[44px]"
                 >
-                  <span className="sm:sr-only">Next</span>
+                  <span className="sr-only sm:not-sr-only">Next</span>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

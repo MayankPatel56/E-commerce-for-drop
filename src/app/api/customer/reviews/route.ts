@@ -12,18 +12,21 @@ export async function GET() {
 
   try {
     const reviews = await db.review.findMany({
-      where: { customerId: customer.userId },
-      include: {
+      where: {
+        customerId: customer.id, // ✅ Sirf logged-in customer ke reviews dikhein
+      },
+      select: {
+        id: true,
+        rating: true,
+        title: true,
+        comment: true,
+        reviewedAt: true,
+        photoUrl: true, // ✅ Photo URL include kiya
         product: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            primaryImage: true,
-          },
+          select: { name: true, slug: true, primaryImage: true },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "desc" }, // ✅ Sabse naye pehle
     });
 
     return NextResponse.json(reviews);

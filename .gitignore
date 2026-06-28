@@ -50,5 +50,8 @@ test
 prompt
 
 server.log
+# Local SQLite database artifacts (project uses Supabase PostgreSQL)
+/db/
+
 # Skills directory
 /skills/

@@ -9,8 +9,8 @@ const updateHomepageSchema = z.object({
   heroBanner: z.unknown().optional(),
   featuredProductIds: z.array(z.number()).optional(),
   categoriesSection: z.unknown().optional(),
-  whyChooseUs: z.array(z.record(z.unknown())).optional(),
-  customerReviews: z.record(z.unknown()).optional(),
+  whyChooseUs: z.array(z.record(z.string(), z.unknown())).optional(),
+  customerReviews: z.record(z.string(), z.unknown()).optional(),
   footer: z.unknown().optional(),
 });
 
@@ -65,13 +65,13 @@ export async function PUT(request: NextRequest) {
     const content = await db.homepageContent.upsert({
       where: { id: 1 },
       update: {
-        ...data,
+        ...(data as any),
         updatedAt: new Date(),
       },
       create: {
         id: 1,
-        ...data,
-        customerReviews: (data.customerReviews as Record<string, unknown>) ?? {
+        ...(data as any),
+        customerReviews: data.customerReviews ?? {
           max_reviews_to_show: 6,
         },
       },

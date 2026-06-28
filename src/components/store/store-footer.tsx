@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
-import { Store, Instagram, Facebook } from "lucide-react";
+import { Instagram, Facebook } from "lucide-react";
 
 interface StoreFooterProps {
   footer: {
@@ -38,19 +39,20 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
   const facebookUrl = footer?.social_links?.facebook ?? "";
 
   return (
-    <footer className="bg-neutral-900 text-neutral-300">
+    <footer className="border-t border-white/10 bg-black text-white/70">
       {/* Main footer content */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Column 1: Brand */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Store className="h-6 w-6 text-primary" />
-              <span className="text-lg font-bold tracking-tight text-white">
-                Indicore Originals
-              </span>
-            </div>
-            <p className="text-sm text-neutral-400 leading-relaxed max-w-xs">
+            <Image
+              src="/logo.png"
+              alt="Indicore Originals"
+              width={343}
+              height={120}
+              className="h-9 w-auto object-contain"
+            />
+            <p className="text-sm text-white/50 leading-relaxed max-w-xs">
               Curated original products crafted with quality and care. Discover
               unique items that stand out.
             </p>
@@ -68,7 +70,7 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
                     <button
                       type="button"
                       onClick={() => onNavigate(link.id)}
-                      className="text-sm text-neutral-400 hover:text-white transition-colors min-h-[44px] flex items-center w-full text-left"
+                      className="text-sm text-white/50 hover:text-orange-400 transition-colors min-h-[44px] flex items-center w-full text-left"
                     >
                       {link.label}
                     </button>
@@ -90,7 +92,7 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
                     <button
                       type="button"
                       onClick={() => onNavigate(link.id)}
-                      className="text-sm text-neutral-400 hover:text-white transition-colors min-h-[44px] flex items-center w-full text-left"
+                      className="text-sm text-white/50 hover:text-orange-400 transition-colors min-h-[44px] flex items-center w-full text-left"
                     >
                       {link.label}
                     </button>
@@ -106,7 +108,7 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
               Contact
             </h3>
             {contactText && (
-              <p className="text-sm text-neutral-400 leading-relaxed whitespace-pre-line">
+              <p className="text-sm text-white/50 leading-relaxed whitespace-pre-line">
                 {contactText}
               </p>
             )}
@@ -117,7 +119,7 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
                     href={instagramUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+                    className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-white/50 hover:text-orange-400 hover:bg-white/5 transition-colors"
                     aria-label="Follow us on Instagram"
                   >
                     <Instagram className="h-5 w-5" />
@@ -128,7 +130,7 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
                     href={facebookUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+                    className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-white/50 hover:text-orange-400 hover:bg-white/5 transition-colors"
                     aria-label="Follow us on Facebook"
                   >
                     <Facebook className="h-5 w-5" />
@@ -141,9 +143,9 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
       </div>
 
       {/* Bottom bar */}
-      <Separator className="bg-neutral-800" />
+      <Separator className="bg-white/10" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
-        <p className="text-xs text-neutral-500 text-center">
+        <p className="text-xs text-white/40 text-center">
           {copyrightText}
         </p>
       </div>

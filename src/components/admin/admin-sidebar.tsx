@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState, useCallback } from "react";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -62,6 +63,15 @@ function NavContent({
   onViewChange: (view: string) => void;
   onLogout?: () => void;
 }) {
+  // ✅ Stable callbacks to prevent re-renders
+  const handleLogout = useCallback(() => {
+    if (onLogout) {
+      onLogout();
+    } else {
+      signOut({ callbackUrl: "/" });
+    }
+  }, [onLogout]);
+
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
@@ -85,7 +95,7 @@ function NavContent({
                 <button
                   type="button"
                   onClick={() => onViewChange(item.id)}
-                  className={`flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] text-left ${
+                  className={`flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-11 text-left ${
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -111,7 +121,7 @@ function NavContent({
                   <button
                     type="button"
                     onClick={() => onViewChange(item.id)}
-                    className={`flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] text-left ${
+                    className={`flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-11 text-left ${
                       isActive
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -138,7 +148,7 @@ function NavContent({
                   <button
                     type="button"
                     onClick={() => onViewChange(item.id)}
-                    className={`flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] text-left ${
+                    className={`flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-11 text-left ${
                       isActive
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -161,14 +171,8 @@ function NavContent({
       <div className="px-3 py-4">
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 min-h-[44px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-          onClick={() => {
-            if (onLogout) {
-              onLogout();
-            } else {
-              signOut({ callbackUrl: "/" });
-            }
-          }}
+          className="w-full justify-start gap-3 min-h-11 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          onClick={handleLogout}
         >
           <LogOut className="h-5 w-5 shrink-0" />
           <span>Logout</span>
@@ -178,14 +182,29 @@ function NavContent({
   );
 }
 
+// ✅ Memoize NavContent to prevent unnecessary re-renders
+const MemoizedNavContent = React.memo(NavContent);
+
 export function AdminSidebar({ activeView, onViewChange, onLogout }: AdminSidebarProps) {
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  // ✅ Stable callbacks
+  const handleViewChange = useCallback((view: string) => {
+    onViewChange(view);
+    setIsSheetOpen(false); // Close sheet after navigation
+  }, [onViewChange]);
+
+  const handleSheetOpenChange = useCallback((open: boolean) => {
+    setIsSheetOpen(open);
+  }, []);
+
   return (
     <>
       {/* Mobile: Sheet/drawer triggered by hamburger */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-background border-b flex items-center px-4">
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px] p-2">
+            <Button variant="ghost" size="sm" className="min-h-11 min-w-11 p-2">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Open navigation menu</span>
             </Button>
@@ -194,9 +213,9 @@ export function AdminSidebar({ activeView, onViewChange, onLogout }: AdminSideba
             <SheetHeader className="sr-only">
               <SheetTitle>Navigation</SheetTitle>
             </SheetHeader>
-            <NavContent
+            <MemoizedNavContent
               activeView={activeView}
-              onViewChange={onViewChange}
+              onViewChange={handleViewChange}
               onLogout={onLogout}
             />
           </SheetContent>
@@ -205,8 +224,12 @@ export function AdminSidebar({ activeView, onViewChange, onLogout }: AdminSideba
       </div>
 
       {/* Desktop: Fixed sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:w-56 lg:border-r lg:bg-background">
-        <NavContent activeView={activeView} onViewChange={onViewChange} onLogout={onLogout} />
+      <aside className="hidden lg:flex lg:flex-col lg:w-56 lg:border-r lg:bg-background">
+        <MemoizedNavContent
+          activeView={activeView}
+          onViewChange={onViewChange}
+          onLogout={onLogout}
+        />
       </aside>
     </>
   );

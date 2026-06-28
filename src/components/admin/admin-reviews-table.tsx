@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { AddReviewDialog } from "@/components/admin/add-review-dialog";
 import { useState, useEffect, useCallback, useTransition } from "react";
 import {
   Star,
@@ -61,14 +62,15 @@ interface ReviewProduct {
 interface Review {
   id: number;
   productId: number;
-  customerId: string;
+  customerId: string | null;
+  displayName: string | null;
   rating: number;
   title: string;
   comment: string;
   status: "pending" | "approved" | "rejected" | "hidden";
   reviewedAt: string | null;
   createdAt: string;
-  customer: ReviewCustomer;
+  customer: ReviewCustomer | null;
   product: ReviewProduct;
 }
 
@@ -343,8 +345,9 @@ export function AdminReviewsTable({ onRefresh }: AdminReviewsTableProps) {
   return (
     <Card>
       {/* ---- Header with title ---- */}
-      <CardHeader className="pb-0">
+      <CardHeader className="pb-0 flex flex-row items-center justify-between">
         <CardTitle className="text-xl">Review Management</CardTitle>
+       <AddReviewDialog onCreated={fetchReviews} />
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -423,12 +426,16 @@ export function AdminReviewsTable({ onRefresh }: AdminReviewsTableProps) {
                 reviews.map((review) => (
                   <TableRow key={review.id}>
                     {/* Customer */}
-                    <TableCell>
+                    <TableCell> 
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-medium text-sm">{review.customer.name}</span>
-                        <span className="text-xs text-muted-foreground">{review.customer.email}</span>
-                      </div>
-                    </TableCell>
+                         <span className="font-medium text-sm">
+                           {review.customer?.name ?? review.displayName ?? "Anonymous"}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                           {review.customer?.email ?? "Manual entry (no account)"}
+                        </span>
+                       </div>
+                     </TableCell>
 
                     {/* Product */}
                     <TableCell>

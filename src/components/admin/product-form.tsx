@@ -125,8 +125,8 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
         ]);
         if (catRes.ok) {
           const catData = await catRes.json();
-          setCategories(catData.categories || []);
-        }
+          setCategories(Array.isArray(catData) ? catData : catData.categories || []);
+}
         if (tagRes.ok) {
           const tagData = await tagRes.json();
           setTags(tagData.tags || []);
@@ -148,36 +148,35 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
       setIsLoading(true);
       try {
         const res = await fetch(`/api/admin/products/${productId}`);
-        if (!res.ok) throw new Error("Failed to fetch product");
-        const data = await res.json();
-        const p = data.product;
+         if (!res.ok) throw new Error("Failed to fetch product");
+         const p = await res.json();
 
-        setName(p.name || "");
-        setSlug(p.slug || "");
-        setDescription(p.description || "");
-        setPrice(String(p.price || ""));
-        setCategoryId(String(p.categoryId || ""));
-        setSeoTitle(p.seoTitle || "");
-        setSeoDescription(p.seoDescription || "");
-        setIsPublished(p.isPublished || false);
-        setSlugManuallyEdited(true); // Don't auto-regenerate slug when editing
+    setName(p.name || "");
+    setSlug(p.slug || "");
+    setDescription(p.description || "");
+    setPrice(String(p.price || ""));
+    setCategoryId(String(p.categoryId || ""));
+    setSeoTitle(p.seoTitle || "");
+    setSeoDescription(p.seoDescription || "");
+    setIsPublished(p.isPublished || false);
+    setSlugManuallyEdited(true);
 
-        // Images
-        if (p.primaryImage) {
-          setPrimaryImage(p.primaryImage);
-          setPrimaryPreview(p.primaryImage);
-        }
+    // Images
+     if (p.primaryImage) {
+     setPrimaryImage(p.primaryImage);
+     setPrimaryPreview(p.primaryImage);
+     }
 
-        // Gallery images - API returns parsed array (native Json column)
-        if (p.galleryImages && Array.isArray(p.galleryImages)) {
-          setGalleryImages(p.galleryImages);
-          setGalleryPreviews(p.galleryImages);
-        }
+     // Gallery images - API returns parsed array (native Json column)
+       if (p.galleryImages && Array.isArray(p.galleryImages)) {
+      setGalleryImages(p.galleryImages);
+     setGalleryPreviews(p.galleryImages);
+     }
 
-        // Tags
-        if (data.tags && Array.isArray(data.tags)) {
-          setSelectedTagIds(data.tags.map((t: Tag) => t.id));
-        }
+     // Tags - route returns productTags: [{ tag: { id, name } }, ...]
+     if (p.productTags && Array.isArray(p.productTags)) {
+      setSelectedTagIds(p.productTags.map((pt: { tag: Tag }) => pt.tag.id));
+      }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load product");
       } finally {
@@ -444,7 +443,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
         <div className="space-y-2">
           <Label htmlFor="product-category">Category *</Label>
           <Select value={categoryId} onValueChange={setCategoryId} disabled={isSubmitting}>
-            <SelectTrigger className="min-h-[44px]">
+            <SelectTrigger className="min-h-11">
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
@@ -549,7 +548,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
               variant="outline"
               size="sm"
               disabled={isSubmitting || galleryPreviews.length >= 10}
-              className="min-h-[44px]"
+              className="min-h-11"
               asChild
             >
               <span>
@@ -605,7 +604,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
             <Badge
               key={tag.id}
               variant="secondary"
-              className="cursor-pointer px-3 py-1.5 min-h-[32px]"
+              className="cursor-pointer px-3 py-1.5 min-h-8"
               onClick={() => toggleTag(tag.id)}
             >
               {tag.name}
@@ -618,7 +617,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
                 type="button"
                 variant="outline"
                 size="sm"
-                className="min-h-[44px] min-w-[44px]"
+                className="min-h-11 min-w-11"
               >
                 <Tag className="h-4 w-4 mr-2" />
                 Select Tags
@@ -634,7 +633,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
                   {tags.map((tag) => (
                     <div
                       key={tag.id}
-                      className="flex items-center gap-2 cursor-pointer min-h-[44px] px-2 py-1 rounded-md hover:bg-accent"
+                      className="flex items-center gap-2 cursor-pointer min-h-11 px-2 py-1 rounded-md hover:bg-accent"
                       onClick={() => toggleTag(tag.id)}
                     >
                       <Checkbox
@@ -675,11 +674,11 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
           variant="outline"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="min-h-[44px]"
+          className="min-h-11"
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting} className="min-h-[44px]">
+        <Button type="submit" disabled={isSubmitting} className="min-h-11">
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

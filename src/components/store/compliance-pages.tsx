@@ -235,11 +235,7 @@ export function PrivacyPolicyPage({ onNavigate }: CompliancePageProps) {
               <ul className="mt-3 list-none space-y-1 pl-0">
                 <li className="flex items-center gap-2">
                   <Mail className="size-4 shrink-0 text-muted-foreground" />
-                  <span>support@indicoreoriginals.com</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <MessageCircle className="size-4 shrink-0 text-muted-foreground" />
-                  <span>WhatsApp: +91 98765 43210</span>
+                  <span>originalsindicore@gmail.com</span>
                 </li>
               </ul>
             </div>
@@ -541,16 +537,8 @@ export function ReturnPolicyPage({ onNavigate }: CompliancePageProps) {
               </p>
               <ul className="list-none space-y-1.5 pl-0">
                 <li className="flex items-center gap-2">
-                  <MessageCircle className="size-4 shrink-0 text-muted-foreground" />
-                  <span>WhatsApp: +91 98765 43210</span>
-                </li>
-                <li className="flex items-center gap-2">
                   <Mail className="size-4 shrink-0 text-muted-foreground" />
-                  <span>support@indicoreoriginals.com</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Clock className="size-4 shrink-0 text-muted-foreground" />
-                  <span>Mon-Sat, 10:00 AM - 7:00 PM IST</span>
+                  <span>originalsindicore@gmail.com</span>
                 </li>
               </ul>
             </div>
@@ -749,28 +737,16 @@ export function ContactPage({ onNavigate }: CompliancePageProps) {
                   href="mailto:support@indicoreoriginals.com"
                   className="text-sm font-medium text-primary hover:underline"
                 >
-                  support@indicoreoriginals.com
+                  originalsindicore@gmail.com
                 </a>
               </div>
+            </div>
 
               {/* WhatsApp */}
               <div className="rounded-lg border p-6">
                 <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-primary/10">
                   <MessageCircle className="size-5 text-primary" />
                 </div>
-                <h3 className="mb-1 font-semibold">WhatsApp</h3>
-                <p className="mb-2 text-sm text-muted-foreground">
-                  Fastest way to reach us
-                </p>
-                <a
-                  href="https://wa.me/919876543210"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-primary hover:underline"
-                >
-                  +91 98765 43210
-                </a>
-              </div>
 
               {/* Instagram */}
               <div className="rounded-lg border p-6">
@@ -809,40 +785,6 @@ export function ContactPage({ onNavigate }: CompliancePageProps) {
                   Indicore Originals
                 </a>
               </div>
-            </div>
-
-            {/* Business Hours */}
-            <div className="rounded-lg border bg-muted/30 p-6">
-              <div className="mb-4 flex items-center gap-2">
-                <Clock className="size-5 text-muted-foreground" />
-                <h3 className="font-semibold">Business Hours</h3>
-              </div>
-              <div className="grid gap-2 text-sm sm:grid-cols-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Monday - Saturday</span>
-                  <span className="font-medium">10:00 AM - 7:00 PM IST</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Sunday</span>
-                  <span className="font-medium">Closed</span>
-                </div>
-              </div>
-              <p className="mt-4 text-xs text-muted-foreground">
-                Responses outside business hours may be delayed. We typically respond to all
-                messages within 24 hours on business days.
-              </p>
-            </div>
-
-            {/* Location placeholder */}
-            <div className="rounded-lg border bg-muted/30 p-6">
-              <div className="mb-3 flex items-center gap-2">
-                <MapPin className="size-5 text-muted-foreground" />
-                <h3 className="font-semibold">Location</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Indicore Originals operates as an online-first brand. We ship across India.
-                Currently, we do not have a physical retail store open for visits.
-              </p>
             </div>
           </section>
         </div>

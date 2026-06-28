@@ -74,11 +74,7 @@ interface OrderItem {
 }
 
 interface ShippingAddress {
-  name?: string;
-  phone?: string;
-  email?: string;
-  addressLine1?: string;
-  addressLine2?: string;
+  street?: string;
   city?: string;
   state?: string;
   pincode?: string;
@@ -339,10 +335,10 @@ export function OrderDetail({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="font-mono text-xl font-bold tracking-tight sm:text-2xl">
-                {order.orderNumber}
+                {order?.orderNumber || "—"}
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                {formatDate(order.createdAt)}
+                {formatDate(order?.createdAt || new Date().toISOString())}
               </p>
             </div>
             <Badge variant="outline" className={statusCfg.className}>
@@ -359,10 +355,10 @@ export function OrderDetail({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <p className="font-medium">{order.customer.name}</p>
-              <p className="text-muted-foreground">{order.customer.email}</p>
-              <p className="text-muted-foreground">{order.customer.phone}</p>
-              {order.customer.isRegistered && (
+              <p className="font-medium">{order?.customer?.name || "Unknown"}</p>
+              <p className="text-muted-foreground">{order?.customer?.email || "—"}</p>
+              <p className="text-muted-foreground">{order?.customer?.phone || "—"}</p>
+              {order?.customer?.isRegistered && (
                 <Badge variant="secondary" className="mt-1">
                   Registered
                 </Badge>
@@ -379,18 +375,14 @@ export function OrderDetail({
               </CardTitle>
             </CardHeader>
             <CardContent className="text-sm leading-relaxed text-muted-foreground">
-              {addr.name && (
-                <p className="font-medium text-foreground">{addr.name}</p>
-              )}
-              {addr.addressLine1 && <p>{addr.addressLine1}</p>}
-              {addr.addressLine2 && <p>{addr.addressLine2}</p>}
-              {(addr.city || addr.state || addr.pincode) && (
-                <p>
-                  {[addr.city, addr.state, addr.pincode]
-                    .filter(Boolean)
-                    .join(", ")}
-                </p>
-              )}
+              {addr?.street && <p className="font-medium text-foreground">{addr.street}</p>}
+{(addr?.city || addr?.state || addr?.pincode) && (
+  <p>
+    {[addr.city, addr.state, addr.pincode]
+      .filter(Boolean)
+      .join(", ")}
+  </p>
+)}
             </CardContent>
           </Card>
 
@@ -402,69 +394,71 @@ export function OrderDetail({
                 Order Items
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Variant</TableHead>
-                    <TableHead className="hidden sm:table-cell">SKU</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead className="text-right hidden md:table-cell">
-                      Unit Price
-                    </TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {order.items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">
-                        {(item.variantSnapshot?.productName as string) ??
-                          item.variant?.product?.name ??
-                          "Unknown Product"}
+            <CardContent className="p-0 overflow-x-auto">
+              <div className="min-w-[600px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Variant</TableHead>
+                      <TableHead className="hidden sm:table-cell">SKU</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right hidden md:table-cell">
+                        Unit Price
+                      </TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {order?.items?.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">
+                          {(item.variantSnapshot?.productName as string) ??
+                            item.variant?.product?.name ??
+                            "Unknown Product"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {item.variantSnapshot?.variantType
+                            ? `${item.variantSnapshot.variantType as string}: ${item.variantSnapshot.variantValue as string}`
+                            : item.variant
+                              ? `${item.variant.variantType}: ${item.variant.variantValue}`
+                              : "—"}
+                        </TableCell>
+                        <TableCell className="hidden font-mono text-xs sm:table-cell">
+                          {item.variant?.sku ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.quantity}
+                        </TableCell>
+                        <TableCell className="text-right hidden md:table-cell">
+                          {formatPrice(item.unitPrice)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatPrice(item.lineTotal)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-right font-semibold"
+                      >
+                        Total
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {item.variantSnapshot?.variantType
-                          ? `${item.variantSnapshot.variantType as string}: ${item.variantSnapshot.variantValue as string}`
-                          : item.variant
-                            ? `${item.variant.variantType}: ${item.variant.variantValue}`
-                            : "—"}
-                      </TableCell>
-                      <TableCell className="hidden font-mono text-xs sm:table-cell">
-                        {item.variant?.sku ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {item.quantity}
-                      </TableCell>
-                      <TableCell className="text-right hidden md:table-cell">
-                        {formatPrice(item.unitPrice)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatPrice(item.lineTotal)}
+                      <TableCell className="text-right font-bold">
+                        {formatPrice(order?.cartTotal || 0)}
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-                <TableFooter>
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-right font-semibold"
-                    >
-                      Total
-                    </TableCell>
-                    <TableCell className="text-right font-bold">
-                      {formatPrice(order.cartTotal)}
-                    </TableCell>
-                  </TableRow>
-                </TableFooter>
-              </Table>
+                  </TableFooter>
+                </Table>
+              </div>
             </CardContent>
           </Card>
 
           {/* Internal notes (read-only display) */}
-          {order.internalNotes && (
+          {order?.internalNotes && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -499,7 +493,7 @@ export function OrderDetail({
           </Card>
 
           {/* COD Verification — pending */}
-          {order.status === "pending" && (
+          {order?.status === "pending" && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">COD Verification</CardTitle>
@@ -556,10 +550,10 @@ export function OrderDetail({
           )}
 
           {/* Status Update — confirmed / shipped / delivered */}
-          {order.status !== "pending" &&
-            order.status !== "cancelled" &&
-            order.status !== "returned" &&
-            order.status !== "return_requested" && (
+          {order?.status !== "pending" &&
+            order?.status !== "cancelled" &&
+            order?.status !== "returned" &&
+            order?.status !== "return_requested" && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Update Status</CardTitle>
@@ -631,7 +625,7 @@ export function OrderDetail({
             )}
 
           {/* Return Processing — return_requested */}
-          {order.status === "return_requested" && (
+          {order?.status === "return_requested" && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Return Processing</CardTitle>

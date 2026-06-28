@@ -3,7 +3,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 // Plan: §Phase 4 — Order Creation Transaction with Row-Level Locks
 // Uses DIRECT_URL (non-PgBouncer) for FOR UPDATE support in transactions

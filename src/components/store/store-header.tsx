@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,18 +12,30 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-  Store,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Search,
   ShoppingCart,
   Menu,
   LogIn,
   LogOut,
   User,
-  X,
   LayoutDashboard,
   Heart,
   Star,
+  ChevronDown,
+  ShieldCheck, // ✓ FIX 1: Added ShieldCheck import
 } from "lucide-react";
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
 
 interface StoreHeaderProps {
   onNavigate: (view: string, data?: Record<string, unknown>) => void;
@@ -32,12 +45,27 @@ interface StoreHeaderProps {
   onLogout: () => void;
   isAuthenticated: boolean;
   userName?: string;
+  userRole?: string;        
+  currentView?: string;
 }
 
 const NAV_LINKS = [
   { id: "home", label: "Home" },
   { id: "shop", label: "Shop" },
+] as const;
+
+const SECONDARY_NAV_LINKS = [
+  { id: "about", label: "About Us" },
   { id: "track-order", label: "Track Order" },
+  { id: "contact", label: "Contact Us" },
+] as const;
+
+const ALL_MOBILE_LINKS = [
+  { id: "home", label: "Home" },
+  { id: "shop", label: "Shop" },
+  { id: "about", label: "About Us" },
+  { id: "track-order", label: "Track Order" },
+  { id: "contact", label: "Contact Us" },
 ] as const;
 
 const CUSTOMER_NAV_LINKS = [
@@ -47,6 +75,7 @@ const CUSTOMER_NAV_LINKS = [
   { id: "customer-profile", label: "Profile", icon: User },
 ] as const;
 
+// ✓ FIX 2: Added userRole to MobileNav destructuring
 function MobileNav({
   onNavigate,
   onOpenCart,
@@ -55,45 +84,48 @@ function MobileNav({
   onLogout,
   isAuthenticated,
   userName,
+  userRole,
   onClose,
 }: StoreHeaderProps & { onClose: () => void }) {
   const handleNav = (view: string) => {
     onNavigate(view);
     onClose();
   };
-
   const handleCart = () => {
     onOpenCart();
     onClose();
   };
-
   const handleLogin = () => {
     onOpenLogin();
     onClose();
   };
-
   const handleLogout = () => {
     onLogout();
     onClose();
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-black text-white">
       <SheetHeader>
-        <SheetTitle className="flex items-center gap-2">
-          <Store className="h-5 w-5 text-primary" />
-          Indicore Originals
+        <SheetTitle className="flex items-center text-white">
+          <Image
+            src="/logo.png"
+            alt="Indicore Originals"
+            width={220}
+            height={60}
+            className="object-contain"
+          />
         </SheetTitle>
       </SheetHeader>
 
       <nav className="flex-1 py-4" aria-label="Mobile navigation">
         <ul className="space-y-1">
-          {NAV_LINKS.map((link) => (
+          {ALL_MOBILE_LINKS.map((link) => (
             <li key={link.id}>
               <button
                 type="button"
                 onClick={() => handleNav(link.id)}
-                className="flex items-center w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] text-left text-foreground hover:bg-accent hover:text-accent-foreground"
+                className="flex items-center w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-11 text-left text-white/90 hover:bg-white/10 hover:text-orange-400"
               >
                 {link.label}
               </button>
@@ -102,10 +134,10 @@ function MobileNav({
         </ul>
       </nav>
 
-      <div className="border-t pt-4 space-y-2">
+      <div className="border-t border-white/10 pt-4 space-y-2">
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 min-h-[44px]"
+          className="w-full justify-start gap-3 min-h-11 text-white/90 hover:bg-white/10 hover:text-orange-400"
           onClick={() => handleNav("search")}
         >
           <Search className="h-4 w-4" />
@@ -114,24 +146,35 @@ function MobileNav({
 
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 min-h-[44px]"
+          className="w-full justify-start gap-3 min-h-11 text-white/90 hover:bg-white/10 hover:text-orange-400"
           onClick={handleCart}
         >
           <ShoppingCart className="h-4 w-4" />
           Cart
           {cartCount > 0 && (
-            <Badge variant="default" className="ml-auto">
+            <Badge variant="default" className="ml-auto bg-orange-500">
               {cartCount}
             </Badge>
           )}
         </Button>
 
+        {/* ✓ FIX 3: Fixed nested ternary - replaced entire broken block */}
         {isAuthenticated ? (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 px-3 py-2 text-sm text-white/60">
               <User className="h-4 w-4" />
               <span className="truncate">{userName ?? "Account"}</span>
             </div>
+            {userRole === "admin" && (
+              <button
+                type="button"
+                onClick={() => handleNav("admin")}
+                className="flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-11 text-left text-orange-400 hover:bg-white/10"
+              >
+                <ShieldCheck className="h-4 w-4 shrink-0" />
+                <span>Admin Panel</span>
+              </button>
+            )}
             {CUSTOMER_NAV_LINKS.map((link) => {
               const Icon = link.icon;
               return (
@@ -139,7 +182,7 @@ function MobileNav({
                   key={link.id}
                   type="button"
                   onClick={() => handleNav(link.id)}
-                  className="flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] text-left text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  className="flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-11 text-left text-white/70 hover:bg-white/10 hover:text-orange-400"
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span>{link.label}</span>
@@ -148,7 +191,7 @@ function MobileNav({
             })}
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 min-h-[44px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              className="w-full justify-start gap-3 min-h-11 text-white/70 hover:text-red-400 hover:bg-red-500/10"
               onClick={handleLogout}
             >
               <LogOut className="h-4 w-4" />
@@ -158,7 +201,7 @@ function MobileNav({
         ) : (
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 min-h-[44px]"
+            className="w-full justify-start gap-3 min-h-11 text-white/90 hover:bg-white/10 hover:text-orange-400"
             onClick={handleLogin}
           >
             <LogIn className="h-4 w-4" />
@@ -170,6 +213,7 @@ function MobileNav({
   );
 }
 
+// ✓ FIX 4: Added userRole to StoreHeader destructuring
 export function StoreHeader({
   onNavigate,
   onOpenCart,
@@ -178,25 +222,53 @@ export function StoreHeader({
   onLogout,
   isAuthenticated,
   userName,
+  userRole,
+  currentView,
 }: StoreHeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/homepage")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (active && json?.categories) {
+          setCategories(json.categories);
+        }
+      })
+      .catch(() => {
+        // Dropdown silently falls back to a plain "Browse all" link
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const linkClass = (id: string) =>
+    `px-3 py-2 text-sm font-medium transition-colors min-h-11 rounded-md ${
+      currentView === id
+        ? "text-orange-400"
+        : "text-white/80 hover:text-orange-400 hover:bg-white/5"
+    }`;
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-background border-b">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 w-full bg-black border-b border-white/10">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left: Logo */}
         <button
           type="button"
           onClick={() => onNavigate("home")}
-          className="flex items-center gap-2 min-h-[44px] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+          className="flex items-center shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 rounded-sm"
         >
-          <Store className="h-6 w-6 text-primary" />
-          <span className="text-lg font-bold tracking-tight whitespace-nowrap hidden xs:inline">
-            Indicore Originals
-          </span>
-          <span className="text-lg font-bold tracking-tight xs:hidden">
-            Indicore
-          </span>
+          <Image
+            src="/logo.png"
+            alt="Indicore Originals"
+            width={400}
+            height={174}
+            priority
+            className="h-12 w-auto object-contain sm:h-20"
+          />
         </button>
 
         {/* Center: Desktop nav links */}
@@ -206,7 +278,54 @@ export function StoreHeader({
               key={link.id}
               type="button"
               onClick={() => onNavigate(link.id)}
-              className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px] rounded-md hover:bg-accent"
+              className={linkClass(link.id)}
+            >
+              {link.label}
+            </button>
+          ))}
+
+          {/* Categories dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={`${linkClass("categories")} flex items-center gap-1`}
+              >
+                Categories
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="bg-neutral-900 border-white/10 text-white"
+            >
+              {categories.length > 0 ? (
+                categories.map((cat) => (
+                  <DropdownMenuItem
+                    key={cat.id}
+                    onClick={() => onNavigate("shop", { category: cat.slug })}
+                    className="cursor-pointer focus:bg-white/10 focus:text-orange-400"
+                  >
+                    {cat.name}
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <DropdownMenuItem
+                  onClick={() => onNavigate("shop")}
+                  className="cursor-pointer focus:bg-white/10 focus:text-orange-400"
+                >
+                  Browse all products
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {SECONDARY_NAV_LINKS.map((link) => (
+            <button
+              key={link.id}
+              type="button"
+              onClick={() => onNavigate(link.id)}
+              className={linkClass(link.id)}
             >
               {link.label}
             </button>
@@ -215,53 +334,44 @@ export function StoreHeader({
 
         {/* Right: Actions */}
         <div className="flex items-center gap-1">
-          {/* Search — desktop */}
           <Button
             variant="ghost"
             size="sm"
-            className="min-h-[44px] min-w-[44px] p-2 hidden md:inline-flex"
+            className="min-h-11 min-w-11 p-2 hidden md:inline-flex text-white/80 hover:text-orange-400 hover:bg-white/5"
             onClick={() => onNavigate("search")}
             aria-label="Search products"
           >
             <Search className="h-5 w-5" />
           </Button>
 
-          {/* Cart */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="relative min-h-[44px] min-w-[44px] p-2"
-            onClick={onOpenCart}
-            aria-label={`Cart with ${cartCount} item${cartCount !== 1 ? "s" : ""}`}
-          >
-            <ShoppingCart className="h-5 w-5" />
-            {cartCount > 0 && (
-              <Badge
-                variant="default"
-                className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center px-1 text-[10px] font-bold"
-              >
-                {cartCount > 99 ? "99+" : cartCount}
-              </Badge>
-            )}
-          </Button>
-
-          {/* Login / User — desktop */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center">
+            {/* ✓ FIX 5: Fixed desktop authenticated block with proper ternary and admin button */}
             {isAuthenticated ? (
               <>
+                {userRole === "admin" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="min-h-11 gap-1.5 px-2 text-white/80 hover:text-orange-400 hover:bg-white/5"
+                    onClick={() => onNavigate("admin")}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    <span className="text-xs">Admin Panel</span>
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="min-h-[44px] gap-1.5 px-2"
+                  className="min-h-11 gap-1.5 px-2 text-white/80 hover:text-orange-400 hover:bg-white/5"
                   onClick={() => onNavigate("customer-dashboard")}
                 >
                   <LayoutDashboard className="h-4 w-4" />
-                  <span className="max-w-[100px] truncate text-xs">{userName}</span>
+                  <span className="max-w-25 truncate text-xs">{userName}</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="min-h-[44px] min-w-[44px] p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  className="min-h-11 min-w-11 p-2 text-white/60 hover:text-red-400 hover:bg-red-500/10"
                   onClick={onLogout}
                   aria-label="Logout"
                 >
@@ -272,28 +382,46 @@ export function StoreHeader({
               <Button
                 variant="ghost"
                 size="sm"
-                className="min-h-[44px] gap-1.5 px-3"
+                className="min-h-11 min-w-11 p-2 text-white/80 hover:text-orange-400 hover:bg-white/5"
                 onClick={onOpenLogin}
+                aria-label="Login"
               >
-                <LogIn className="h-4 w-4" />
-                Login
+                <User className="h-5 w-5" />
               </Button>
             )}
           </div>
 
-          {/* Mobile hamburger */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="relative min-h-11 min-w-11 p-2 text-white/80 hover:text-orange-400 hover:bg-white/5"
+            onClick={onOpenCart}
+            aria-label={`Cart with ${cartCount} item${cartCount !== 1 ? "s" : ""}`}
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {cartCount > 0 && (
+              <Badge
+                variant="default"
+                className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center px-1 text-[10px] font-bold bg-orange-500 border-0"
+              >
+                {cartCount > 99 ? "99+" : cartCount}
+              </Badge>
+            )}
+          </Button>
+
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="min-h-[44px] min-w-[44px] p-2 md:hidden"
+                className="min-h-11 min-w-11 p-2 md:hidden text-white/80 hover:text-orange-400 hover:bg-white/5"
                 aria-label="Open navigation menu"
               >
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-72 p-0">
+              {/* ✓ FIX 6: Pass userRole to MobileNav */}
               <MobileNav
                 onNavigate={onNavigate}
                 onOpenCart={onOpenCart}
@@ -302,6 +430,7 @@ export function StoreHeader({
                 onLogout={onLogout}
                 isAuthenticated={isAuthenticated}
                 userName={userName}
+                userRole={userRole}
                 onClose={() => setMobileOpen(false)}
               />
             </SheetContent>

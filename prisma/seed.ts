@@ -2,7 +2,12 @@ import { config } from "dotenv";
 config();
 
 import bcrypt from "bcryptjs";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
+
+type ProductWithRelations = Prisma.ProductGetPayload<{
+  include: { variants: true; productTags: true };
+}>;
+
 
 const db = new PrismaClient();
 
@@ -10,7 +15,11 @@ async function seed() {
   console.log("🌱 Seeding database...");
 
   // 1. Create admin user (password: admin account — 16+ chars as per plan)
-  const adminPassword = await bcrypt.hash("IndicoreAdmin2024!Secure", 10);
+  const adminPasswordPlain = process.env.SEED_ADMIN_PASSWORD;
+if (!adminPasswordPlain) {
+  throw new Error("SEED_ADMIN_PASSWORD env variable is required to run the seed script");
+}
+const adminPassword = await bcrypt.hash(adminPasswordPlain, 10);
 
   const adminUser = await db.user.upsert({
     where: { email: "admin@indicoreoriginals.com" },
@@ -64,37 +73,37 @@ async function seed() {
 
   // 3. Seed homepage content singleton (includes customer_reviews — Resolution #6)
   // Uses native Json type — no JSON.stringify needed
-  await db.homepageContent.upsert({
-    where: { id: 1 },
-    update: {},
-    create: {
-      id: 1,
-      heroBanner: {
-        image_url: "/placeholder-hero.jpg",
-        text: "Welcome to Indicore Originals",
-        cta_text: "Shop Now",
-        cta_link: "/shop",
-      },
-      featuredProductIds: [],
-      categoriesSection: { display_categories: [] },
-      whyChooseUs: [
-        { icon: "truck", title: "Free Shipping", description: "On orders above ₹299" },
-        { icon: "shield-check", title: "Secure Payments", description: "COD available" },
-        { icon: "refresh-cw", title: "Easy Returns", description: "Hassle-free return policy" },
-        { icon: "headphones", title: "24/7 Support", description: "We're here to help" },
-      ],
-      customerReviews: { max_reviews_to_show: 6 },
-      footer: {
-        contact_text: "support@indicoreoriginals.com",
-        social_links: {
-          instagram: "https://instagram.com/indicore",
-          facebook: "https://facebook.com/indicore",
-        },
-        copyright_text: "© 2024 Indicore Originals. All rights reserved.",
-      },
+  const homepageContentData = {
+  heroBanner: {
+    image_url: "/Hero-bana.png",
+    text: "Welcome to Indicore Originals",
+    cta_text: "Shop Now",
+    cta_link: "/shop",
+  },
+  featuredProductIds: [],
+  categoriesSection: { display_categories: [] },
+  whyChooseUs: [
+    { icon: "truck", title: "Free Shipping", description: "On orders above ₹299" },
+    { icon: "shield-check", title: "Secure Payments", description: "COD available" },
+    { icon: "refresh-cw", title: "Easy Returns", description: "Hassle-free return policy" },
+    { icon: "headphones", title: "24/7 Support", description: "We're here to help" },
+  ],
+  customerReviews: { max_reviews_to_show: 6 },
+  footer: {
+    contact_text: "support@indicoreoriginals.com",
+    social_links: {
+      instagram: "https://instagram.com/indicore",
+      facebook: "https://facebook.com/indicore",
     },
-  });
+    copyright_text: "© 2026 Indicore Originals. All rights reserved.",
+  },
+};
 
+await db.homepageContent.upsert({
+  where: { id: 1 },
+  update: homepageContentData,   // ✅ now actually updates on re-seed
+  create: { id: 1, ...homepageContentData },
+});
   console.log("✅ Homepage content singleton seeded (id: 1)");
 
   // ─── Phase 3: Seed sample storefront data ──────────────────────────────
@@ -268,7 +277,7 @@ async function seed() {
     },
   ];
 
-  const createdProducts = [];
+  const createdProducts: ProductWithRelations[] = [];
   for (const pData of productsData) {
     const product = await db.product.upsert({
       where: { slug: pData.slug },

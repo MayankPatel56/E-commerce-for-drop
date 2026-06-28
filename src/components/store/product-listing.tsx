@@ -332,7 +332,7 @@ export function ProductListing({
             placeholder="Search products..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-9 min-h-[44px]"
+            className="pl-9 min-h-11"
           />
         </div>
       </div>
@@ -353,7 +353,7 @@ export function ProductListing({
         ) : (
           <div className="space-y-1 max-h-52 overflow-y-auto custom-scrollbar">
             <label
-              className={`flex items-center gap-2 min-h-[36px] px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors ${
+              className={`flex items-center gap-2 min-h-9 px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors ${
                 selectedCategory === "" ? "bg-muted font-medium" : ""
               }`}
             >
@@ -372,7 +372,7 @@ export function ProductListing({
             {categories.map((cat) => (
               <label
                 key={cat.id}
-                className={`flex items-center justify-between gap-2 min-h-[36px] px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors ${
+                className={`flex items-center justify-between gap-2 min-h-9 px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors ${
                   selectedCategory === cat.slug ? "bg-muted font-medium" : ""
                 }`}
               >
@@ -417,7 +417,7 @@ export function ProductListing({
                 setSelectedTags([]);
                 setPage(1);
               }}
-              className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline min-h-[28px]"
+              className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline min-h-7"
             >
               Clear tags
             </button>
@@ -436,7 +436,7 @@ export function ProductListing({
             {tags.map((tag) => (
               <label
                 key={tag.id}
-                className="flex items-center justify-between gap-2 min-h-[36px] px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors"
+                className="flex items-center justify-between gap-2 min-h-9 px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <Checkbox
@@ -465,7 +465,7 @@ export function ProductListing({
             placeholder="Min"
             value={minPrice}
             onChange={(e) => handleMinPriceChange(e.target.value)}
-            className="min-h-[44px] w-full"
+            className="min-h-11 w-full"
             min={0}
           />
           <span className="text-muted-foreground text-sm">-</span>
@@ -474,7 +474,7 @@ export function ProductListing({
             placeholder="Max"
             value={maxPrice}
             onChange={(e) => handleMaxPriceChange(e.target.value)}
-            className="min-h-[44px] w-full"
+            className="min-h-11 w-full"
             min={0}
           />
         </div>
@@ -483,7 +483,7 @@ export function ProductListing({
       <Separator />
 
       {/* In Stock Only */}
-      <div className="flex items-center justify-between min-h-[44px]">
+      <div className="flex items-center justify-between min-h-11">
         <Label htmlFor="in-stock-switch" className="text-sm font-medium cursor-pointer">
           In Stock Only
         </Label>
@@ -509,7 +509,7 @@ export function ProductListing({
             setPage(1);
           }}
         >
-          <SelectTrigger className="min-h-[44px] w-full">
+          <SelectTrigger className="min-h-11 w-full">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
@@ -528,7 +528,7 @@ export function ProductListing({
       {hasActiveFilters && (
         <Button
           variant="outline"
-          className="w-full min-h-[44px]"
+          className="w-full min-h-11"
           onClick={clearAllFilters}
         >
           <X className="h-4 w-4 mr-2" />
@@ -564,17 +564,17 @@ export function ProductListing({
             onOpenChange={setMobileFiltersOpen}
           >
             <SheetTrigger asChild>
-              <Button variant="outline" className="min-h-[44px] min-w-[44px]">
-                <Filter className="h-4 w-4 mr-2" />
+              <Button variant="outline" className="min-h-11 min-w-11">
+                <Filter className="h-4 w-4"/>
                 Filters
-                {hasActiveFilters && (
+                {hasActiveFilters && ( 
                   <Badge variant="secondary" className="ml-2 text-xs">
                     Active
                   </Badge>
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[320px] overflow-y-auto">
+            <SheetContent side="left" className="w-75 sm:w-[320px] overflow-y-auto">
               <SheetHeader>
                 <SheetTitle>Filters</SheetTitle>
                 <SheetDescription>
@@ -594,7 +594,7 @@ export function ProductListing({
               setPage(1);
             }}
           >
-            <SelectTrigger className="min-h-[44px] flex-1">
+            <SelectTrigger className="min-h-11 flex-1">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -636,7 +636,7 @@ export function ProductListing({
             {selectedCategory && (
               <Badge
                 variant="secondary"
-                className="min-h-[28px] cursor-pointer"
+                className="min-h-7 cursor-pointer"
                 onClick={() => {
                   setSelectedCategory("");
                   setPage(1);
@@ -653,7 +653,7 @@ export function ProductListing({
                 <Badge
                   key={tagId}
                   variant="secondary"
-                  className="min-h-[28px] cursor-pointer"
+                  className="min-h-7 cursor-pointer"
                   onClick={() => toggleTag(tagId)}
                 >
                   {tag.name}
@@ -664,7 +664,7 @@ export function ProductListing({
             {minPrice && (
               <Badge
                 variant="secondary"
-                className="min-h-[28px] cursor-pointer"
+                className="min-h-7 cursor-pointer"
                 onClick={() => {
                   setMinPrice("");
                   setPage(1);
@@ -677,7 +677,7 @@ export function ProductListing({
             {maxPrice && (
               <Badge
                 variant="secondary"
-                className="min-h-[28px] cursor-pointer"
+                className="min-h-7 cursor-pointer"
                 onClick={() => {
                   setMaxPrice("");
                   setPage(1);
@@ -690,7 +690,7 @@ export function ProductListing({
             {inStockOnly && (
               <Badge
                 variant="secondary"
-                className="min-h-[28px] cursor-pointer"
+                className="min-h-7 cursor-pointer"
                 onClick={() => {
                   setInStockOnly(false);
                   setPage(1);
@@ -703,7 +703,7 @@ export function ProductListing({
             {search && (
               <Badge
                 variant="secondary"
-                className="min-h-[28px] cursor-pointer"
+                className="min-h-7 cursor-pointer"
                 onClick={() => {
                   setSearch("");
                   setSearchInput("");
@@ -724,7 +724,7 @@ export function ProductListing({
             <Button
               variant="outline"
               size="sm"
-              className="mt-2 min-h-[44px]"
+              className="mt-2 min-h-11"
               onClick={fetchProducts}
             >
               Try Again
@@ -749,7 +749,7 @@ export function ProductListing({
             </p>
             {hasActiveFilters && (
               <Button
-                className="mt-4 min-h-[44px]"
+                className="mt-4 min-h-11"
                 onClick={clearAllFilters}
               >
                 <X className="h-4 w-4 mr-2" />
@@ -807,7 +807,7 @@ export function ProductListing({
                       )}
 
                       {/* Name */}
-                      <h3 className="text-sm font-medium leading-tight line-clamp-2 min-h-[2.5rem]">
+                      <h3 className="text-sm font-medium leading-tight line-clamp-2 min-h-10">
                         {product.name}
                       </h3>
 
@@ -841,7 +841,7 @@ export function ProductListing({
                     size="sm"
                     onClick={() => handlePageChange(pagination.page - 1)}
                     disabled={pagination.page <= 1}
-                    className="min-h-[44px] min-w-[44px]"
+                    className="min-h-11 min-w-11"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     <span className="sr-only">Previous</span>
@@ -854,7 +854,7 @@ export function ProductListing({
                       variant={pageNum === pagination.page ? "default" : "outline"}
                       size="sm"
                       onClick={() => handlePageChange(pageNum)}
-                      className="min-h-[44px] min-w-[44px]"
+                      className="min-h-11 min-w-11"
                     >
                       {pageNum}
                     </Button>
@@ -866,7 +866,7 @@ export function ProductListing({
                     size="sm"
                     onClick={() => handlePageChange(pagination.page + 1)}
                     disabled={pagination.page >= pagination.totalPages}
-                    className="min-h-[44px] min-w-[44px]"
+                    className="min-h-11 min-w-11"
                   >
                     <ChevronRight className="h-4 w-4" />
                     <span className="sr-only">Next</span>

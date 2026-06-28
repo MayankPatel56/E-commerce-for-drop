@@ -67,89 +67,97 @@ export async function GET(request: NextRequest) {
 
     const orderWhere = { createdAt: dateFilter };
 
-    // Run all queries in parallel
-    const [
-      totalOrders,
-      revenueResult,
-      pendingOrders,
-      deliveredOrders,
-      cancelledOrders,
-      confirmedOrders,
-      shippedOrders,
-      totalCustomers,
-      subscribers,
-      totalReviews,
-      approvedReviews,
-      pendingReviews,
-      // For repeat purchase rate: customers with >1 order
-      customersWithMultipleOrders,
-      customersWithOrders,
-    ] = await Promise.all([
-      // Total orders in range
-      db.order.count({ where: orderWhere }),
+    // Run queries sequentially to prevent connection pool exhaustion and timeouts
+    // when connection_limit is set to a low value (like 1).
 
-      // Revenue: sum of cartTotal excluding cancelled
-      db.order.aggregate({
-        where: { ...orderWhere, status: { not: "cancelled" } },
-        _sum: { cartTotal: true },
-        _count: true,
-      }),
+    // 1. Group order stats by status to reduce 7 count/sum queries into 1
+    const orderMetrics = await db.order.groupBy({
+      by: ["status"],
+      where: orderWhere,
+      _count: { id: true },
+      _sum: { cartTotal: true },
+    });
 
-      // Status counts
-      db.order.count({ where: { ...orderWhere, status: "pending" } }),
-      db.order.count({ where: { ...orderWhere, status: "delivered" } }),
-      db.order.count({ where: { ...orderWhere, status: "cancelled" } }),
-      db.order.count({ where: { ...orderWhere, status: "confirmed" } }),
-      db.order.count({ where: { ...orderWhere, status: "shipped" } }),
+    let totalOrders = 0;
+    let revenue = 0;
+    let pendingOrders = 0;
+    let deliveredOrders = 0;
+    let cancelledOrders = 0;
+    let confirmedOrders = 0;
+    let shippedOrders = 0;
+    let nonCancelledOrders = 0;
 
-      // Total customers (global, not date-filtered)
-      db.customer.count(),
+    for (const metric of orderMetrics) {
+      const count = metric._count.id;
+      totalOrders += count;
 
-      // Subscribers
-      db.customer.count({ where: { emailConsentGiven: true } }),
+      if (metric.status !== "cancelled") {
+        revenue += metric._sum.cartTotal ?? 0;
+        nonCancelledOrders += count;
+      }
 
-      // Review counts (global, not date-filtered)
-      db.review.count(),
-      db.review.count({ where: { status: "approved" } }),
-      db.review.count({ where: { status: "pending" } }),
+      if (metric.status === "pending") pendingOrders = count;
+      else if (metric.status === "delivered") deliveredOrders = count;
+      else if (metric.status === "cancelled") cancelledOrders = count;
+      else if (metric.status === "confirmed") confirmedOrders = count;
+      else if (metric.status === "shipped") shippedOrders = count;
+    }
 
-      // Repeat purchase: customers with more than 1 order (non-cancelled)
-      db.order.groupBy({
-        by: ["customerId"],
-        where: {
-          customerId: { not: null },
-          status: { not: "cancelled" },
-        },
-        having: { count: { id: { gt: 1 } } },
-        _count: { id: true },
-      }),
+    // 2. Group review stats by status to reduce 3 count queries into 1
+    const reviewMetrics = await db.review.groupBy({
+      by: ["status"],
+      _count: { id: true },
+    });
 
-      // Total unique customers with any orders (non-cancelled)
-      db.order.groupBy({
-        by: ["customerId"],
-        where: {
-          customerId: { not: null },
-          status: { not: "cancelled" },
-        },
-        _count: { id: true },
-      }),
-    ]);
+    let totalReviews = 0;
+    let approvedReviews = 0;
+    let pendingReviews = 0;
+
+    for (const metric of reviewMetrics) {
+      const count = metric._count.id;
+      totalReviews += count;
+
+      if (metric.status === "approved") approvedReviews = count;
+      else if (metric.status === "pending") pendingReviews = count;
+    }
+
+    // 3. Count total customers
+    const totalCustomers = await db.customer.count();
+
+    // 4. Count subscribers
+    const subscribers = await db.customer.count({
+      where: { emailConsentGiven: true },
+    });
+
+    // 5. Repeat purchase: group by customerId to find repeat purchase rate
+    const customerOrderCounts = await db.order.groupBy({
+      by: ["customerId"],
+      where: {
+        customerId: { not: null },
+        status: { not: "cancelled" },
+        ...orderWhere,
+      },
+      _count: { id: true },
+    });
 
     // Calculate derived metrics
-    const revenue = revenueResult._sum.cartTotal ?? 0;
-    const nonCancelledOrders =
-      confirmedOrders + shippedOrders + deliveredOrders + pendingOrders;
+    const avgOrderValue =
+      nonCancelledOrders > 0 ? revenue / nonCancelledOrders : 0;
+
     const codVerificationRate =
       nonCancelledOrders > 0
         ? ((confirmedOrders + shippedOrders + deliveredOrders) / nonCancelledOrders) * 100
         : 0;
 
-    const avgOrderValue =
-      revenueResult._count > 0 ? revenue / revenueResult._count : 0;
+    // Repeat purchase: customers with more than 1 order in the date range
+    const customersWithMultipleOrders = customerOrderCounts.filter(
+      (g) => g._count.id > 1
+    ).length;
+    const customersWithOrders = customerOrderCounts.length;
 
     const repeatPurchaseRate =
-      customersWithOrders.length > 0
-        ? (customersWithMultipleOrders.length / customersWithOrders.length) * 100
+      customersWithOrders > 0
+        ? (customersWithMultipleOrders / customersWithOrders) * 100
         : 0;
 
     return NextResponse.json({
@@ -168,9 +176,11 @@ export async function GET(request: NextRequest) {
       pendingReviews,
     });
   } catch (err) {
+    // Detailed logging to help debug
     console.error("GET /api/admin/analytics error:", err);
+    // Optionally, return the error message in development
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: err instanceof Error ? err.message : String(err) },
       { status: 500 }
     );
   }

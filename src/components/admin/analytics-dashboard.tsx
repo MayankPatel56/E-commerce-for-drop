@@ -156,7 +156,7 @@ export function AnalyticsDashboard() {
       const res = await fetch(`/api/admin/analytics?${params.toString()}`);
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? `Request failed with status ${res.status}`);
+        throw new Error(body?.details || body?.error || `Request failed with status ${res.status}`);
       }
 
       const json: AnalyticsData = await res.json();

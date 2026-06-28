@@ -152,16 +152,16 @@ export function CustomersTable() {
   // ── Skeleton ─────────────────────────────────────────────────────────────
 
   const TableSkeleton = () => (
-    <div className="space-y-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3">
-          <Skeleton className="h-4 w-[120px]" />
-          <Skeleton className="h-4 flex-1 max-w-[180px]" />
-          <Skeleton className="h-4 w-[100px]" />
-          <Skeleton className="h-5 w-[70px]" />
-          <Skeleton className="h-5 w-[50px]" />
-          <Skeleton className="h-4 w-[60px]" />
-          <Skeleton className="h-4 w-[90px]" />
+    <div className="space-y-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 border-b">
+          <Skeleton className="h-5 w-full sm:w-[120px]" />
+          <Skeleton className="h-5 w-full sm:w-[180px]" />
+          <Skeleton className="h-5 w-full sm:w-[100px]" />
+          <Skeleton className="h-5 w-full sm:w-[70px]" />
+          <Skeleton className="h-5 w-full sm:w-[50px]" />
+          <Skeleton className="h-5 w-full sm:w-[60px]" />
+          <Skeleton className="h-5 w-full sm:w-[90px]" />
         </div>
       ))}
     </div>
@@ -191,18 +191,18 @@ export function CustomersTable() {
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="font-medium text-sm truncate max-w-[200px]">
-            {customer.name}
+            {customer?.name || "Unknown"}
           </span>
           <div className="flex items-center gap-1.5 shrink-0 ml-2">
-            {getRoleBadge(customer.role)}
-            {getRegisteredBadge(customer.isRegistered)}
+            {getRoleBadge(customer?.role || "customer")}
+            {getRegisteredBadge(customer?.isRegistered ?? false)}
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
           <Mail className="h-3 w-3 shrink-0" />
-          <span className="truncate">{customer.email}</span>
+          <span className="truncate">{customer?.email || "—"}</span>
         </div>
-        {customer.phone && (
+        {customer?.phone && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
             <Phone className="h-3 w-3 shrink-0" />
             <span>{customer.phone}</span>
@@ -210,10 +210,10 @@ export function CustomersTable() {
         )}
         <div className="flex items-center justify-between mt-3 pt-2 border-t">
           <span className="text-xs text-muted-foreground">
-            {customer._count.orders} order{customer._count.orders !== 1 ? "s" : ""}
+            {customer?._count?.orders ?? 0} order{customer?._count?.orders !== 1 ? "s" : ""}
           </span>
           <span className="text-xs text-muted-foreground">
-            {formatDate(customer.createdAt)}
+            {customer?.createdAt ? formatDate(customer.createdAt) : "—"}
           </span>
         </div>
       </CardContent>
@@ -287,7 +287,7 @@ export function CustomersTable() {
 
       {/* Empty State */}
       {!isLoading && !error && customers.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="flex flex-col items-center justify-center py-12 text-center px-4">
           <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <h3 className="text-lg font-medium">No customers found</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-sm">
@@ -300,7 +300,7 @@ export function CustomersTable() {
       {!isLoading && !error && customers.length > 0 && (
         <div className="space-y-3 md:hidden">
           {customers.map((customer) => (
-            <MobileCard key={customer.id} customer={customer} />
+            <MobileCard key={customer?.id || Math.random()} customer={customer} />
           ))}
         </div>
       )}
@@ -309,74 +309,76 @@ export function CustomersTable() {
       {!isLoading && !error && customers.length > 0 && (
         <div className="hidden md:block">
           <div className="max-h-[calc(100vh-18rem)] overflow-y-auto rounded-md border scrollbar-thin">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="min-w-[160px]">Name</TableHead>
-                  <TableHead className="min-w-[200px]">Email</TableHead>
-                  <TableHead className="min-w-[130px]">Phone</TableHead>
-                  <TableHead className="min-w-[90px]">
-                    <span className="sr-only">Role</span>
-                    <span className="flex items-center gap-1.5">
-                      <Shield className="h-3.5 w-3.5" />
-                      Role
-                    </span>
-                  </TableHead>
-                  <TableHead className="min-w-[100px]">Registered</TableHead>
-                  <TableHead className="min-w-[90px]">Orders</TableHead>
-                  <TableHead className="min-w-[120px]">Created Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customers.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell>
-                      <span className="text-sm font-medium truncate block max-w-[200px]">
-                        {customer.name}
+            <div className="min-w-[740px]">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="min-w-[160px]">Name</TableHead>
+                    <TableHead className="min-w-[200px]">Email</TableHead>
+                    <TableHead className="min-w-[130px]">Phone</TableHead>
+                    <TableHead className="min-w-[90px]">
+                      <span className="sr-only">Role</span>
+                      <span className="flex items-center gap-1.5">
+                        <Shield className="h-3.5 w-3.5" />
+                        Role
                       </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-sm truncate max-w-[200px]">
-                          {customer.email}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {customer.phone ? (
-                        <div className="flex items-center gap-1.5">
-                          <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <span className="text-sm">{customer.phone}</span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{getRoleBadge(customer.role)}</TableCell>
-                    <TableCell>{getRegisteredBadge(customer.isRegistered)}</TableCell>
-                    <TableCell>
-                      <span className="text-sm font-medium">
-                        {customer._count.orders}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {formatDate(customer.createdAt)}
-                      </span>
-                    </TableCell>
+                    </TableHead>
+                    <TableHead className="min-w-[100px]">Registered</TableHead>
+                    <TableHead className="min-w-[90px]">Orders</TableHead>
+                    <TableHead className="min-w-[120px]">Created Date</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {customers.map((customer) => (
+                    <TableRow key={customer?.id || Math.random()}>
+                      <TableCell>
+                        <span className="text-sm font-medium truncate block max-w-[200px]">
+                          {customer?.name || "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-sm truncate max-w-[200px]">
+                            {customer?.email || "—"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {customer?.phone ? (
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-sm">{customer.phone}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{getRoleBadge(customer?.role || "customer")}</TableCell>
+                      <TableCell>{getRegisteredBadge(customer?.isRegistered ?? false)}</TableCell>
+                      <TableCell>
+                        <span className="text-sm font-medium">
+                          {customer?._count?.orders ?? 0}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {customer?.createdAt ? formatDate(customer.createdAt) : "—"}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
       )}
 
       {/* Pagination */}
       {!isLoading && !error && totalPages > 0 && (
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground order-2 sm:order-1">
             Showing{" "}
             <span className="font-medium text-foreground">{rangeStart}</span>
             {"–"}
@@ -384,7 +386,7 @@ export function CustomersTable() {
             {" of "}
             <span className="font-medium text-foreground">{total}</span>
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 order-1 sm:order-2">
             <Button
               variant="outline"
               size="sm"
@@ -394,7 +396,7 @@ export function CustomersTable() {
               aria-label="Previous page"
             >
               <ChevronLeft className="h-4 w-4" />
-              <span className="sm:sr-only">Previous</span>
+              <span className="sr-only sm:not-sr-only">Previous</span>
             </Button>
             <Button
               variant="outline"
@@ -404,7 +406,7 @@ export function CustomersTable() {
               className="min-h-[44px] min-w-[44px]"
               aria-label="Next page"
             >
-              <span className="sm:sr-only">Next</span>
+              <span className="sr-only sm:not-sr-only">Next</span>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

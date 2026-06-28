@@ -333,7 +333,7 @@ export function HomepageEditor() {
         <p className="text-sm text-muted-foreground mt-1">
           {error || "No data returned from the server"}
         </p>
-        <Button onClick={fetchAll} className="mt-4 min-h-[44px]">
+        <Button onClick={fetchAll} className="mt-4 min-h-11">
           Try Again
         </Button>
       </div>
@@ -401,7 +401,7 @@ export function HomepageEditor() {
                     value={hero.image_url}
                     onChange={(e) => updateHero("image_url", e.target.value)}
                     placeholder="https://example.com/hero-banner.jpg"
-                    className="min-h-[44px]"
+                    className="min-h-11"
                   />
                 </div>
                 <div className="space-y-2">
@@ -412,7 +412,7 @@ export function HomepageEditor() {
                     onChange={(e) => updateHero("text", e.target.value)}
                     placeholder="Welcome to our store"
                     rows={3}
-                    className="min-h-[44px]"
+                    className="min-h-11"
                   />
                 </div>
                 <div className="space-y-2">
@@ -422,7 +422,7 @@ export function HomepageEditor() {
                     value={hero.cta_text}
                     onChange={(e) => updateHero("cta_text", e.target.value)}
                     placeholder="Shop Now"
-                    className="min-h-[44px]"
+                    className="min-h-11"
                   />
                   <Label htmlFor="hero-cta-link" className="mt-3">
                     CTA Button Link
@@ -432,7 +432,7 @@ export function HomepageEditor() {
                     value={hero.cta_link}
                     onChange={(e) => updateHero("cta_link", e.target.value)}
                     placeholder="/products"
-                    className="min-h-[44px]"
+                    className="min-h-11"
                   />
                 </div>
               </div>
@@ -482,7 +482,7 @@ export function HomepageEditor() {
                     return (
                       <label
                         key={product.id}
-                        className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 cursor-pointer min-h-[44px]"
+                        className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 cursor-pointer min-h-11"
                       >
                         <input
                           type="checkbox"
@@ -549,7 +549,7 @@ export function HomepageEditor() {
                     return (
                       <div
                         key={category.id}
-                        className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-muted/50 min-h-[44px]"
+                        className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-muted/50 min-h-11"
                       >
                         <div className="flex items-center gap-3">
                           <Switch
@@ -633,7 +633,7 @@ export function HomepageEditor() {
                           size="sm"
                           onClick={() => moveWhyChooseItem(index, "up")}
                           disabled={index === 0}
-                          className="min-h-[36px] min-w-[36px] p-1"
+                          className="min-h-9 min-w-9 p-1"
                           aria-label={`Move item ${index + 1} up`}
                         >
                           <ArrowUp className="h-4 w-4" />
@@ -643,7 +643,7 @@ export function HomepageEditor() {
                           size="sm"
                           onClick={() => moveWhyChooseItem(index, "down")}
                           disabled={index === whyItems.length - 1}
-                          className="min-h-[36px] min-w-[36px] p-1"
+                          className="min-h-9 min-w-9 p-1"
                           aria-label={`Move item ${index + 1} down`}
                         >
                           <ArrowDown className="h-4 w-4" />
@@ -652,7 +652,7 @@ export function HomepageEditor() {
                           variant="ghost"
                           size="sm"
                           onClick={() => removeWhyChooseItem(index)}
-                          className="min-h-[36px] min-w-[36px] p-1 text-destructive hover:text-destructive"
+                          className="min-h-9 min-w-9 p-1 text-destructive hover:text-destructive"
                           aria-label={`Remove item ${index + 1}`}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -668,7 +668,7 @@ export function HomepageEditor() {
                             updateWhyChooseField(index, "icon", e.target.value)
                           }
                           placeholder="e.g. Truck, Shield, Star"
-                          className="min-h-[44px]"
+                          className="min-h-11"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -679,22 +679,18 @@ export function HomepageEditor() {
                             updateWhyChooseField(index, "title", e.target.value)
                           }
                           placeholder="e.g. Free Shipping"
-                          className="min-h-[44px]"
+                          className="min-h-11"
                         />
                       </div>
                       <div className="space-y-1.5">
                         <Label>Description</Label>
-                        <Input
+                         <Input
                           value={item.description}
-                          onChange={(e) =>
-                            updateWhyChooseField(
-                              index,
-                              "description",
-                              e.target.value
-                            )
-                          }
-                          placeholder="Brief description..."
-                          className="min-h-[44px]"
+                           onChange={(e) =>
+                            updateWhyChooseField(index,"description",e.target.value)
+                         }
+                         placeholder="Brief description..."
+                         className="min-h-11"
                         />
                       </div>
                     </div>
@@ -704,7 +700,7 @@ export function HomepageEditor() {
               <Button
                 variant="outline"
                 onClick={addWhyChooseItem}
-                className="min-h-[44px]"
+                className="min-h-11"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Item
@@ -758,7 +754,7 @@ export function HomepageEditor() {
                       const val = parseInt(e.target.value, 10);
                       if (!isNaN(val)) updateMaxReviews(val);
                     }}
-                    className="min-h-[44px] w-24"
+                    className="min-h-11 w-24"
                   />
                   <span className="text-sm text-muted-foreground">
                     (1–20)
@@ -861,7 +857,7 @@ export function HomepageEditor() {
                     }
                     placeholder="Reach us at support@example.com"
                     rows={2}
-                    className="min-h-[44px]"
+                    className="min-h-11"
                   />
                 </div>
                 <div className="space-y-2">
@@ -873,7 +869,7 @@ export function HomepageEditor() {
                       updateSocialLink("instagram", e.target.value)
                     }
                     placeholder="https://instagram.com/yourstore"
-                    className="min-h-[44px]"
+                    className="min-h-11"
                   />
                 </div>
                 <div className="space-y-2">
@@ -885,7 +881,7 @@ export function HomepageEditor() {
                       updateSocialLink("facebook", e.target.value)
                     }
                     placeholder="https://facebook.com/yourstore"
-                    className="min-h-[44px]"
+                    className="min-h-11"
                   />
                 </div>
                 <div className="sm:col-span-2 space-y-2">
@@ -897,7 +893,7 @@ export function HomepageEditor() {
                       updateFooter("copyright_text", e.target.value)
                     }
                     placeholder="© 2025 Indicore Originals. All rights reserved."
-                    className="min-h-[44px]"
+                    className="min-h-11"
                   />
                 </div>
               </div>
@@ -911,7 +907,7 @@ export function HomepageEditor() {
         <Button
           onClick={handleSave}
           disabled={isSaving}
-          className="min-h-[44px] min-w-[120px]"
+          className="min-h-11 min-w-30"
         >
           {isSaving ? (
             <>

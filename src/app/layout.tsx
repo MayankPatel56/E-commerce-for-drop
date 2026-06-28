@@ -15,11 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Indicore Originals — Curated Products",
+  title: "Indicore Originals — The Unique Products",
   description:
     "Shop curated products from Indicore Originals. Modern, mobile-first e-commerce platform with COD payment.",
   icons: {
-    icon: "/logo.svg",
+    icon: "/loko.png",
   },
 };
 

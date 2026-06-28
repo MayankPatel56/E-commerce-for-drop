@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { signIn, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -171,7 +171,7 @@ interface FormErrors {
 
 // ─── Page Component ─────────────────────────────────────────────────────────
 
-export default function HomePage() {
+function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
@@ -595,6 +595,7 @@ export default function HomePage() {
         onNavigate={handleNavigate}
         onOpenCart={() => setCartOpen(true)}
         cartCount={totalItems}
+        userRole={user?.role} 
         onOpenLogin={() => { setAppView("login"); setShowLoginModal(true); setFormErrors({}); setGeneralError(null); setLockoutInfo(null); }}
         isAuthenticated={!!user}
         userName={user?.name}
@@ -722,7 +723,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => handleNavigate("home")}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] flex items-center gap-1"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors min-h-11 flex items-center gap-1"
             >
               <Store className="h-4 w-4" />
               <span className="hidden sm:inline">Store</span>
@@ -868,5 +869,17 @@ export default function HomePage() {
       {renderStorefront()}
       {renderLoginModal()}
     </>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <HomePageContent />
+    </Suspense>
   );
 }

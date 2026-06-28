@@ -43,20 +43,16 @@ type OrderStatus =
   | "return_requested"
   | "returned";
 
-interface OrderItem {
-  id: number;
-  productName: string;
-  quantity: number;
-  price: number;
-}
-
 interface Order {
   id: number;
   orderNumber: string;
-  customerName: string;
-  customerEmail: string;
-  items: OrderItem[];
-  total: number;
+  customer: {
+    name: string;
+    email: string;
+    phone: string;
+  } | null;
+  itemCount: number;
+  cartTotal: number;
   status: OrderStatus;
   createdAt: string;
 }
@@ -141,11 +137,6 @@ function formatStatus(status: OrderStatus): string {
   return STATUS_LABELS[status] ?? status;
 }
 
-function itemCountLabel(items: OrderItem[]): string {
-  const total = items.reduce((sum, item) => sum + item.quantity, 0);
-  return `${total} item${total !== 1 ? "s" : ""}`;
-}
-
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
@@ -212,9 +203,7 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
   }, [searchInput]);
 
   // Notify parent on data change
-  useEffect(() => {
-    onRefresh?.();
-  }, [orders]);
+  
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -250,16 +239,16 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
   // ── Skeleton ─────────────────────────────────────────────────────────────
 
   const TableSkeleton = () => (
-    <div className="space-y-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3">
-          <Skeleton className="h-4 w-[110px]" />
-          <Skeleton className="h-4 flex-1 max-w-[160px]" />
-          <Skeleton className="h-4 w-[50px]" />
-          <Skeleton className="h-4 w-[80px]" />
-          <Skeleton className="h-5 w-[80px]" />
-          <Skeleton className="h-4 w-[90px]" />
-          <Skeleton className="h-5 w-[60px]" />
+    <div className="space-y-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 border-b">
+          <Skeleton className="h-5 w-full sm:w-[110px]" />
+          <Skeleton className="h-5 w-full sm:w-[160px]" />
+          <Skeleton className="h-5 w-full sm:w-[50px]" />
+          <Skeleton className="h-5 w-full sm:w-[80px]" />
+          <Skeleton className="h-5 w-full sm:w-[80px]" />
+          <Skeleton className="h-5 w-full sm:w-[90px]" />
+          <Skeleton className="h-5 w-full sm:w-[60px]" />
         </div>
       ))}
     </div>
@@ -299,21 +288,21 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
     >
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="font-mono text-sm font-medium">{order.orderNumber}</span>
+          <span className="font-mono text-sm font-medium">{order?.orderNumber || "—"}</span>
           <Badge
             variant="outline"
-            className={STATUS_STYLES[order.status]}
+            className={STATUS_STYLES[order?.status || "pending"]}
           >
-            {formatStatus(order.status)}
+            {formatStatus(order?.status || "pending")}
           </Badge>
         </div>
-        <p className="text-sm font-medium truncate">{order.customerName}</p>
-        <p className="text-xs text-muted-foreground truncate">{order.customerEmail}</p>
+        <p className="text-sm font-medium truncate">{order?.customer?.name || "Guest Checkout"}</p>
+        <p className="text-xs text-muted-foreground truncate">{order?.customer?.email || "—"}</p>
         <div className="flex items-center justify-between mt-3">
           <span className="text-xs text-muted-foreground">
-            {itemCountLabel(order.items)} &middot; {formatDate(order.createdAt)}
+            {`${order?.itemCount || 0} item${order?.itemCount !== 1 ? "s" : ""}`} &middot; {formatDate(order?.createdAt || new Date().toISOString())}
           </span>
-          <span className="text-sm font-semibold">{formatCurrency(order.total)}</span>
+          <span className="text-sm font-semibold">{formatCurrency(order?.cartTotal || 0)}</span>
         </div>
       </CardContent>
     </Card>
@@ -423,7 +412,7 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
 
       {/* Empty State */}
       {!isLoading && !error && orders.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="flex flex-col items-center justify-center py-12 text-center px-4">
           <Package className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <h3 className="text-lg font-medium">No orders found</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-sm">{emptyMessage}</p>
@@ -443,91 +432,93 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
       {!isLoading && !error && orders.length > 0 && (
         <div className="hidden md:block">
           <div className="max-h-[calc(100vh-18rem)] overflow-y-auto rounded-md border scrollbar-thin">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="min-w-[120px]">Order #</TableHead>
-                  <TableHead className="min-w-[180px]">Customer</TableHead>
-                  <TableHead className="min-w-[70px]">Items</TableHead>
-                  <TableHead className="min-w-[90px] text-right">Total</TableHead>
-                  <TableHead className="min-w-[110px]">Status</TableHead>
-                  <TableHead className="min-w-[110px]">Date</TableHead>
-                  <TableHead className="min-w-[80px] text-right">
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((order) => (
-                  <TableRow
-                    key={order.id}
-                    className="cursor-pointer"
-                    onClick={() => handleRowClick(order.id)}
-                  >
-                    <TableCell>
-                      <span className="font-mono text-sm font-medium">
-                        {order.orderNumber}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium truncate max-w-[200px]">
-                          {order.customerName}
-                        </span>
-                        <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                          {order.customerEmail}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {itemCountLabel(order.items)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="text-sm font-semibold">
-                        {formatCurrency(order.total)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={STATUS_STYLES[order.status]}
-                      >
-                        {formatStatus(order.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {formatDate(order.createdAt)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="min-h-[44px] min-w-[44px]"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRowClick(order.id);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                        <span className="sr-only">View order {order.orderNumber}</span>
-                      </Button>
-                    </TableCell>
+            <div className="min-w-[740px]">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="min-w-[120px]">Order #</TableHead>
+                    <TableHead className="min-w-[180px]">Customer</TableHead>
+                    <TableHead className="min-w-[70px]">Items</TableHead>
+                    <TableHead className="min-w-[90px] text-right">Total</TableHead>
+                    <TableHead className="min-w-[110px]">Status</TableHead>
+                    <TableHead className="min-w-[110px]">Date</TableHead>
+                    <TableHead className="min-w-[80px] text-right">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => (
+                    <TableRow
+                      key={order.id}
+                      className="cursor-pointer"
+                      onClick={() => handleRowClick(order.id)}
+                    >
+                      <TableCell>
+                        <span className="font-mono text-sm font-medium">
+                          {order?.orderNumber || "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium truncate max-w-[200px]">
+                            {order?.customer?.name || "Guest Checkout"}
+                          </span>
+                          <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            {order?.customer?.email || "—"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {`${order?.itemCount || 0} item${order?.itemCount !== 1 ? "s" : ""}`}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="text-sm font-semibold">
+                          {formatCurrency(order?.cartTotal || 0)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={STATUS_STYLES[order?.status || "pending"]}
+                        >
+                          {formatStatus(order?.status || "pending")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {formatDate(order?.createdAt || new Date().toISOString())}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="min-h-[44px] min-w-[44px]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRowClick(order.id);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span className="sr-only">View order {order?.orderNumber || ""}</span>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
       )}
 
       {/* Pagination */}
       {!isLoading && !error && pagination.totalPages > 0 && (
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground order-2 sm:order-1">
             Showing{" "}
             <span className="font-medium text-foreground">{rangeStart}</span>
             {"–"}
@@ -535,7 +526,7 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
             {" of "}
             <span className="font-medium text-foreground">{pagination.total}</span>
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 order-1 sm:order-2">
             <Button
               variant="outline"
               size="sm"
@@ -544,7 +535,7 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
               className="min-h-[44px] min-w-[44px]"
             >
               <ChevronLeft className="h-4 w-4" />
-              <span className="sm:sr-only">Previous</span>
+              <span className="sr-only sm:not-sr-only">Previous</span>
             </Button>
             <Button
               variant="outline"
@@ -553,7 +544,7 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
               disabled={page >= pagination.totalPages}
               className="min-h-[44px] min-w-[44px]"
             >
-              <span className="sm:sr-only">Next</span>
+              <span className="sr-only sm:not-sr-only">Next</span>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

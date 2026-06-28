@@ -228,7 +228,7 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
           variant="outline"
           size="sm"
           onClick={openAddDialog}
-          className="min-h-[44px] min-w-[44px]"
+          className="min-h-11 min-w-11"
         >
           <Plus className="h-4 w-4 mr-2" />
           Add Variant
@@ -246,12 +246,12 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4 px-4 py-3">
-              <Skeleton className="h-4 w-[100px]" />
-              <Skeleton className="h-4 w-[60px]" />
-              <Skeleton className="h-4 w-[60px]" />
-              <Skeleton className="h-4 w-[60px]" />
-              <Skeleton className="h-4 w-[60px]" />
-              <Skeleton className="h-5 w-[80px]" />
+              <Skeleton className="h-4 w-25" />
+              <Skeleton className="h-4 w-15" />
+              <Skeleton className="h-4 w-15" />
+              <Skeleton className="h-4 w-15" />
+              <Skeleton className="h-4 w-15" />
+              <Skeleton className="h-5 w-20" />
             </div>
           ))}
         </div>
@@ -264,7 +264,7 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
       )}
 
       {!isLoading && variants.length > 0 && (
-        <div className="max-h-96 md:max-h-none overflow-y-auto rounded-md border">
+        <div className="max-h-96 md:max-h-none overflow-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -274,7 +274,7 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
                 <TableHead>Price Override</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-[44px]">
+                <TableHead className="w-11">
                   <span className="sr-only">Actions</span>
                 </TableHead>
               </TableRow>
@@ -307,7 +307,7 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="min-h-[44px] min-w-[44px] p-2"
+                          className="min-h-11 min-w-11 p-2"
                         >
                           <MoreHorizontal className="h-4 w-4" />
                           <span className="sr-only">Actions</span>
@@ -316,7 +316,7 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           onClick={() => openEditDialog(variant)}
-                          className="min-h-[44px] cursor-pointer"
+                          className="min-h-11 cursor-pointer"
                         >
                           <Pencil className="h-4 w-4 mr-2" />
                           Edit
@@ -324,7 +324,7 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => setDeleteTarget(variant)}
-                          className="min-h-[44px] text-destructive focus:text-destructive cursor-pointer"
+                          className="min-h-11 text-destructive focus:text-destructive cursor-pointer"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
@@ -369,7 +369,7 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
               <div className="space-y-2">
                 <Label>Variant Type *</Label>
                 <Select value={formType} onValueChange={setFormType} disabled={isSubmitting}>
-                  <SelectTrigger className="min-h-[44px]">
+                  <SelectTrigger className="min-h-11">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -429,11 +429,11 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
               variant="outline"
               onClick={() => { setDialogOpen(false); resetForm(); }}
               disabled={isSubmitting}
-              className="min-h-[44px]"
+              className="min-h-11"
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting} className="min-h-[44px]">
+            <Button onClick={handleSubmit} disabled={isSubmitting} className="min-h-11">
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -459,13 +459,13 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting} className="min-h-[44px]">
+            <AlertDialogCancel disabled={isDeleting} className="min-h-11">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
-              className="min-h-[44px] bg-destructive text-white hover:bg-destructive/90"
+              className="min-h-11 bg-destructive text-white hover:bg-destructive/90"
             >
               {isDeleting ? (
                 <>

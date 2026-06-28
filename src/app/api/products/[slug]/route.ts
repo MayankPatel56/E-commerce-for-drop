@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 
 /**
  * GET /api/products/[slug] — Public product detail
  * Returns full product info: variants, gallery, approved reviews, SEO, avg rating
  * Plan Reference: Phase 9 ISR — revalidate = 60 (1 minute)
+ *
+ * Caching: result (including "not found" / null) is cached per-slug for 60s,
+ * tagged "products". Caching the null case too prevents cache-penetration —
+ * repeated requests for a nonexistent slug won't repeatedly hit the DB.
  */
 export const revalidate = 60;
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
-  try {
-    const { slug } = await params;
+// Basic slug format guard — reject obvious garbage before it ever reaches
+// the cache layer or the DB (mitigates scraping/probing with junk slugs).
+const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/;
 
+const getCachedProduct = unstable_cache(
+  async (slug: string) => {
     const product = await db.product.findUnique({
       where: { slug },
       include: {
@@ -37,11 +41,30 @@ export async function GET(
       },
     });
 
-    if (!product) {
+    if (!product || !product.isPublished) {
+      return null; // cached as a negative result too
+    }
+
+    return product;
+  },
+  ["product-detail"],
+  { revalidate: 60, tags: ["products"] }
+);
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const { slug } = await params;
+
+    if (!SLUG_PATTERN.test(slug)) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    if (!product.isPublished) {
+    const product = await getCachedProduct(slug);
+
+    if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
@@ -102,7 +125,7 @@ export async function GET(
         comment: r.comment,
         photoUrl: r.photoUrl,
         reviewedAt: r.reviewedAt,
-        customerName: r.customer.name,
+        customerName: r.customer?.name ?? r.displayName ?? "Anonymous",
       })),
       averageRating: avgRating,
       reviewCount: approvedReviews.length,

@@ -6,12 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+// ✅ ScrollArea पुरानी फ़ाइल से import होगा
+// ✅ ScrollReelTestimonials नई फ़ाइल से import होगा
+import { ScrollReelTestimonials } from "@/components/ui/scroll-reel-testimonials"; 
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+// ... बाकी के सारे imports जैसे के थे वैसे ही रहने दें
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Star,
@@ -24,6 +28,8 @@ import {
   Package,
   Heart,
   Zap,
+  Lock,
+  BadgeCheck,
   AlertCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -64,7 +70,9 @@ interface HomepageData {
     title: string;
     comment: string;
     reviewedAt: string;
-    customerName: string;
+    photoUrl: string | null;
+    displayName: string | null;
+    customer: { name: string } | null;
     product: { name: string; slug: string };
   }[];
   footer: {
@@ -99,6 +107,8 @@ const iconMap: Record<string, LucideIcon> = {
   star: Star,
   heart: Heart,
   zap: Zap,
+  lock: Lock,
+  "badge-check": BadgeCheck,
 };
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -169,40 +179,83 @@ export default function StorefrontHomepage({
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ── Section 1: Hero Banner ─────────────────────────────────────── */}
-      <section className="relative flex min-h-[300px] items-center justify-center md:min-h-[400px] lg:min-h-[480px]">
-        {data.heroBanner?.image_url && !heroImageError ? (
-          <Image
-            src={data.heroBanner.image_url}
-            alt={data.heroBanner.text || storeName}
-            fill
-            className="object-cover"
-            priority
-            onError={() => setHeroImageError(true)}
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-neutral-200 to-neutral-300" />
-        )}
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/40" />
+     
+     {/* ── Section 1: Hero Banner ─────────────────────────────────────── */}
 
-        {/* Content */}
-        <div className="relative z-10 mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <h1 className="mb-4 text-3xl font-bold text-white drop-shadow-md sm:text-4xl md:text-5xl">
-            {data.heroBanner?.text || "Welcome to Indicore Originals"}
-          </h1>
-          {data.heroBanner?.cta_text && (
-            <Button
-              size="lg"
-              className="mt-2 min-h-[44px] text-base font-semibold"
-              onClick={() => onNavigate("shop")}
-            >
-              {data.heroBanner.cta_text}
-              <ArrowRight className="ml-1 size-4" />
-            </Button>
-          )}
-        </div>
-      </section>
+<section className="relative isolate overflow-hidden bg-black">
+  {data.heroBanner?.image_url && !heroImageError && (
+    <Image
+      src={data.heroBanner.image_url}
+      alt={data.heroBanner.text || storeName}
+      fill
+      priority
+      className="object-cover object-right"
+      onError={() => setHeroImageError(true)}
+    />
+  )}
+
+  <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/30" />
+
+  <div className="relative mx-auto flex min-h-[460px] max-w-7xl items-center px-4 py-16 sm:px-6 md:min-h-[520px] lg:min-h-[600px] lg:px-8">
+    <div className="max-w-xl text-left">
+      <h1 className="text-4xl font-bold leading-tight text-white sm:text-5xl md:text-6xl">
+        {data.heroBanner?.text ? (
+          data.heroBanner.text
+        ) : (
+          <>
+            Original Products.
+            <br />
+            Curated for{" "}
+            <span className="text-orange-500">Modern Living.</span>
+          </>
+        )}
+      </h1>
+      <p className="mt-4 max-w-md text-base text-white/60 sm:text-lg">
+        Unique, high-quality products selected for people who value
+        originality.
+      </p>
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        {data.heroBanner?.cta_text && (
+          <Button
+            size="lg"
+            className="min-h-[48px] gap-2 bg-orange-500 px-6 text-base font-semibold text-black hover:bg-orange-400"
+            onClick={() => onNavigate("shop")}
+          >
+            {data.heroBanner.cta_text}
+            <ArrowRight className="size-4" />
+          </Button>
+        )}
+        <Button
+          size="lg"
+          variant="outline"
+          className="min-h-[48px] border-white/30 bg-transparent px-6 text-base font-semibold text-white hover:bg-white/10"
+          onClick={() => onNavigate("shop")}
+        >
+          Explore Categories
+        </Button>
+      </div>
+    </div>
+  </div>
+
+  {data.whyChooseUs && data.whyChooseUs.length > 0 && (
+    <div className="relative border-t border-white/10 bg-black">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-6 sm:grid-cols-4 sm:px-6 lg:px-8">
+        {data.whyChooseUs.map((usp, idx) => {
+          const IconComp = iconMap[usp.icon] ?? Package;
+          return (
+            <div key={idx} className="flex items-center gap-3">
+              <IconComp className="size-6 shrink-0 text-orange-500" />
+              <div>
+                <p className="text-sm font-semibold text-white">{usp.title}</p>
+                <p className="text-xs text-white/50">{usp.description}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  )}
+</section>
 
       {/* ── Section 2: Featured Products ───────────────────────────────── */}
       <section className="py-12 md:py-16 lg:py-20">
@@ -220,7 +273,6 @@ export default function StorefrontHomepage({
 
           {data.featuredProducts && data.featuredProducts.length > 0 ? (
             <>
-              {/* Mobile: horizontal scroll */}
               <div className="flex gap-4 overflow-x-auto pb-4 sm:hidden snap-x snap-mandatory scrollbar-hide">
                 {data.featuredProducts.map((product) => (
                   <ProductCard
@@ -231,7 +283,6 @@ export default function StorefrontHomepage({
                 ))}
               </div>
 
-              {/* Desktop: grid */}
               <div className="hidden grid-cols-2 gap-4 sm:grid md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
                 {data.featuredProducts.map((product) => (
                   <ProductCard
@@ -242,7 +293,6 @@ export default function StorefrontHomepage({
                 ))}
               </div>
 
-              {/* Mobile "Shop All" button */}
               <div className="mt-6 text-center sm:hidden">
                 <Button
                   variant="outline"
@@ -296,84 +346,28 @@ export default function StorefrontHomepage({
         </section>
       )}
 
-      {/* ── Section 4: Why Choose Us ───────────────────────────────────── */}
-      {data.whyChooseUs && data.whyChooseUs.length > 0 && (
-        <section className="py-12 md:py-16 lg:py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <h2 className="mb-8 text-center text-2xl font-bold md:mb-10 md:text-3xl">
-              Why Choose Us
-            </h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-              {data.whyChooseUs.map((usp, idx) => {
-                const IconComp = iconMap[usp.icon] ?? Package;
-                return (
-                  <Card key={idx} className="rounded-lg">
-                    <CardContent className="flex flex-col items-center p-6 text-center">
-                      <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10">
-                        <IconComp className="size-6 text-primary" />
-                      </div>
-                      <h3 className="mb-1 font-semibold">{usp.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {usp.description}
-                      </p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Section 5: Customer Reviews ────────────────────────────────── */}
-      <section className="bg-neutral-50 py-12 md:py-16 lg:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      {/* ── Section 5: Customer Reviews (🆕 UPDATED) ───────────────────── */}
+  
+      <section className="bg-neutral-50 py-12 md:py-16 lg:py-20 flex justify-center">
+        <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2 className="mb-8 text-center text-2xl font-bold md:mb-10 md:text-3xl">
             What Our Customers Say
           </h2>
 
           {data.reviews && data.reviews.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-              {data.reviews.map((review) => (
-                <Card key={review.id} className="rounded-lg">
-                  <CardContent className="p-5 md:p-6">
-                    {/* Star rating */}
-                    <div className="mb-2 flex gap-0.5">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`size-4 ${
-                            i < review.rating
-                              ? "fill-amber-400 text-amber-400"
-                              : "text-neutral-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-
-                    {review.title && (
-                      <h3 className="mb-1 font-semibold">{review.title}</h3>
-                    )}
-                    <p className="mb-3 text-sm text-muted-foreground line-clamp-3">
-                      {review.comment}
-                    </p>
-
-                    <div className="mt-auto flex items-center justify-between border-t pt-3">
-                      <span className="text-sm font-medium">
-                        {review.customerName}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {review.reviewedAt
-                          ? new Date(review.reviewedAt).toLocaleDateString(
-                              "en-IN",
-                              { year: "numeric", month: "short", day: "numeric" }
-                            )
-                          : ""}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="flex justify-center">
+              <ScrollReelTestimonials 
+                testimonials={data.reviews
+                  .filter(review => review.comment && review.comment.trim() !== "")
+                  .map((review) => ({
+                    quote: review.comment ?? "Great product!",
+                    author: review.customer?.name ?? review.displayName ?? "Anonymous",
+                    // ✅ AB YAHAN `photoUrl` USE KAREIN! (Aur agar null hai toh placeholder daalein)
+                    image: review.photoUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&auto=format&fit=crop", 
+                    alt: `Review by ${review.customer?.name ?? "Anonymous"}`
+                  }))}
+                charStaggerMs={6}
+              />
             </div>
           ) : (
             <p className="py-16 text-center text-muted-foreground">
@@ -382,7 +376,6 @@ export default function StorefrontHomepage({
           )}
         </div>
       </section>
-
       {/* ── Section 6: FAQ ─────────────────────────────────────────────── */}
       {faqs.length > 0 && (
         <section className="py-12 md:py-16 lg:py-20">
@@ -463,10 +456,7 @@ function ProductCard({
 function LoadingSkeleton() {
   return (
     <>
-      {/* Hero skeleton */}
       <Skeleton className="h-[300px] w-full md:h-[400px]" />
-
-      {/* Featured products skeleton */}
       <section className="py-12 md:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8 flex items-center justify-between">
@@ -484,8 +474,6 @@ function LoadingSkeleton() {
           </div>
         </div>
       </section>
-
-      {/* Categories skeleton */}
       <section className="bg-neutral-50 py-12 md:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Skeleton className="mx-auto mb-8 h-8 w-48 md:mb-10" />
@@ -496,8 +484,6 @@ function LoadingSkeleton() {
           </div>
         </div>
       </section>
-
-      {/* USPs skeleton */}
       <section className="py-12 md:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Skeleton className="mx-auto mb-8 h-8 w-48 md:mb-10" />
@@ -508,8 +494,6 @@ function LoadingSkeleton() {
           </div>
         </div>
       </section>
-
-      {/* Reviews skeleton */}
       <section className="bg-neutral-50 py-12 md:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Skeleton className="mx-auto mb-8 h-8 w-56 md:mb-10" />
@@ -520,8 +504,6 @@ function LoadingSkeleton() {
           </div>
         </div>
       </section>
-
-      {/* FAQ skeleton */}
       <section className="py-12 md:py-16 lg:py-20">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <Skeleton className="mx-auto mb-8 h-8 w-56 md:mb-10" />

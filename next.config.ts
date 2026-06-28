@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const securityHeaders = [
+  // ... your existing headers (unchanged)
   {
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains",
@@ -46,6 +47,18 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: false,
   allowedDevOrigins: ["*"],
+
+  // ✅ ADD THIS SECTION:
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "gefenowenqvlhbrfnibl.supabase.co", // 👈 replace with your actual Supabase project ID
+        pathname: "/storage/v1/object/public/product-images/**", // optional, but restricts to your bucket
+      },
+    ],
+  },
+
   async headers() {
     return [
       {

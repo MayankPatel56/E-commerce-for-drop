@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 
 /**
@@ -7,14 +8,74 @@ import { db } from "@/lib/db";
  *               minPrice, maxPrice, search, sort, page, limit
  * Resolution #9: Multi-tag filtering — products matching ANY of the selected tags
  * Plan Reference: Phase 9 ISR — revalidate = 3600 (1 hour)
+ *
+ * Caching: query results are cached for 5 minutes via unstable_cache, tagged
+ * "products" so admin mutations can invalidate immediately with revalidateTag.
  */
 export const revalidate = 3600;
+
+const getCachedProductList = unstable_cache(
+  async (
+    where: Record<string, unknown>,
+    orderBy: Record<string, string>,
+    skip: number,
+    limit: number
+  ) => {
+    // Parallel: count + findMany are independent of each other
+    const [total, products] = await Promise.all([
+      db.product.count({ where }),
+      db.product.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+          variants: {
+            select: {
+              id: true,
+              variantType: true,
+              variantValue: true,
+              price: true,
+              stockQuantity: true,
+              isOutOfStock: true,
+            },
+          },
+          productTags: {
+            include: {
+              tag: { select: { id: true, name: true } },
+            },
+          },
+          _count: {
+            select: { reviews: { where: { status: "approved" } } },
+          },
+        },
+      }),
+    ]);
+
+    const productIds = products.map((p) => p.id);
+    const ratingAggregates = productIds.length > 0
+      ? await db.review.groupBy({
+          by: ["productId"],
+          where: {
+            productId: { in: productIds },
+            status: "approved",
+          },
+          _avg: { rating: true },
+          _count: { rating: true },
+        })
+      : [];
+
+    return { total, products, ratingAggregates };
+  },
+  ["products-list"],
+  { revalidate: 300, tags: ["products"] } // 5 minute cache, invalidated by admin writes
+);
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
 
-    // Parse query parameters
     const categorySlug = searchParams.get("category") || undefined;
     const tagsParam = searchParams.get("tags") || undefined;
     const inStockParam = searchParams.get("inStock");
@@ -25,7 +86,6 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
 
-    // Parse tags (Resolution #9)
     const tagIds = tagsParam
       ? tagsParam
           .split(",")
@@ -33,7 +93,6 @@ export async function GET(req: NextRequest) {
           .filter((id) => !isNaN(id) && id > 0)
       : [];
 
-    // Build where clause
     const where: Record<string, unknown> = { isPublished: true };
 
     if (categorySlug) {
@@ -60,7 +119,6 @@ export async function GET(req: NextRequest) {
       where.name = { contains: searchQuery };
     }
 
-    // Multi-tag filter: products that have ANY of the selected tags
     if (tagIds.length > 0) {
       where.productTags = {
         some: {
@@ -69,59 +127,18 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    // Build order by
     let orderBy: Record<string, string> = { createdAt: "desc" };
     if (sort === "price_asc") orderBy = { price: "asc" };
     else if (sort === "price_desc") orderBy = { price: "desc" };
     else if (sort === "newest") orderBy = { createdAt: "desc" };
     else if (sort === "name_asc") orderBy = { name: "asc" };
 
-    // Count total (for pagination)
-    const total = await db.product.count({ where });
-
-    // Fetch products
-    const products = await db.product.findMany({
+    const { total, products, ratingAggregates } = await getCachedProductList(
       where,
       orderBy,
-      skip: (page - 1) * limit,
-      take: limit,
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-        variants: {
-          select: {
-            id: true,
-            variantType: true,
-            variantValue: true,
-            price: true,
-            stockQuantity: true,
-            isOutOfStock: true,
-          },
-        },
-        productTags: {
-          include: {
-            tag: { select: { id: true, name: true } },
-          },
-        },
-        _count: {
-          select: { reviews: { where: { status: "approved" } } },
-        },
-      },
-    });
-
-    // Calculate average rating per product from approved reviews
-    // Batch query for efficiency
-    const productIds = products.map((p) => p.id);
-    const ratingAggregates = productIds.length > 0
-      ? await db.review.groupBy({
-          by: ["productId"],
-          where: {
-            productId: { in: productIds },
-            status: "approved",
-          },
-          _avg: { rating: true },
-          _count: { rating: true },
-        })
-      : [];
+      (page - 1) * limit,
+      limit
+    );
 
     const ratingMap = new Map<number, { avg: number; count: number }>();
     for (const ra of ratingAggregates) {

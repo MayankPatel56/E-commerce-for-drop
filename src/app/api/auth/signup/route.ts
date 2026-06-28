@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.errors[0]?.message || "Invalid input" },
+        { error: parsed.error.issues[0]?.message || "Invalid input" },
         { status: 400 }
       );
     }
@@ -124,8 +124,8 @@ export async function POST(req: NextRequest) {
       user: {
         id: user.id,
         email: user.email,
-        name: user.customer.name,
-        role: user.customer.role,
+        name: user.customer?.name || name,
+        role: user.customer?.role || "customer",
       },
       message: "Account created successfully. Please sign in.",
     });

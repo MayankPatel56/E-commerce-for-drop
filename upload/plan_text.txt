@@ -903,7 +903,7 @@ why_choose_us, customer_reviews, footer
 '{"display_categories": []}',
 '[{"icon": "truck", "title": "Free Shipping", "description": "On orders above ₹299"}]',
 '{"max_reviews_to_show": 6}',
-'{"contact_text": "support@indicoreoriginals.com", "copyright_text": "© 2024 Indicore Originals"}'
+'{"contact_text": "support@indicoreoriginals.com", "copyright_text": "© 2026 Indicore Originals"}'
 ) ON CONFLICT (id) DO NOTHING;
 Settings Key-Value Store:
 sql
