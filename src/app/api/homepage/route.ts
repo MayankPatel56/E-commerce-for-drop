@@ -1,19 +1,24 @@
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 
 /**
  * GET /api/homepage — Public homepage content
  * Returns the homepage_content singleton + featured products + categories + latest approved reviews
  * Plan Reference: Phase 9 ISR — revalidate = 300 (5 minutes)
+ *
+ * Caching: the whole DB-fetch step is wrapped in unstable_cache, tagged
+ * "products" (shares invalidation with admin product/review mutations) and
+ * "homepage" (for homepage-content-specific edits).
  */
 export const revalidate = 300;
 
-export async function GET() {
-  try {
+const getCachedHomepageData = unstable_cache(
+  async () => {
     // 1. Get homepage content singleton
     const homepage = await db.homepageContent.findUnique({ where: { id: 1 } });
     if (!homepage) {
-      return NextResponse.json({ error: "Homepage content not configured" }, { status: 404 });
+      return null;
     }
 
     // Parse JSON columns
@@ -24,9 +29,6 @@ export async function GET() {
     const customerReviews = (homepage.customerReviews as Record<string, any> | null) ?? { max_reviews_to_show: 6 };
     const footer = homepage.footer ?? null;
 
-    // 2-5. Fetch featured products, categories, reviews, and settings in parallel —
-    // none of these depend on each other's results, only on values already
-    // derived from `homepage` above, so there's no reason to await them one at a time.
     const displayCategoryIds = categoriesSection?.display_categories || [];
     const maxReviews = customerReviews.max_reviews_to_show ?? 6;
 
@@ -65,19 +67,17 @@ export async function GET() {
           }),
 
       // 4. Latest approved reviews (count controlled by customer_reviews config)
-            // 4. Latest approved reviews (count controlled by customer_reviews config)
       db.review.findMany({
         where: { status: "approved" },
         orderBy: { reviewedAt: "desc" },
         take: maxReviews,
-        // ✅ YAHAN CHANGES KAREIN: `include` ki jagah `select` use karein aur `photoUrl` add karein
         select: {
           id: true,
           rating: true,
           title: true,
           comment: true,
           reviewedAt: true,
-          photoUrl: true, // ✅ YEH LINE ADD KAREIN (Taki photo URL aaye!)
+          photoUrl: true,
           displayName: true,
           customer: { select: { name: true } },
           product: { select: { name: true, slug: true } },
@@ -96,7 +96,7 @@ export async function GET() {
       settingsMap[s.key] = s.value;
     }
 
-    return NextResponse.json({
+    return {
       heroBanner,
       featuredProducts,
       categories,
@@ -105,7 +105,21 @@ export async function GET() {
       reviews,
       footer,
       settings: settingsMap,
-    });
+    };
+  },
+  ["homepage-data"],
+  { revalidate: 300, tags: ["products", "homepage"] }
+);
+
+export async function GET() {
+  try {
+    const data = await getCachedHomepageData();
+
+    if (!data) {
+      return NextResponse.json({ error: "Homepage content not configured" }, { status: 404 });
+    }
+
+    return NextResponse.json(data);
   } catch (error) {
     console.error("GET /api/homepage error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
