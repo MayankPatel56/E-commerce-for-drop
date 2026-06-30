@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
  * Returns active FAQs ordered by displayOrder
  * Plan Reference: Phase 9 ISR — revalidate = 1800 (30 minutes)
  */
-export const revalidate = 1800;
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {

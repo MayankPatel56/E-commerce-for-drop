@@ -11,7 +11,7 @@ import { db } from "@/lib/db";
  * "products" (shares invalidation with admin product/review mutations) and
  * "homepage" (for homepage-content-specific edits).
  */
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 const getCachedHomepageData = unstable_cache(
   async () => {

@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
  * Returns categories with product count for storefront navigation
  * Plan Reference: Phase 9 ISR — revalidate = 3600 (1 hour)
  */
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {

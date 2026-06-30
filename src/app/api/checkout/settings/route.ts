@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
  * Returns COD min/max values for checkout validation
  * Plan Reference: Phase 9 ISR — revalidate = 3600 (1 hour)
  */
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
