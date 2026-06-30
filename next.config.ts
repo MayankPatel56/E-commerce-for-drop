@@ -46,11 +46,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // 👇 ADD THIS BLOCK
-
-    eslint: {
-      ignoreDuringBuilds: true,
-  },
   reactStrictMode: false,
 
   images: {
