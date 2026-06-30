@@ -174,7 +174,7 @@ interface FormErrors {
 function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const errorParam = searchParams.get("error");
+  const errorParam = searchParams?.get("error") || null; // ✅ Added optional chaining and fallback
 
   // Navigation state
   const [appView, setAppView] = useState<AppView>("home");
@@ -872,6 +872,7 @@ function HomePageContent() {
   );
 }
 
+// ✅ FIX: Export with dynamic to prevent static generation issues
 export default function HomePage() {
   return (
     <Suspense fallback={

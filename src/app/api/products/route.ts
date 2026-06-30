@@ -12,6 +12,11 @@ import { db } from "@/lib/db";
  * Caching: query results are cached for 5 minutes via unstable_cache, tagged
  * "products" so admin mutations can invalidate immediately with revalidateTag.
  */
+
+// ✅ FIX: Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
+// ✅ Keep ISR revalidation for the page that uses this data
 export const revalidate = 3600;
 
 const getCachedProductList = unstable_cache(
