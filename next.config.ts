@@ -41,17 +41,19 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  // output: "standalone", // Only for self-hosting, not needed on Vercel
+  output: "standalone",
+
   typescript: {
     ignoreBuildErrors: true,
   },
+
   reactStrictMode: false,
 
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "gefenowenqvlhbrfnibl.supabase.co", // replace with your actual Supabase project ID
+        hostname: "gefenowenqvlhbrfnibl.supabase.co",
         pathname: "/storage/v1/object/public/product-images/**",
       },
     ],
@@ -65,6 +67,6 @@ const nextConfig = {
       },
     ];
   },
-} as NextConfig;
+} satisfies NextConfig;
 
 export default nextConfig;
