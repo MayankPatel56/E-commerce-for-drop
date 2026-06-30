@@ -47,9 +47,7 @@ const nextConfig = {
   },
 
   // 👇 ADD THIS BLOCK
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+
 
   reactStrictMode: false,
 
