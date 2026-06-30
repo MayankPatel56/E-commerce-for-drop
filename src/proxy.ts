@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {   // ✅ renamed from 'middleware' to 'proxy'
   const { pathname } = req.nextUrl;
 
   // Protect admin routes
@@ -17,7 +17,6 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Check admin role
     if (token.role !== "admin") {
       const loginUrl = new URL("/", req.url);
       loginUrl.searchParams.set("error", "access_denied");
