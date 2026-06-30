@@ -174,7 +174,7 @@ interface FormErrors {
 function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const errorParam = searchParams?.get("error") || null; // ✅ Added optional chaining and fallback
+  const errorParam = searchParams?.get("error") || null;
 
   // Navigation state
   const [appView, setAppView] = useState<AppView>("home");
@@ -244,14 +244,13 @@ function HomePageContent() {
   const handleNavigate = useCallback((view: string, data?: Record<string, unknown>) => {
     window.scrollTo(0, 0);
     if (view === "admin") {
-      // Only admin can go to admin
       if (user?.role === "admin") {
         setAppView("admin");
       }
       return;
     }
     if (view === "login") {
-      if (user) return; // Already logged in
+      if (user) return;
       setShowLoginModal(true);
       return;
     }
@@ -281,7 +280,6 @@ function HomePageContent() {
       setAppView("checkout");
       return;
     }
-    // Customer views
     if (view === "customer-dashboard" || view === "customer-profile" || view === "customer-wishlist" || view === "customer-reviews" || view === "customer-orders") {
       if (!user) {
         setShowLoginModal(true);
@@ -290,7 +288,6 @@ function HomePageContent() {
       setAppView(view as AppView);
       return;
     }
-    // Default: home
     setAppView(view as AppView);
   }, [user]);
 
@@ -383,7 +380,6 @@ function HomePageContent() {
         setGeneralError(data.error || "Signup failed");
         return;
       }
-      // Auto-signin
       const result = await signIn("credentials", {
         email: signupEmail.trim().toLowerCase(),
         password: signupPassword,
@@ -483,12 +479,10 @@ function HomePageContent() {
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        {/* Backdrop */}
         <div
           className="absolute inset-0 bg-black/50"
           onClick={() => { setShowLoginModal(false); setFormErrors({}); setGeneralError(null); setLockoutInfo(null); }}
         />
-        {/* Modal */}
         <Card className="relative w-full max-w-md shadow-xl z-10">
           <CardHeader className="text-center space-y-2 pb-4">
             <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -690,7 +684,6 @@ function HomePageContent() {
         )}
       </main>
 
-      {/* Footer is rendered by StorefrontHomepage for the home view */}
       {appView !== "home" && (
         <footer className="w-full border-t bg-white py-4 mt-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
@@ -699,7 +692,6 @@ function HomePageContent() {
         </footer>
       )}
 
-      {/* Cart Drawer */}
       <CartDrawer
         open={cartOpen}
         onOpenChange={setCartOpen}
@@ -718,7 +710,6 @@ function HomePageContent() {
         <AdminSidebar activeView={sidebarView} onViewChange={handleViewChange} onLogout={handleLogout} />
 
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Top bar */}
           <header className="h-16 border-b bg-white flex items-center px-4 sm:px-6 gap-4">
             <button
               type="button"
@@ -751,7 +742,6 @@ function HomePageContent() {
             </div>
           </header>
 
-          {/* Panel content */}
           <main className="flex-1 p-4 sm:p-6 overflow-auto">
             {adminPanel === "reviews" && (
               <AdminReviewsTable
@@ -872,7 +862,11 @@ function HomePageContent() {
   );
 }
 
-// ✅ FIX: Export with dynamic to prevent static generation issues
+// ✅ FIX: Use generateStaticParams to opt out of static generation for this route
+export function generateStaticParams() {
+  return [];
+}
+
 export default function HomePage() {
   return (
     <Suspense fallback={

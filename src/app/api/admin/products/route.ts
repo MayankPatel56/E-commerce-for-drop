@@ -238,8 +238,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // ✅ Invalidate products cache only after successful creation
-    revalidateTag("products",  { expire: 0 });
+    // ✅ Fix: Correct revalidateTag usage - no expire option needed
+    revalidateTag("products");
 
     return NextResponse.json(product, { status: 201 });
   } catch (err) {

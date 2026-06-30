@@ -45,10 +45,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,   // ✅ now allowed via type assertion below
-  },
-  
   reactStrictMode: false,
 
   images: {
@@ -69,6 +65,6 @@ const nextConfig = {
       },
     ];
   },
-} as NextConfig; // 👈 assertion silences the 'eslint' type error
+} as NextConfig;
 
 export default nextConfig;
