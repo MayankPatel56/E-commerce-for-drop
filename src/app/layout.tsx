@@ -4,6 +4,13 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { CartProvider } from "@/context/cart-context";
 
+console.log("ENV CHECK:", {
+  DATABASE_URL: !!process.env.DATABASE_URL,
+  DIRECT_URL: !!process.env.DIRECT_URL,
+  NEXTAUTH_SECRET: !!process.env.NEXTAUTH_SECRET,
+  SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+});
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
