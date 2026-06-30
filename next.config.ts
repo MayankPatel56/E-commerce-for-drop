@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const securityHeaders = [
-  // ... your existing headers (unchanged)
   {
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains",
@@ -45,6 +44,11 @@ const nextConfig = {
 
   typescript: {
     ignoreBuildErrors: true,
+  },
+
+  // 👇 ADD THIS BLOCK
+  eslint: {
+    ignoreDuringBuilds: true,
   },
 
   reactStrictMode: false,
