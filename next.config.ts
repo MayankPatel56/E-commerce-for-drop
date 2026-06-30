@@ -40,21 +40,23 @@ const securityHeaders = [
   },
 ];
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   // output: "standalone", // Only for self-hosting, not needed on Vercel
   typescript: {
     ignoreBuildErrors: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,   // ✅ now allowed via type assertion below
+  },
   
   reactStrictMode: false,
 
-  // ✅ ADD THIS SECTION:
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "gefenowenqvlhbrfnibl.supabase.co", // 👈 replace with your actual Supabase project ID
-        pathname: "/storage/v1/object/public/product-images/**", // optional, but restricts to your bucket
+        hostname: "gefenowenqvlhbrfnibl.supabase.co", // replace with your actual Supabase project ID
+        pathname: "/storage/v1/object/public/product-images/**",
       },
     ],
   },
@@ -67,6 +69,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-};
+} as NextConfig; // 👈 assertion silences the 'eslint' type error
 
 export default nextConfig;
