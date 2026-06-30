@@ -46,7 +46,6 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  allowedDevOrigins: ["*"],
 
   // ✅ ADD THIS SECTION:
   images: {
