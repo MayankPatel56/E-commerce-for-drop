@@ -41,7 +41,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // output: "standalone", // Only for self-hosting, not needed on Vercel
   typescript: {
     ignoreBuildErrors: true,
   },
