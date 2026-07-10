@@ -765,9 +765,8 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
               ))}
             </div>
           )}
-
           {/* Add to Cart */}
-          <div className="pt-2">
+          <div className="pt-2 space-y-3">
             {noVariantsAvailable ? (
               <Button
                 disabled
@@ -785,22 +784,36 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                 Out of Stock
               </Button>
             ) : (
-              <Button
-                disabled={isVariantDisabled || isAddingToCart}
-                onClick={handleAddToCart}
-                className="w-full min-h-[48px] text-base font-semibold"
-              >
-                {isAddingToCart ? (
-                  <Loader2 className="size-5 animate-spin" />
-                ) : (
-                  <ShoppingCart className="size-5" />
-                )}
-                {isAddingToCart
-                  ? "Adding..."
-                  : !allVariantTypesSelected
-                    ? "Select Options"
-                    : "Add to Cart"}
-              </Button>
+              <>
+                <Button
+                  disabled={isVariantDisabled || isAddingToCart}
+                  onClick={handleAddToCart}
+                  className="w-full min-h-[48px] text-base font-semibold"
+                >
+                  {isAddingToCart ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : (
+                    <ShoppingCart className="size-5" />
+                  )}
+                  {isAddingToCart
+                    ? "Adding..."
+                    : !allVariantTypesSelected
+                      ? "Select Options"
+                      : "Add to Cart"}
+                </Button>
+
+                <Button
+                  disabled={isVariantDisabled || isAddingToCart}
+                  onClick={async () => {
+                    await handleAddToCart();
+                    onNavigate("checkout");
+                  }}
+                  variant="outline"
+                  className="w-full min-h-[48px] text-base font-semibold"
+                >
+                  Buy Now
+                </Button>
+              </>
             )}
           </div>
 
