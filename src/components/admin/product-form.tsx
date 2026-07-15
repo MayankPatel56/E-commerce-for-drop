@@ -159,7 +159,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
     setSeoTitle(p.seoTitle || "");
     setSeoDescription(p.seoDescription || "");
     setIsPublished(p.isPublished || false);
-    setSlugManuallyEdited(true);
+    setSlugManuallyEdited(Boolean(p.slug));
 
     // Images
      if (p.primaryImage) {
@@ -257,7 +257,6 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
   const validate = (): string | null => {
     if (!name.trim()) return "Product name is required";
     if (name.trim().length < 2) return "Product name must be at least 2 characters";
-    if (!slug.trim()) return "Slug is required";
     if (!price || isNaN(Number(price)) || Number(price) <= 0) return "Valid price is required";
     if (!categoryId) return "Category is required";
     return null;
@@ -298,7 +297,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
       // Build payload
       const payload: Record<string, unknown> = {
         name: name.trim(),
-        slug: slug.trim(),
+        slug: slug.trim() || generateSlug(name),
         description: description.trim(),
         price: Number(price),
         categoryId: Number(categoryId),

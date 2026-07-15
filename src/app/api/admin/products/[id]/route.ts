@@ -18,6 +18,7 @@ const variantSchema = z.object({
 
 const updateProductSchema = z.object({
   name: z.string().min(1, "Name is required").max(255).optional(),
+  slug: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   price: z.number().min(0, "Price must be non-negative").optional(),
   categoryId: z.number().int().positive("Category ID is required").optional(),
@@ -32,8 +33,9 @@ const updateProductSchema = z.object({
 
 // ─── Slug Collision Handler ───────────────────────────────────────────────────
 
-async function generateUniqueSlug(name: string, excludeId?: number): Promise<string> {
-  const base = generateSlug(name);
+async function generateUniqueSlug(name: string, excludeId?: number, preferredSlug?: string | null): Promise<string> {
+  const baseSource = preferredSlug?.trim() ? preferredSlug.trim() : name;
+  const base = generateSlug(baseSource) || generateSlug(name) || "product";
   const existing = await db.product.findMany({
     where: { slug: { startsWith: base }, id: excludeId ? { not: excludeId } : undefined },
     select: { slug: true },
@@ -180,9 +182,13 @@ export async function PUT(
     // Build update data
     const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) {
-      const slug = await generateUniqueSlug(data.name, productId);
       updateData.name = data.name;
-      updateData.slug = slug;
+    }
+    if (data.slug !== undefined) {
+      const slugSource = data.slug?.trim() || data.name || existing.name;
+      updateData.slug = await generateUniqueSlug(slugSource, productId, data.slug);
+    } else if (data.name !== undefined) {
+      updateData.slug = await generateUniqueSlug(data.name, productId);
     }
     if (data.description !== undefined) updateData.description = data.description;
     if (data.price !== undefined) updateData.price = data.price;

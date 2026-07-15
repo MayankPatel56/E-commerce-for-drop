@@ -57,12 +57,13 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
+    const normalizedSlug = slug.trim().toLowerCase();
 
-    if (!SLUG_PATTERN.test(slug)) {
+    if (!SLUG_PATTERN.test(normalizedSlug)) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    const product = await getCachedProduct(slug);
+    const product = await getCachedProduct(normalizedSlug);
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });

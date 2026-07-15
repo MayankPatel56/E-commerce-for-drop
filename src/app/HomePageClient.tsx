@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { signIn, signOut } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -169,16 +169,78 @@ interface FormErrors {
   general?: string;
 }
 
+interface HomePageClientProps {
+  initialView?: AppView;
+  initialProductSlug?: string;
+}
+
 // ─── Page Component ─────────────────────────────────────────────────────────
 
-function HomePageContent() {
+function HomePageContent({
+  initialView = "home",
+  initialProductSlug,
+}: HomePageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const errorParam = searchParams?.get("error") || null;
 
   // Navigation state
-  const [appView, setAppView] = useState<AppView>("home");
-  const [productSlug, setProductSlug] = useState<string | null>(null);
+  const [appView, setAppView] = useState<AppView>(initialView);
+  useEffect(() => {
+  switch (pathname) {
+    case "/":
+      setAppView("home");
+      break;
+
+    case "/shop":
+      setAppView("shop");
+      break;
+
+    case "/search":
+      setAppView("search");
+      router.push("/search");
+      break;
+
+    case "/track-order":
+      setAppView("track-order");
+      router.push("/track-order");
+      break;
+
+    case "/checkout":
+      setAppView("checkout");
+      break;
+
+    case "/about":
+      setAppView("about");
+      router.push("/about");
+      break;
+
+    case "/contact":
+      setAppView("contact");
+      router.push("/contact");
+      break;
+
+    case "/faq":
+      setAppView("faq");
+      router.push("/faq");
+      break;
+
+    case "/privacy":
+      setAppView("privacy");
+      break;
+
+    case "/terms":
+      setAppView("terms");
+      break;
+
+    case "/returns":
+      setAppView("returns");
+      router.push("/returns");
+      break;
+  }
+}, [pathname]);
+  const [productSlug, setProductSlug] = useState(initialProductSlug ?? "");
   const [initialCategory, setInitialCategory] = useState<string | undefined>();
 
   // Auth state
@@ -259,20 +321,24 @@ function HomePageContent() {
       if (slug) {
         setProductSlug(slug);
         setAppView("product");
+        router.push(`/product/${slug}`);
       }
       return;
     }
-    if (view === "shop") {
-      setInitialCategory(data?.category as string | undefined);
-      setAppView("shop");
-      return;
-    }
+     if (view === "shop") {
+     setInitialCategory(data?.category as string | undefined);
+     setAppView("shop");
+     router.push("/shop");
+     return;
+       }
     if (view === "search") {
       setAppView("search");
+      router.push("/search");
       return;
     }
     if (view === "track-order") {
       setAppView("track-order");
+      router.push("/track-order");
       return;
     }
     if (view === "checkout") {
@@ -289,7 +355,7 @@ function HomePageContent() {
       return;
     }
     setAppView(view as AppView);
-  }, [user]);
+  }, [user, router]);
 
   // ─── Auth Handlers ──────────────────────────────────────────────────────
 
@@ -864,14 +930,4 @@ function HomePageContent() {
 
 // ✅ FIX: generateStaticParams is REMOVED – it belongs only in server components
 
-export default function HomePage() {
-  return (
-    <Suspense fallback={
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    }>
-      <HomePageContent />
-    </Suspense>
-  );
-}
+export default HomePageContent;

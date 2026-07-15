@@ -17,6 +17,7 @@ const variantSchema = z.object({
 
 const createProductSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
+  slug: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   price: z.number().min(0, "Price must be non-negative"),
   categoryId: z.number().int().positive("Category ID is required"),
@@ -31,8 +32,9 @@ const createProductSchema = z.object({
 
 // ─── Slug Collision Handler ───────────────────────────────────────────────────
 
-async function generateUniqueSlug(name: string): Promise<string> {
-  const base = generateSlug(name);
+async function generateUniqueSlug(name: string, preferredSlug?: string | null): Promise<string> {
+  const baseSource = preferredSlug?.trim() ? preferredSlug.trim() : name;
+  const base = generateSlug(baseSource) || generateSlug(name) || "product";
   const existing = await db.product.findMany({
     where: { slug: { startsWith: base } },
     select: { slug: true },
@@ -202,7 +204,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique slug
-    const slug = await generateUniqueSlug(data.name);
+    const slug = await generateUniqueSlug(data.name, data.slug ?? undefined);
 
     // Create product
     const product = await db.product.create({
@@ -239,7 +241,7 @@ export async function POST(request: NextRequest) {
     });
 
     // ✅ Fix: Correct revalidateTag usage - no expire option needed
-    revalidateTag("products");
+    revalidateTag("products", { expire: 0 });
 
     return NextResponse.json(product, { status: 201 });
   } catch (err) {
