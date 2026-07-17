@@ -185,10 +185,8 @@ export async function PUT(
       updateData.name = data.name;
     }
     if (data.slug !== undefined) {
-      const slugSource = data.slug?.trim() || data.name || existing.name;
+      const slugSource = data.slug?.trim() || existing.slug;
       updateData.slug = await generateUniqueSlug(slugSource, productId, data.slug);
-    } else if (data.name !== undefined) {
-      updateData.slug = await generateUniqueSlug(data.name, productId);
     }
     if (data.description !== undefined) updateData.description = data.description;
     if (data.price !== undefined) updateData.price = data.price;

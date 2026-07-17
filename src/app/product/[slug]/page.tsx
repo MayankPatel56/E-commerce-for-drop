@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import HomePageClient from "../../HomePageClient";
 
 export const revalidate = 60;
@@ -80,15 +81,19 @@ export async function generateMetadata({
     product.description ||
     `View ${product.name} on Indicore Originals.`;
   const imageUrl = await toAbsoluteUrl(product.primaryImage);
+  const canonicalUrl = `${await getSiteUrl()}/product/${product.slug}`;
 
   return {
     title,
     description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title,
       description,
       type: "website",
-      url: `${await getSiteUrl()}/product/${product.slug}`,
+      url: canonicalUrl,
       images: imageUrl ? [{ url: imageUrl, alt: product.name }] : undefined,
     },
     twitter: {
@@ -112,5 +117,9 @@ export default async function ProductPage({
     notFound();
   }
 
-  return <HomePageClient initialView="product" initialProductSlug={slug} />;
+  return (
+    <Suspense fallback={null}>
+      <HomePageClient initialView="product" initialProductSlug={slug} />
+    </Suspense>
+  );
 }
