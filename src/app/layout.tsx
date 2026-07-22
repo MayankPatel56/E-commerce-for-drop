@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { CartProvider } from "@/context/cart-context";
+import { Preloader } from '@/components/Preloader';
 
 console.log("ENV CHECK:", {
   DATABASE_URL: !!process.env.DATABASE_URL,
@@ -37,13 +38,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
-      >
-        <CartProvider>
-          {children}
-          <Toaster position="top-right" richColors />
-        </CartProvider>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+     <CartProvider>
+        <Preloader />
+        {children}
+        <Toaster />
+      </CartProvider>
       </body>
     </html>
   );
