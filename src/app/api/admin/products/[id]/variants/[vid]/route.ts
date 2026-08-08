@@ -9,6 +9,7 @@ const updateVariantSchema = z.object({
   sku: z.string().min(1, "SKU is required").optional(),
   variantType: z.string().min(1, "Variant type is required").optional(),
   variantValue: z.string().min(1, "Variant value is required").optional(),
+  colorHex: z.string().optional().nullable(),
   price: z.number().min(0, "Price must be non-negative").optional().nullable(),
   stockQuantity: z.number().int("Stock must be an integer").optional(),
 });
@@ -64,6 +65,7 @@ export async function PUT(
     if (data.variantType !== undefined) updateData.variantType = data.variantType;
     if (data.variantValue !== undefined) updateData.variantValue = data.variantValue;
     if (data.price !== undefined) updateData.price = data.price;
+    if (data.colorHex !== undefined) updateData.colorHex = data.colorHex;
     if (data.stockQuantity !== undefined) {
       updateData.stockQuantity = data.stockQuantity;
       // isOutOfStock is set automatically by DB trigger (set_is_out_of_stock)

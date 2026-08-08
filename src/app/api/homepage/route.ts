@@ -47,10 +47,15 @@ const getCachedHomepageData = unstable_cache(
           })
         : Promise.resolve([]),
 
-      // 3. Categories for categories section
+      // 3. Categories for categories section (Filtered: only categories with > 0 published products)
       displayCategoryIds.length > 0
         ? db.category.findMany({
-            where: { id: { in: displayCategoryIds } },
+            where: {
+              id: { in: displayCategoryIds },
+              products: {
+                some: { isPublished: true },
+              },
+            },
             include: {
               _count: {
                 select: { products: { where: { isPublished: true } } },
@@ -58,6 +63,11 @@ const getCachedHomepageData = unstable_cache(
             },
           })
         : db.category.findMany({
+            where: {
+              products: {
+                some: { isPublished: true },
+              },
+            },
             include: {
               _count: {
                 select: { products: { where: { isPublished: true } } },

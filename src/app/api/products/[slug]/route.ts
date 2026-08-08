@@ -83,7 +83,7 @@ export async function GET(
     const galleryImages: string[] = (product.galleryImages as string[] | null) ?? [];
 
     // Group variants by type for the UI selector
-    const variantTypes: Record<string, { value: string; variantId: number; price: number | null; stockQuantity: number; isOutOfStock: boolean }[]> = {};
+    const variantTypes: Record<string, { value: string; variantId: number; colorHex: string | null; price: number | null; stockQuantity: number; isOutOfStock: boolean }[]> = {};
     for (const v of product.variants) {
       if (!variantTypes[v.variantType]) {
         variantTypes[v.variantType] = [];
@@ -91,6 +91,7 @@ export async function GET(
       variantTypes[v.variantType].push({
         value: v.variantValue,
         variantId: v.id,
+        colorHex: v.colorHex,
         price: v.price,
         stockQuantity: v.stockQuantity,
         isOutOfStock: v.isOutOfStock,
@@ -103,6 +104,11 @@ export async function GET(
       slug: product.slug,
       description: product.description,
       price: product.price,
+      compareAtPrice: product.compareAtPrice,
+      badgeText: product.badgeText,
+      soldLabel: product.soldLabel,
+      videoUrl: product.videoUrl,
+      features: product.features ?? [],
       primaryImage: product.primaryImage,
       galleryImages,
       seoTitle: product.seoTitle,
@@ -113,6 +119,7 @@ export async function GET(
         sku: v.sku,
         variantType: v.variantType,
         variantValue: v.variantValue,
+        colorHex: v.colorHex,
         price: v.price,
         stockQuantity: v.stockQuantity,
         isOutOfStock: v.isOutOfStock,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useCart } from "@/context/cart-context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,12 +23,22 @@ import {
   Loader2,
   PenSquare,
   LogIn,
+  X,
+  Heart,
+  Share2,
+  Truck,
+  Shield,
+  RefreshCw,
+  Clock,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -55,6 +65,8 @@ interface Product {
   slug: string;
   description: string;
   price: number;
+  compareAtPrice?: number | null;
+  badgeText?: string | null;
   primaryImage: string | null;
   galleryImages: string[];
   seoTitle: string;
@@ -68,6 +80,7 @@ interface Product {
     price: number | null;
     stockQuantity: number;
     isOutOfStock: boolean;
+    colorHex?: string | null;
   }[];
   variantTypes: Record<string, ProductVariantOption[]>;
   tags: { id: number; name: string }[];
@@ -119,36 +132,29 @@ function getInitials(name: string): string {
 function ProductDetailSkeleton() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6">
-      {/* Back link */}
       <Skeleton className="h-5 w-32" />
-
       <div className="grid gap-8 md:grid-cols-2">
-        {/* Left column — image skeleton */}
         <div className="space-y-3">
-          <Skeleton className="aspect-square w-full rounded-lg" />
+          <Skeleton className="aspect-square w-full rounded-2xl" />
           <div className="flex gap-2">
-            <Skeleton className="h-16 w-16 rounded-md" />
-            <Skeleton className="h-16 w-16 rounded-md" />
-            <Skeleton className="h-16 w-16 rounded-md" />
-            <Skeleton className="h-16 w-16 rounded-md" />
+            <Skeleton className="h-16 w-16 rounded-xl" />
+            <Skeleton className="h-16 w-16 rounded-xl" />
+            <Skeleton className="h-16 w-16 rounded-xl" />
+            <Skeleton className="h-16 w-16 rounded-xl" />
           </div>
         </div>
-
-        {/* Right column — info skeleton */}
         <div className="space-y-4">
-          <Skeleton className="h-4 w-48" /> {/* breadcrumb */}
-          <Skeleton className="h-8 w-3/4" /> {/* title */}
-          <Skeleton className="h-5 w-32" /> {/* rating */}
-          <Skeleton className="h-8 w-24" /> {/* price */}
-          <Skeleton className="h-20 w-full" /> {/* description */}
-          <Skeleton className="h-10 w-full" /> {/* variant row */}
-          <Skeleton className="h-10 w-full" /> {/* variant row */}
-          <Skeleton className="h-12 w-full" /> {/* add to cart */}
-          <Skeleton className="h-4 w-40" /> {/* category link */}
+          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-4 w-40" />
         </div>
       </div>
-
-      {/* Reviews skeleton */}
       <div className="space-y-4">
         <Skeleton className="h-7 w-48" />
         <Skeleton className="h-24 w-full" />
@@ -160,23 +166,30 @@ function ProductDetailSkeleton() {
 
 // ─── Star Rating Display ───────────────────────────────────────────────────
 
-function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) {
-  const iconClass = size === "md" ? "size-5" : "size-4";
+function StarRating({ rating, size = "sm", showLabel = false }: { rating: number; size?: "sm" | "md" | "lg"; showLabel?: boolean }) {
+  const sizeMap = { sm: "size-3.5", md: "size-5", lg: "size-6" };
+  const iconClass = sizeMap[size] || sizeMap.sm;
+  
   return (
-    <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
-      {[1, 2, 3, 4, 5].map((star) => {
-        const filled = star <= Math.round(rating);
-        return (
-          <Star
-            key={star}
-            className={`${iconClass} ${
-              filled
-                ? "fill-yellow-400 text-yellow-400"
-                : "fill-muted text-muted"
-            }`}
-          />
-        );
-      })}
+    <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((star) => {
+          const filled = star <= Math.round(rating);
+          return (
+            <Star
+              key={star}
+              className={`${iconClass} ${
+                filled
+                  ? "fill-yellow-400 text-yellow-400"
+                  : "fill-muted/30 text-muted/30"
+              } transition-colors`}
+            />
+          );
+        })}
+      </div>
+      {showLabel && (
+        <span className="text-sm font-medium text-foreground">{rating.toFixed(1)}</span>
+      )}
     </div>
   );
 }
@@ -185,21 +198,27 @@ function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "md
 
 function ProductNotFound({ onNavigate }: { onNavigate: (view: string) => void }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 px-4 py-20 text-center">
-      <Package className="size-16 text-muted-foreground" />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col items-center justify-center gap-6 px-4 py-20 text-center"
+    >
+      <div className="rounded-full bg-muted p-6">
+        <Package className="size-16 text-muted-foreground" />
+      </div>
       <h2 className="text-2xl font-bold">Product not found</h2>
-      <p className="text-muted-foreground">
+      <p className="text-muted-foreground max-w-md">
         The product you are looking for does not exist or has been removed.
       </p>
       <Button
         variant="default"
         onClick={() => onNavigate("shop")}
-        className="min-h-[48px] px-8"
+        className="min-h-[48px] px-8 rounded-full"
       >
-        <ArrowLeft className="size-4" />
+        <ArrowLeft className="size-4 mr-2" />
         Back to Shop
       </Button>
-    </div>
+    </motion.div>
   );
 }
 
@@ -273,80 +292,94 @@ function ReviewForm({ productId, onSubmitted }: { productId: number; onSubmitted
 
   if (!eligibilityChecked) {
     return (
-      <div className="rounded-lg border p-6 flex items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <div className="rounded-2xl border p-8 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (!eligible) {
     return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertDescription>{ineligibleReason}</AlertDescription>
+      <Alert variant="destructive" className="mb-4 relative rounded-xl">
+        <AlertDescription className="pr-8">{ineligibleReason}</AlertDescription>
+        <button
+          onClick={onSubmitted}
+          className="absolute right-2 top-2 p-1.5 rounded-full hover:bg-destructive/10 transition-colors"
+          aria-label="Dismiss notice"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </Alert>
     );
   }
 
   if (success) {
     return (
-      <Alert className="mb-4 border-green-200 bg-green-50">
+      <Alert className="mb-4 border-green-200 bg-green-50 rounded-xl">
         <AlertDescription className="text-green-700">
-          Review submitted successfully! It will appear after admin approval.
+          ✅ Review submitted successfully! It will appear after admin approval.
         </AlertDescription>
       </Alert>
     );
   }
 
   return (
-    <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4 mb-4">
-      <h3 className="text-base font-semibold">Write Your Review</h3>
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border bg-card/50 backdrop-blur-sm p-6 space-y-5 mb-4"
+    >
+      <h3 className="text-lg font-semibold flex items-center gap-2">
+        <PenSquare className="h-5 w-5 text-primary" />
+        Write Your Review
+      </h3>
 
       {formError && (
-        <p className="text-sm text-destructive">{formError}</p>
+        <p className="text-sm text-destructive bg-destructive/10 px-4 py-2 rounded-lg">
+          {formError}
+        </p>
       )}
 
-      {/* Star rating */}
-      <div className="space-y-1.5">
-        <Label>Rating</Label>
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Rating</Label>
         <div className="flex items-center gap-1">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
-              className="p-0.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md hover:bg-yellow-50 transition-colors"
+              className="p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-yellow-50 transition-all"
               onMouseEnter={() => setHoveredStar(star)}
               onMouseLeave={() => setHoveredStar(0)}
               onClick={() => setRating(star)}
               aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
             >
               <Star
-                size={24}
-                className={
+                size={28}
+                className={`transition-all ${
                   star <= (hoveredStar || rating)
-                    ? "fill-yellow-400 text-yellow-400"
-                    : "fill-muted text-muted"
-                }
+                    ? "fill-yellow-400 text-yellow-400 scale-110"
+                    : "fill-muted/30 text-muted/30"
+                }`}
               />
             </button>
           ))}
         </div>
       </div>
 
-      {/* Title */}
-      <div className="space-y-1.5">
-        <Label htmlFor="review-title">Title (optional)</Label>
+      <div className="space-y-2">
+        <Label htmlFor="review-title" className="text-sm font-medium">Title (optional)</Label>
         <Input
           id="review-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Summarize your experience"
           maxLength={100}
+          className="rounded-xl"
         />
       </div>
 
-      {/* Comment */}
-      <div className="space-y-1.5">
-        <Label htmlFor="review-comment">Comment</Label>
+      <div className="space-y-2">
+        <Label htmlFor="review-comment" className="text-sm font-medium">Comment</Label>
         <Textarea
           id="review-comment"
           value={comment}
@@ -354,22 +387,27 @@ function ReviewForm({ productId, onSubmitted }: { productId: number; onSubmitted
           placeholder="Tell us about your experience with this product..."
           rows={4}
           maxLength={1000}
+          className="rounded-xl"
         />
         <p className="text-xs text-muted-foreground text-right">
           {comment.length}/1000
         </p>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Button onClick={handleSubmit} disabled={submitting} className="min-h-[44px]">
+      <div className="flex items-center gap-3 pt-2">
+        <Button 
+          onClick={handleSubmit} 
+          disabled={submitting} 
+          className="min-h-[48px] px-8 rounded-full"
+        >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
           {submitting ? "Submitting..." : "Submit Review"}
         </Button>
-        <Button variant="ghost" onClick={onSubmitted} className="min-h-[44px]">
+        <Button variant="ghost" onClick={onSubmitted} className="min-h-[48px] rounded-full">
           Cancel
         </Button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -396,10 +434,13 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
   >({});
   const [isAddingToCart, setIsAddingToCart] = useState<boolean>(false);
   const [showReviewForm, setShowReviewForm] = useState<boolean>(false);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
+  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
 
   const { addItem } = useCart();
 
-  // ── Fetch product ──
+  // ── Fetch product with immediate state reset ──
   useEffect(() => {
     let cancelled = false;
 
@@ -407,6 +448,11 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
       setLoading(true);
       setError(false);
       setNotFound(false);
+      setSelectedVariants({});
+      setMainImage("");
+      setShowReviewForm(false);
+      setQuantity(1);
+      setImageLoaded(false);
 
       try {
         const res = await fetch(`/api/products/${slug}`);
@@ -442,59 +488,34 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
     };
   }, [slug]);
 
-  // Reset selected variants when product changes
-  useEffect(() => {
-    setSelectedVariants({});
-    if (product) {
-      setMainImage(product.primaryImage || "");
-    }
-  }, [product?.id]);
-
-  // ── Image list for gallery ──
-  const allImages: string[] = product
-    ? [product.primaryImage, ...product.galleryImages].filter(Boolean) as string[]
-    : [];
-
-  // ── Variant selection logic ──
-  const variantTypeKeys = product
-    ? Object.keys(product.variantTypes)
-    : [];
+  // ── Variant matching ──
+  const variantTypeKeys = product ? Object.keys(product.variantTypes) : [];
 
   const allVariantTypesSelected =
     variantTypeKeys.length > 0 &&
     variantTypeKeys.every((key) => selectedVariants[key] !== undefined);
 
-  // Find the variant that matches the fully selected combination
-  const currentVariant = (() => {
+  const selectedOptionIds = useMemo(
+    () => Object.values(selectedVariants).map((v) => v.variantId),
+    [selectedVariants]
+  );
+
+  const currentVariant = useMemo(() => {
     if (!product || !allVariantTypesSelected) return null;
-
-    // The selected variantId is from the LAST selected variant type.
-    // For a fully selected combination, we look up the variant from product.variants
-    // that matches all selected values.
-    const selectedValues = variantTypeKeys.map(
-      (key) => selectedVariants[key]?.value
+    const matched = product.variants.find((v) =>
+      selectedOptionIds.includes(v.id)
     );
+    return matched || null;
+  }, [product, allVariantTypesSelected, selectedOptionIds]);
 
-    const match = product.variants.find((v) => {
-      return variantTypeKeys.every((key, idx) => v.variantType === key && v.variantValue === selectedValues[idx]);
-    });
-
-    return match || null;
-  })();
-
-  const isCurrentVariantOutOfStock =
-    currentVariant?.isOutOfStock ?? false;
-
-  const isVariantDisabled =
-    !allVariantTypesSelected || isCurrentVariantOutOfStock;
-
+  const isCurrentVariantOutOfStock = currentVariant?.isOutOfStock ?? false;
+  const isVariantDisabled = !allVariantTypesSelected || isCurrentVariantOutOfStock;
   const noVariantsAvailable = product && product.variants.length === 0;
 
   // ── Handlers ──
   const handleVariantSelect = useCallback(
     (type: string, option: ProductVariantOption) => {
       if (option.isOutOfStock) return;
-
       setSelectedVariants((prev) => ({
         ...prev,
         [type]: {
@@ -514,7 +535,6 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
 
     setIsAddingToCart(true);
 
-    // Build variant description
     const variantParts = variantTypeKeys.map(
       (key) => `${key.charAt(0).toUpperCase() + key.slice(1)}: ${selectedVariants[key].value}`
     );
@@ -527,81 +547,117 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
         productName: product.name,
         variantDescription,
         price: currentVariant.price ?? product.price,
-        quantity: 1,
+        quantity: quantity,
         imageUrl: product.primaryImage || "",
         stockAvailable: currentVariant.stockQuantity,
       });
     } catch {
-      // Cart add failed — silently handle
+      // silently handle
     } finally {
-      // Brief delay to show loading feedback
       setTimeout(() => setIsAddingToCart(false), 400);
     }
-  }, [product, currentVariant, selectedVariants, variantTypeKeys, isCurrentVariantOutOfStock, addItem]);
+  }, [product, currentVariant, selectedVariants, variantTypeKeys, isCurrentVariantOutOfStock, addItem, quantity]);
 
   // ── Render states ──
   if (loading) return <ProductDetailSkeleton />;
-
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 px-4 py-20 text-center">
+        <div className="rounded-full bg-destructive/10 p-4">
+          <Package className="size-12 text-destructive" />
+        </div>
         <p className="text-lg text-destructive">Something went wrong loading this product.</p>
         <Button
           variant="outline"
           onClick={() => onNavigate("shop")}
-          className="min-h-[48px] px-8"
+          className="min-h-[48px] px-8 rounded-full"
         >
-          <ArrowLeft className="size-4" />
+          <ArrowLeft className="size-4 mr-2" />
           Back to Shop
         </Button>
       </div>
     );
   }
-
-  if (notFound) {
-    return <ProductNotFound onNavigate={onNavigate} />;
-  }
-
+  if (notFound) return <ProductNotFound onNavigate={onNavigate} />;
   if (!product) return null;
 
-  // ── Determine price display ──
   const displayPrice = currentVariant?.price ?? product.price;
   const hasPriceOverride = currentVariant?.price != null;
+  const allImages: string[] = product
+    ? [product.primaryImage, ...product.galleryImages].filter(Boolean) as string[]
+    : [];
+
+  const discountPercent = product.compareAtPrice 
+    ? Math.round(((product.compareAtPrice - displayPrice) / product.compareAtPrice) * 100)
+    : 0;
+
+  const maxStock = currentVariant?.stockQuantity || 0;
 
   // ── Render ──
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="mx-auto w-full max-w-6xl px-4 py-6"
+    >
       {/* Back navigation */}
       <button
         type="button"
         onClick={() => onNavigate("shop")}
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+        className="group mb-6 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all min-h-[44px]"
       >
-        <ArrowLeft className="size-4" />
+        <ArrowLeft className="size-4 group-hover:-translate-x-1 transition-transform" />
         Back to Shop
       </button>
 
-      {/* Two-column layout */}
-      <div className="grid gap-6 md:gap-10 md:grid-cols-2">
+      <div className="grid gap-8 md:gap-12 lg:grid-cols-2">
         {/* ── Left Column: Image Gallery ── */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Main image */}
-          <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-muted">
+          <motion.div 
+            className="relative aspect-square w-full overflow-hidden rounded-2xl border bg-muted/30"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
             {mainImage ? (
-              <Image
-                src={mainImage}
-                alt={product.name}
-                width={800}
-                height={800}
-                className="size-full object-cover transition-opacity"
-                priority
-              />
+              <>
+                <Image
+                  src={mainImage}
+                  alt={product.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className={`object-cover transition-opacity duration-500 ${
+                    imageLoaded ? "opacity-100" : "opacity-0"
+                  }`}
+                  priority
+                  onLoad={() => setImageLoaded(true)}
+                />
+                {!imageLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex size-full items-center justify-center">
                 <Package className="size-16 text-muted-foreground" />
               </div>
             )}
-          </div>
+            
+            {/* Badge */}
+            {product.badgeText && (
+              <Badge className="absolute top-4 left-4 bg-primary text-primary-foreground rounded-full px-4 py-1.5 text-sm font-semibold shadow-lg">
+                {product.badgeText}
+              </Badge>
+            )}
+            
+            {discountPercent > 0 && (
+              <Badge className="absolute top-4 right-4 bg-red-500 text-white rounded-full px-4 py-1.5 text-sm font-semibold shadow-lg">
+                {discountPercent}% OFF
+              </Badge>
+            )}
+          </motion.div>
 
           {/* Thumbnail row */}
           {allImages.length > 1 && (
@@ -610,19 +666,22 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => setMainImage(img)}
-                  className={`relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border-2 transition-all min-h-[44px] min-w-[44px] ${
+                  onClick={() => {
+                    setMainImage(img);
+                    setImageLoaded(false);
+                  }}
+                  className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all min-h-[44px] min-w-[44px] ${
                     mainImage === img
-                      ? "border-primary ring-2 ring-primary/30"
-                      : "border-transparent hover:border-muted-foreground/30"
+                      ? "border-primary ring-2 ring-primary/30 shadow-md"
+                      : "border-transparent hover:border-primary/30"
                   }`}
                 >
                   <Image
                     src={img}
                     alt={`${product.name} image ${idx + 1}`}
-                    width={64}
-                    height={64}
-                    className="size-full object-cover"
+                    fill
+                    sizes="80px"
+                    className="object-cover"
                   />
                 </button>
               ))}
@@ -631,7 +690,12 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
         </div>
 
         {/* ── Right Column: Product Info ── */}
-        <div className="space-y-4">
+        <motion.div 
+          className="space-y-5"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
           {/* Breadcrumb */}
           {product.category && (
             <Breadcrumb>
@@ -643,6 +707,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                       e.preventDefault();
                       onNavigate("shop");
                     }}
+                    className="hover:text-primary transition-colors"
                   >
                     Home
                   </BreadcrumbLink>
@@ -655,49 +720,48 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                       e.preventDefault();
                       onNavigate("shop", { category: product.category!.slug });
                     }}
+                    className="hover:text-primary transition-colors"
                   >
                     {product.category.name}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>{product.name}</BreadcrumbPage>
+                  <BreadcrumbPage className="line-clamp-1">{product.name}</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           )}
 
-          {/* Product Name */}
-          <h1 className="text-2xl font-bold leading-tight md:text-3xl">
+          {/* Title */}
+          <h1 className="text-2xl font-bold leading-tight md:text-3xl lg:text-4xl">
             {product.name}
           </h1>
 
           {/* Rating */}
           {product.reviewCount > 0 && (
-            <div className="flex items-center gap-2">
-              <StarRating rating={product.averageRating} />
+            <div className="flex items-center gap-3">
+              <StarRating rating={product.averageRating} size="md" showLabel />
               <span className="text-sm text-muted-foreground">
-                {product.averageRating} ({product.reviewCount}{" "}
-                {product.reviewCount === 1 ? "review" : "reviews"})
+                ({product.reviewCount} {product.reviewCount === 1 ? "review" : "reviews"})
               </span>
             </div>
           )}
 
           {/* Price */}
-          <div className="flex items-baseline gap-2">
-            {hasPriceOverride ? (
-              <>
-                <span className="text-2xl font-bold">
-                  {formatPrice(displayPrice)}
-                </span>
-                <span className="text-lg text-muted-foreground line-through">
-                  {formatPrice(product.price)}
-                </span>
-              </>
-            ) : (
-              <span className="text-2xl font-bold">
-                {formatPrice(product.price)}
+          <div className="flex items-baseline gap-3">
+            <span className="text-3xl font-bold text-primary">
+              {formatPrice(displayPrice)}
+            </span>
+            {hasPriceOverride && product.compareAtPrice && (
+              <span className="text-lg text-muted-foreground line-through">
+                {formatPrice(product.compareAtPrice)}
               </span>
+            )}
+            {discountPercent > 0 && (
+              <Badge variant="destructive" className="rounded-full px-3 py-1">
+                Save {discountPercent}%
+              </Badge>
             )}
           </div>
 
@@ -715,16 +779,25 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
             const options = product.variantTypes[type];
             if (!options || options.length === 0) return null;
             const selected = selectedVariants[type];
+            const isColorType = type.toLowerCase() === "color";
 
             return (
-              <div key={type} className="space-y-2">
-                <label className="text-sm font-medium">
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </label>
+              <div key={type} className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </label>
+                  {selected && (
+                    <span className="text-sm text-muted-foreground">
+                      Selected: {selected.value}
+                    </span>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {options.map((option) => {
                     const isSelected = selected?.variantId === option.variantId;
                     const isOOS = option.isOutOfStock;
+                    const colorHex = product.variants.find(v => v.id === option.variantId)?.colorHex;
 
                     return (
                       <button
@@ -732,20 +805,30 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                         type="button"
                         disabled={isOOS}
                         onClick={() => handleVariantSelect(type, option)}
-                        className={`relative min-h-[44px] rounded-md border px-4 py-2 text-sm font-medium transition-all ${
+                        className={`relative min-h-[48px] rounded-xl border-2 px-5 py-2.5 text-sm font-medium transition-all ${
                           isSelected
-                            ? "border-primary bg-primary text-primary-foreground"
+                            ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                             : isOOS
-                              ? "cursor-not-allowed border-border opacity-50"
-                              : "border-border hover:border-primary/50 hover:bg-accent"
+                              ? "cursor-not-allowed border-border/30 opacity-40"
+                              : "border-border hover:border-primary/50 hover:bg-accent/50"
                         }`}
                       >
-                        {option.value}
+                        {isColorType && colorHex ? (
+                          <div className="flex items-center gap-2">
+                            <span 
+                              className="size-5 rounded-full border shadow-inner"
+                              style={{ backgroundColor: colorHex }}
+                            />
+                            {option.value}
+                          </div>
+                        ) : (
+                          option.value
+                        )}
                         {isOOS && (
                           <span className="ml-1.5 text-xs">(Out of Stock)</span>
                         )}
                         {isSelected && (
-                          <Check className="ml-1.5 inline size-3.5" />
+                          <Check className="ml-1.5 inline size-4" />
                         )}
                       </button>
                     );
@@ -759,48 +842,89 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
           {product.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {product.tags.map((tag) => (
-                <Badge key={tag.id} variant="secondary" className="text-xs">
-                  {tag.name}
+                <Badge key={tag.id} variant="secondary" className="rounded-full text-xs px-3 py-1">
+                  #{tag.name}
                 </Badge>
               ))}
             </div>
           )}
-          {/* Add to Cart */}
+
+          {/* Quantity Selector */}
+          {!noVariantsAvailable && !isCurrentVariantOutOfStock && allVariantTypesSelected && (
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium">Quantity</label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="h-10 w-10 rounded-xl border flex items-center justify-center hover:bg-muted transition-colors"
+                  disabled={quantity <= 1}
+                >
+                  <Minus className="size-4" />
+                </button>
+                <span className="w-12 text-center font-medium text-lg">{quantity}</span>
+                <button
+                  type="button"
+                  onClick={() => setQuantity(Math.min(maxStock, quantity + 1))}
+                  className="h-10 w-10 rounded-xl border flex items-center justify-center hover:bg-muted transition-colors"
+                  disabled={quantity >= maxStock}
+                >
+                  <Plus className="size-4" />
+                </button>
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {maxStock} available
+              </span>
+            </div>
+          )}
+
+          {/* Action Buttons */}
           <div className="pt-2 space-y-3">
             {noVariantsAvailable ? (
               <Button
                 disabled
-                className="w-full min-h-[48px] text-base font-semibold"
+                className="w-full min-h-[52px] text-base font-semibold rounded-2xl"
               >
-                <ShoppingCart className="size-5" />
+                <ShoppingCart className="size-5 mr-2" />
                 No variants available
               </Button>
             ) : isCurrentVariantOutOfStock && allVariantTypesSelected ? (
               <Button
                 disabled
-                className="w-full min-h-[48px] text-base font-semibold"
+                className="w-full min-h-[52px] text-base font-semibold rounded-2xl"
               >
-                <ShoppingCart className="size-5" />
+                <ShoppingCart className="size-5 mr-2" />
                 Out of Stock
               </Button>
             ) : (
               <>
-                <Button
-                  disabled={isVariantDisabled || isAddingToCart}
-                  onClick={handleAddToCart}
-                  className="w-full min-h-[48px] text-base font-semibold"
-                >
-                  {isAddingToCart ? (
-                    <Loader2 className="size-5 animate-spin" />
-                  ) : (
-                    <ShoppingCart className="size-5" />
-                  )}
-                  {isAddingToCart
-                    ? "Adding..."
-                    : !allVariantTypesSelected
-                      ? "Select Options"
-                      : "Add to Cart"}
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    disabled={isVariantDisabled || isAddingToCart}
+                    onClick={handleAddToCart}
+                    className="flex-1 min-h-[52px] text-base font-semibold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl transition-shadow"
+                  >
+                    {isAddingToCart ? (
+                      <Loader2 className="size-5 animate-spin mr-2" />
+                    ) : (
+                      <ShoppingCart className="size-5 mr-2" />
+                    )}
+                    {isAddingToCart
+                      ? "Adding..."
+                      : !allVariantTypesSelected
+                        ? "Select Options"
+                        : "Add to Cart"}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="min-h-[52px] min-w-[52px] rounded-2xl border-2"
+                    onClick={() => setIsWishlisted(!isWishlisted)}
+                  >
+                    <Heart className={`size-5 transition-all ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
+                  </Button>
+                </div>
 
                 <Button
                   disabled={isVariantDisabled || isAddingToCart}
@@ -809,7 +933,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                     onNavigate("checkout");
                   }}
                   variant="outline"
-                  className="w-full min-h-[48px] text-base font-semibold"
+                  className="w-full min-h-[52px] text-base font-semibold rounded-2xl border-2 hover:bg-primary hover:text-primary-foreground transition-all"
                 >
                   Buy Now
                 </Button>
@@ -817,7 +941,27 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
             )}
           </div>
 
-          {/* Category link */}
+          {/* Shipping Info */}
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <div className="flex items-center gap-2.5 text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl">
+              <Truck className="size-4 text-primary" />
+              <span>Free Delivery</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl">
+              <Shield className="size-4 text-primary" />
+              <span>Secure Payment</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl">
+              <RefreshCw className="size-4 text-primary" />
+              <span>7-Day Returns</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl">
+              <Clock className="size-4 text-primary" />
+              <span>24/7 Support</span>
+            </div>
+          </div>
+
+          {/* Category Link */}
           {product.category && (
             <button
               type="button"
@@ -829,22 +973,36 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
               View all in {product.category.name}
             </button>
           )}
-        </div>
+        </motion.div>
       </div>
 
       {/* ── Reviews Section ── */}
-      <Separator className="my-8 md:my-10" />
+      <Separator className="my-10" />
 
-      <section className="space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <h2 className="text-xl font-bold">
-            Customer Reviews ({product.reviewCount})
-          </h2>
+      <motion.section 
+        className="space-y-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 className="text-2xl font-bold">
+              Customer Reviews
+              <span className="ml-2 text-base font-normal text-muted-foreground">
+                ({product.reviewCount})
+              </span>
+            </h2>
+            {product.reviewCount > 0 && (
+              <div className="flex items-center gap-2 mt-1">
+                <StarRating rating={product.averageRating} size="md" showLabel />
+              </div>
+            )}
+          </div>
           {isAuthenticated ? (
             <Button
               variant="outline"
-              size="sm"
-              className="min-h-[44px] gap-1.5"
+              className="min-h-[48px] gap-2 rounded-full px-6 border-2 hover:bg-primary hover:text-primary-foreground transition-all"
               onClick={() => setShowReviewForm(true)}
             >
               <PenSquare className="h-4 w-4" />
@@ -853,8 +1011,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
           ) : (
             <Button
               variant="outline"
-              size="sm"
-              className="min-h-[44px] gap-1.5"
+              className="min-h-[48px] gap-2 rounded-full px-6 border-2"
               onClick={() => onNavigate("login")}
             >
               <LogIn className="h-4 w-4" />
@@ -863,32 +1020,34 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
           )}
         </div>
 
-        {/* Review Form (for authenticated users) */}
-        {showReviewForm && (
-          <ReviewForm
-            productId={product.id}
-            onSubmitted={() => {
-              setShowReviewForm(false);
-            }}
-          />
-        )}
+        <AnimatePresence>
+          {showReviewForm && (
+            <ReviewForm
+              productId={product.id}
+              onSubmitted={() => {
+                setShowReviewForm(false);
+              }}
+            />
+          )}
+        </AnimatePresence>
 
         {product.reviews.length > 0 ? (
           <div className="space-y-4">
-            {product.reviews.map((review) => (
-              <div
+            {product.reviews.map((review, index) => (
+              <motion.div
                 key={review.id}
-                className="rounded-lg border bg-card p-4 space-y-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="rounded-2xl border bg-card/50 backdrop-blur-sm p-5 space-y-3 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-full bg-muted text-xs font-bold">
+                    <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
                       {getInitials(review.customerName)}
                     </div>
                     <div>
-                      <p className="text-sm font-medium">
-                        {review.customerName}
-                      </p>
+                      <p className="text-sm font-medium">{review.customerName}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatDate(review.reviewedAt)}
                       </p>
@@ -905,15 +1064,16 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                     {review.comment}
                   </p>
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground py-8 text-center">
-            No reviews yet. Be the first to review this product!
-          </p>
+          <div className="py-12 text-center border rounded-2xl bg-muted/10">
+            <Package className="size-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">No reviews yet. Be the first to review this product!</p>
+          </div>
         )}
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }

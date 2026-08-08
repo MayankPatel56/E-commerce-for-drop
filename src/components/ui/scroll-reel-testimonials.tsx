@@ -273,12 +273,27 @@ export function ScrollReelTestimonials({
           </svg>
 
           <div className="relative w-full max-w-[390px] overflow-hidden" aria-live="polite">
+            {/* Real text for screen readers, search engine crawlers, and copy/paste.
+                Visually hidden (off-screen) but NOT aria-hidden, so assistive tech
+                and text-extraction tools read it as normal, unspaced text. */}
+            <div className="sr-only">
+              <p className={QUOTE_CLASSES}>{current.quote}</p>
+              <p className={AUTHOR_CLASSES}>{current.author}</p>
+            </div>
+
+            {/* Layout spacer only — reserves height so the animated block below
+                doesn't cause layout shift between quotes of different lengths. */}
             <div aria-hidden="true" className="invisible flex min-h-[140px] flex-col gap-[19px]">
               <p className={QUOTE_CLASSES}>{current.quote}</p>
               <p className={AUTHOR_CLASSES}>{current.author}</p>
             </div>
+
+            {/* Decorative character-by-character animation. Hidden from
+                accessibility tree/crawlers so it never gets read/indexed
+                as spaced-out letters. */}
             <div
               key={displayIndex}
+              aria-hidden="true"
               className={cn(
                 "absolute inset-x-0 top-0 flex flex-col gap-[19px] will-change-[transform,opacity]",
                 exiting && "scroll-reel-exit"

@@ -12,6 +12,7 @@ const variantSchema = z.object({
   sku: z.string().min(1, "SKU is required"),
   variantType: z.string().min(1, "Variant type is required"),
   variantValue: z.string().min(1, "Variant value is required"),
+  colorHex: z.string().optional().nullable(),
   price: z.number().min(0, "Price must be non-negative").optional().nullable(),
   stockQuantity: z.number().int("Stock must be an integer"),
 });
@@ -21,6 +22,11 @@ const updateProductSchema = z.object({
   slug: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   price: z.number().min(0, "Price must be non-negative").optional(),
+  compareAtPrice: z.number().min(0).optional().nullable(),
+  badgeText: z.string().max(40).optional().nullable(),
+  soldLabel: z.string().max(80).optional().nullable(),
+  videoUrl: z.string().optional().nullable(),
+  features: z.array(z.object({ icon: z.string(), label: z.string() })).optional(),
   categoryId: z.number().int().positive("Category ID is required").optional(),
   primaryImage: z.string().optional().nullable(),
   galleryImages: z.array(z.string()).optional().nullable(),
@@ -201,6 +207,11 @@ export async function PUT(
     if (data.seoTitle !== undefined) updateData.seoTitle = data.seoTitle;
     if (data.seoDescription !== undefined) updateData.seoDescription = data.seoDescription;
     if (data.isPublished !== undefined) updateData.isPublished = data.isPublished;
+    if (data.compareAtPrice !== undefined) updateData.compareAtPrice = data.compareAtPrice;
+    if (data.badgeText !== undefined) updateData.badgeText = data.badgeText;
+    if (data.soldLabel !== undefined) updateData.soldLabel = data.soldLabel;
+    if (data.videoUrl !== undefined) updateData.videoUrl = data.videoUrl;
+    if (data.features !== undefined) updateData.features = (data.features.length > 0 ? data.features : null) as any;
 
     // Update product
     const product = await db.product.update({
@@ -232,6 +243,7 @@ export async function PUT(
           sku: v.sku,
           variantType: v.variantType,
           variantValue: v.variantValue,
+          colorHex: v.colorHex ?? null,
           price: v.price ?? null,
           stockQuantity: v.stockQuantity,
           // isOutOfStock set by DB trigger
@@ -276,7 +288,7 @@ export async function PUT(
     });
 
     // ✅ Invalidate products cache after successful update
-    revalidateTag("products",  { expire: 0 });
+    revalidateTag("products", { expire: 0 });
 
     return NextResponse.json(updated);
   } catch (err) {
@@ -306,10 +318,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    await db.product.update({where: { id: productId },data: {deletedAt: new Date(),isPublished: false,},});
+    await db.product.update({
+      where: { id: productId },
+      data: {
+        deletedAt: new Date(),
+        isPublished: false,
+      },
+    });
 
     // ✅ Invalidate products cache after successful deletion
-    revalidateTag("products",  { expire: 0 });
+    revalidateTag("products", { expire: 0 });
 
     return NextResponse.json({ message: "Product deleted" });
   } catch (err) {

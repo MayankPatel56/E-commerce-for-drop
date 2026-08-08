@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode, useMemo } from "react";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,
   CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import {
   Package,
   Heart,
@@ -15,6 +17,14 @@ import {
   ShoppingBag,
   ArrowRight,
   Clock,
+  TrendingUp,
+  Award,
+  Gift,
+  ChevronRight,
+  ShoppingCart,
+  Eye,
+  Calendar,
+  IndianRupee,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -73,78 +83,66 @@ function formatDate(dateStr: string): string {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Status helpers                                                     */
-/* ------------------------------------------------------------------ */
+function getStatusColor(status: Order["status"]): string {
+  const colors = {
+    pending: "bg-orange-500/10 text-orange-600 border-orange-200",
+    confirmed: "bg-blue-500/10 text-blue-600 border-blue-200",
+    shipped: "bg-violet-500/10 text-violet-600 border-violet-200",
+    delivered: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
+    cancelled: "bg-red-500/10 text-red-600 border-red-200",
+  };
+  return colors[status] || colors.pending;
+}
 
-type StatusStyle = {
-  dot: string;
-  text: string;
-  border: string;
-  label: string;
-};
-
-const STATUS_STYLES: Record<Order["status"], StatusStyle> = {
-  pending: {
-    dot: "bg-orange-500",
-    text: "text-orange-700",
-    border: "border-orange-500",
-    label: "Pending",
-  },
-  confirmed: {
-    dot: "bg-sky-600",
-    text: "text-sky-700",
-    border: "border-sky-600",
-    label: "Confirmed",
-  },
-  shipped: {
-    dot: "bg-violet-600",
-    text: "text-violet-700",
-    border: "border-violet-600",
-    label: "Shipped",
-  },
-  delivered: {
-    dot: "bg-emerald-600",
-    text: "text-emerald-700",
-    border: "border-emerald-600",
-    label: "Delivered",
-  },
-  cancelled: {
-    dot: "bg-red-600",
-    text: "text-red-700",
-    border: "border-red-600",
-    label: "Cancelled",
-  },
-};
+function getStatusDot(status: Order["status"]): string {
+  const colors = {
+    pending: "bg-orange-500",
+    confirmed: "bg-blue-500",
+    shipped: "bg-violet-500",
+    delivered: "bg-emerald-500",
+    cancelled: "bg-red-500",
+  };
+  return colors[status] || colors.pending;
+}
 
 /* ------------------------------------------------------------------ */
 /*  Small building blocks                                              */
 /* ------------------------------------------------------------------ */
 
-function SectionEyebrow({ label, title }: { label: string; title: string }) {
+function SectionHeader({ 
+  label, 
+  title, 
+  actionLabel, 
+  onAction 
+}: { 
+  label: string; 
+  title: string; 
+  actionLabel?: string; 
+  onAction?: () => void;
+}) {
   return (
-    <div>
-      <div className="mb-1.5 flex items-center gap-2">
-        <span className="h-[3px] w-6 bg-orange-500" />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-400">
-          {label}
-        </span>
+    <div className="flex items-center justify-between mb-4">
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="h-[3px] w-6 bg-gradient-to-r from-orange-500 to-orange-400 rounded-full" />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            {label}
+          </span>
+        </div>
+        <h2 className="text-xl font-bold text-foreground">{title}</h2>
       </div>
-      <h2 className="text-lg font-bold text-neutral-900">{title}</h2>
+      {actionLabel && onAction && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="group min-h-[44px] gap-1 text-muted-foreground hover:text-orange-600 transition-all"
+          onClick={onAction}
+        >
+          {actionLabel}
+          <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+        </Button>
+      )}
     </div>
-  );
-}
-
-function ViewAllButton({ onClick }: { onClick: () => void }) {
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="min-h-[44px] min-w-[44px] gap-1 text-neutral-500 hover:text-orange-600 focus-visible:ring-2 focus-visible:ring-orange-500"
-      onClick={onClick}
-    >
-      View All <ArrowRight className="h-4 w-4" />
-    </Button>
   );
 }
 
@@ -162,22 +160,29 @@ function EmptyState({
   onCta: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center gap-3 py-10 text-center">
-      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-50">
-        {icon}
-      </span>
-      <div>
-        <p className="font-semibold text-neutral-900">{heading}</p>
-        <p className="text-sm text-neutral-500">{subtext}</p>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col items-center gap-4 py-12 text-center"
+    >
+      <div className="relative">
+        <div className="absolute inset-0 bg-primary/5 rounded-full blur-2xl" />
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          {icon}
+        </div>
+      </div>
+      <div className="space-y-1">
+        <p className="font-semibold text-foreground text-lg">{heading}</p>
+        <p className="text-sm text-muted-foreground">{subtext}</p>
       </div>
       <Button
-        size="sm"
-        className="mt-1 min-h-[44px] bg-neutral-950 text-white hover:bg-orange-600 focus-visible:ring-2 focus-visible:ring-orange-500"
+        className="mt-2 min-h-[44px] rounded-full px-6 shadow-lg shadow-primary/20 hover:shadow-xl transition-all"
         onClick={onCta}
       >
         {ctaLabel}
+        <ArrowRight className="h-4 w-4 ml-2" />
       </Button>
-    </div>
+    </motion.div>
   );
 }
 
@@ -241,6 +246,15 @@ export function CustomerDashboard({
     onNavigate("shop");
   }
 
+  // Calculate member tier based on total orders
+  const memberTier = useMemo(() => {
+    if (!data) return { label: "New", color: "text-gray-500", icon: Gift };
+    if (data.totalOrders >= 50) return { label: "Gold", color: "text-amber-500", icon: Award };
+    if (data.totalOrders >= 20) return { label: "Silver", color: "text-gray-400", icon: Award };
+    if (data.totalOrders >= 5) return { label: "Bronze", color: "text-orange-600", icon: Award };
+    return { label: "New", color: "text-gray-500", icon: Gift };
+  }, [data]);
+
   /* ---- Loading skeleton ---- */
 
   if (loading) {
@@ -251,178 +265,285 @@ export function CustomerDashboard({
 
   if (error || !data) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
-        <ShoppingBag className="h-12 w-12 text-neutral-300" />
-        <p className="text-sm text-neutral-500">{error ?? "No data available"}</p>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center justify-center gap-6 py-20 text-center"
+      >
+        <div className="relative">
+          <div className="absolute inset-0 bg-destructive/5 rounded-full blur-2xl" />
+          <ShoppingBag className="h-16 w-16 text-muted-foreground/30 relative" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-lg font-semibold text-foreground">Unable to load dashboard</p>
+          <p className="text-sm text-muted-foreground">{error ?? "No data available"}</p>
+        </div>
         <Button
           variant="outline"
-          className="min-h-[44px] min-w-[44px] border-neutral-300 hover:bg-neutral-950 hover:text-white focus-visible:ring-2 focus-visible:ring-orange-500"
+          className="min-h-[44px] rounded-full px-6"
           onClick={() => window.location.reload()}
         >
           Try Again
+          <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
-      </div>
+      </motion.div>
     );
   }
 
   /* ---- Render ---- */
 
   return (
-    <div className="space-y-10">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="space-y-10"
+    >
+      {/* ── Welcome Section ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-gradient-to-r from-primary/5 via-primary/10 to-transparent rounded-2xl border">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-2xl font-bold text-foreground">Welcome back! 👋</h2>
+            <Badge variant="outline" className={`${memberTier.color} border-current`}>
+              <memberTier.icon className="h-3 w-3 mr-1" />
+              {memberTier.label} Member
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Here's what's happening with your account
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          className="min-h-[44px] rounded-full"
+          onClick={() => onNavigate("customer-profile")}
+        >
+          <Eye className="h-4 w-4 mr-2" />
+          View Profile
+        </Button>
+      </div>
+
       {/* ── Overview Cards ─────────────────────────────────────────── */}
       <section aria-label="Dashboard overview">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Total Orders */}
-          <Card className="overflow-hidden rounded-2xl border-0 bg-neutral-950 p-0">
-            <CardContent className="p-5 pb-4">
-              <div className="flex items-start justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
-                  Total Orders
-                </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-800">
-                  <Package className="h-4 w-4 text-orange-500" />
-                </span>
-              </div>
-              <p className="mt-4 text-5xl font-bold tabular-nums tracking-tight text-white">
-                {data.totalOrders}
-              </p>
-            </CardContent>
-            <div className="border-t border-dashed border-neutral-800 px-5 py-2.5">
-              <span className="text-[11px] text-neutral-500">
-                All-time orders placed
-              </span>
-            </div>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <Card className="group overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-foreground to-foreground/95 hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-muted-foreground/60">
+                      Total Orders
+                    </p>
+                    <p className="mt-3 text-4xl font-bold tracking-tight text-white">
+                      {data.totalOrders}
+                    </p>
+                  </div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm group-hover:scale-110 transition-transform">
+                    <Package className="h-5 w-5 text-orange-400" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground/60 border-t border-white/10 pt-3">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  <span>{data.totalOrders > 0 ? `Last order: ${formatDate(data.recentOrders[0]?.createdAt || new Date().toISOString())}` : "No orders yet"}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Wishlist Items */}
-          <Card className="overflow-hidden rounded-2xl border-0 bg-neutral-950 p-0">
-            <CardContent className="p-5 pb-4">
-              <div className="flex items-start justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
-                  Wishlist Items
-                </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-800">
-                  <Heart className="h-4 w-4 text-orange-500" />
-                </span>
-              </div>
-              <p className="mt-4 text-5xl font-bold tabular-nums tracking-tight text-white">
-                {data.wishlistCount}
-              </p>
-            </CardContent>
-            <div className="border-t border-dashed border-neutral-800 px-5 py-2.5">
-              <span className="text-[11px] text-neutral-500">
-                Saved for later
-              </span>
-            </div>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="group overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-rose-500 to-rose-600 hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-white/60">
+                      Wishlist
+                    </p>
+                    <p className="mt-3 text-4xl font-bold tracking-tight text-white">
+                      {data.wishlistCount}
+                    </p>
+                  </div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm group-hover:scale-110 transition-transform">
+                    <Heart className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-2 text-xs text-white/60 border-t border-white/20 pt-3">
+                  <ShoppingBag className="h-3.5 w-3.5" />
+                  <span>{data.wishlistCount > 0 ? `${data.wishlistCount} items saved` : "Nothing saved yet"}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Pending Reviews */}
-          <Card className="overflow-hidden rounded-2xl border-0 bg-neutral-950 p-0 sm:col-span-2 lg:col-span-1">
-            <CardContent className="p-5 pb-4">
-              <div className="flex items-start justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
-                  Pending Reviews
-                </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-800">
-                  <Star className="h-4 w-4 text-orange-500" />
-                </span>
-              </div>
-              <div className="mt-4 flex items-center gap-3">
-                <p className="text-5xl font-bold tabular-nums tracking-tight text-white">
-                  {data.pendingReviewCount}
-                </p>
-                {data.pendingReviewCount > 0 && (
-                  <span className="rounded-full bg-orange-500 px-2.5 py-1 text-xs font-semibold text-neutral-950">
-                    {data.pendingReviewCount} new
-                  </span>
-                )}
-              </div>
-            </CardContent>
-            <div className="border-t border-dashed border-neutral-800 px-5 py-2.5">
-              <span className="text-[11px] text-neutral-500">
-                Waiting for your feedback
-              </span>
-            </div>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <Card className="group overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-amber-500 to-orange-500 hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-white/60">
+                      Pending Reviews
+                    </p>
+                    <p className="mt-3 text-4xl font-bold tracking-tight text-white">
+                      {data.pendingReviewCount}
+                    </p>
+                  </div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm group-hover:scale-110 transition-transform">
+                    <Star className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-2 text-xs text-white/60 border-t border-white/20 pt-3">
+                  <Award className="h-3.5 w-3.5" />
+                  <span>{data.pendingReviewCount > 0 ? `${data.pendingReviewCount} reviews needed` : "All caught up!"}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Member Progress */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="overflow-hidden rounded-2xl border bg-gradient-to-br from-violet-500 to-purple-600 hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-white/60">
+                      Member Progress
+                    </p>
+                    <p className="mt-3 text-2xl font-bold tracking-tight text-white">
+                      {memberTier.label}
+                    </p>
+                  </div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm group-hover:scale-110 transition-transform">
+                    <TrendingUp className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between text-xs text-white/60">
+                    <span>Progress to Silver</span>
+                    <span>{Math.min((data.totalOrders / 5) * 100, 100)}%</span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-white/20 overflow-hidden">
+                    <div 
+                      className="h-full rounded-full bg-white transition-all duration-500"
+                      style={{ width: `${Math.min((data.totalOrders / 5) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </section>
 
       {/* ── Recent Orders ──────────────────────────────────────────── */}
       <section aria-label="Recent orders">
-        <div className="mb-4 flex items-center justify-between">
-          <SectionEyebrow label="Orders" title="Recent Orders" />
-          <ViewAllButton onClick={() => onNavigate("customer-orders")} />
-        </div>
+        <SectionHeader
+          label="Orders"
+          title="Recent Orders"
+          actionLabel="View All"
+          onAction={() => onNavigate("customer-orders")}
+        />
 
         {/* Desktop table */}
         <div className="hidden md:block">
-          <Card className="overflow-hidden rounded-2xl border-0 p-0 shadow-sm">
+          <Card className="overflow-hidden rounded-2xl border shadow-sm">
             {data.recentOrders.length === 0 ? (
               <EmptyState
-                icon={<Package className="h-5 w-5 text-orange-600" />}
+                icon={<Package className="h-6 w-6 text-orange-500" />}
                 heading="No orders yet"
                 subtext="Your future fits will show up here."
                 ctaLabel="Start shopping"
                 onCta={handleBrowseShop}
               />
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-neutral-950">
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                      Order
-                    </th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                      Total
-                    </th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                      Date
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.recentOrders.map((order) => {
-                    const style = STATUS_STYLES[order.status];
-                    return (
-                      <tr
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-muted/30">
+                      <th className="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Order
+                      </th>
+                      <th className="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Status
+                      </th>
+                      <th className="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Total
+                      </th>
+                      <th className="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Date
+                      </th>
+                      <th className="px-6 py-4 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.recentOrders.map((order, index) => (
+                      <motion.tr
                         key={order.id}
-                        className="cursor-pointer border-b border-neutral-100 last:border-b-0 transition-colors hover:bg-orange-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-inset"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="cursor-pointer border-t transition-colors hover:bg-muted/30 group"
                         onClick={() => handleOrderClick(order)}
+                        role="button"
+                        tabIndex={0}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
                             handleOrderClick(order);
                           }
                         }}
-                        tabIndex={0}
-                        role="button"
-                        aria-label={`Order ${order.orderNumber}, ${style.label}, ${formatPrice(order.cartTotal)}`}
                       >
-                        <td className="px-4 py-3 font-mono font-semibold text-neutral-900">
-                          {order.orderNumber}
+                        <td className="px-6 py-4 font-mono font-semibold text-foreground text-sm">
+                          #{order.orderNumber}
                         </td>
-                        <td className="px-4 py-3">
-                          <span className="inline-flex items-center gap-1.5">
-                            <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
-                            <span className={`text-sm font-medium ${style.text}`}>
-                              {style.label}
-                            </span>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)} border`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${getStatusDot(order.status)}`} />
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                           </span>
                         </td>
-                        <td className="px-4 py-3 font-semibold text-neutral-900">
+                        <td className="px-6 py-4 font-semibold text-foreground">
                           {formatPrice(order.cartTotal)}
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs text-neutral-500">
+                        <td className="px-6 py-4 text-sm text-muted-foreground">
                           {formatDate(order.createdAt)}
                         </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        <td className="px-6 py-4 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOrderClick(order);
+                            }}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </Card>
         </div>
@@ -430,9 +551,9 @@ export function CustomerDashboard({
         {/* Mobile cards */}
         <div className="flex flex-col gap-3 md:hidden">
           {data.recentOrders.length === 0 ? (
-            <Card className="rounded-2xl border-0 p-0 shadow-sm">
+            <Card className="rounded-2xl border shadow-sm">
               <EmptyState
-                icon={<Package className="h-5 w-5 text-orange-600" />}
+                icon={<Package className="h-6 w-6 text-orange-500" />}
                 heading="No orders yet"
                 subtext="Your future fits will show up here."
                 ctaLabel="Start shopping"
@@ -440,12 +561,15 @@ export function CustomerDashboard({
               />
             </Card>
           ) : (
-            data.recentOrders.map((order) => {
-              const style = STATUS_STYLES[order.status];
-              return (
+            data.recentOrders.map((order, index) => (
+              <motion.div
+                key={order.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
                 <Card
-                  key={order.id}
-                  className={`cursor-pointer rounded-2xl border-0 border-l-4 ${style.border} p-0 shadow-sm transition-colors hover:bg-orange-50/40 active:bg-orange-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500`}
+                  className="cursor-pointer rounded-2xl border shadow-sm transition-all hover:shadow-md active:scale-[0.99]"
                   onClick={() => handleOrderClick(order)}
                   role="button"
                   tabIndex={0}
@@ -455,48 +579,51 @@ export function CustomerDashboard({
                       handleOrderClick(order);
                     }
                   }}
-                  aria-label={`Order ${order.orderNumber}, ${style.label}, ${formatPrice(order.cartTotal)}`}
                 >
-                  <CardContent className="flex items-center justify-between p-4">
-                    <div className="flex flex-col gap-1">
-                      <span className="font-mono font-semibold text-neutral-900">
-                        {order.orderNumber}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-xs text-neutral-500">
-                        <Clock className="h-3 w-3" />
-                        {formatDate(order.createdAt)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5">
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
-                        <span className={`text-xs font-medium ${style.text}`}>
-                          {style.label}
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1.5">
+                        <span className="font-mono font-semibold text-foreground text-sm">
+                          #{order.orderNumber}
                         </span>
-                      </span>
-                      <span className="text-sm font-semibold text-neutral-900">
-                        {formatPrice(order.cartTotal)}
-                      </span>
+                        <div className="flex items-center gap-3">
+                          <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${getStatusColor(order.status)}`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${getStatusDot(order.status)}`} />
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(order.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-foreground">
+                          {formatPrice(order.cartTotal)}
+                        </p>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
-              );
-            })
+              </motion.div>
+            ))
           )}
         </div>
       </section>
 
       {/* ── Wishlist Preview ───────────────────────────────────────── */}
       <section aria-label="Wishlist preview">
-        <div className="mb-4 flex items-center justify-between">
-          <SectionEyebrow label="Saved" title="Your Wishlist" />
-          <ViewAllButton onClick={handleViewAllWishlist} />
-        </div>
+        <SectionHeader
+          label="Saved"
+          title="Your Wishlist"
+          actionLabel="View All"
+          onAction={handleViewAllWishlist}
+        />
 
         {data.wishlistPreview.length === 0 ? (
-          <Card className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50/50 p-0 shadow-none">
+          <Card className="rounded-2xl border border-dashed shadow-none bg-muted/5">
             <EmptyState
-              icon={<Heart className="h-5 w-5 text-orange-600" />}
+              icon={<Heart className="h-6 w-6 text-rose-500" />}
               heading="Nothing saved yet"
               subtext="Tap the heart on anything you love — it'll land here."
               ctaLabel="Browse the shop"
@@ -504,50 +631,83 @@ export function CustomerDashboard({
             />
           </Card>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {data.wishlistPreview.map((item) => (
-              <Card
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {data.wishlistPreview.map((item, index) => (
+              <motion.div
                 key={item.productId}
-                className="group cursor-pointer overflow-hidden rounded-2xl border-0 p-0 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
-                onClick={() => handleWishlistItemClick(item.product.slug)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleWishlistItemClick(item.product.slug);
-                  }
-                }}
-                aria-label={item.product.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
               >
-                <div className="relative aspect-square overflow-hidden bg-neutral-100">
-                  <Image
-                    src={item.product.primaryImage}
-                    alt={item.product.name}
-                    width={400}
-                    height={400}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 flex items-end bg-gradient-to-t from-neutral-950/85 via-neutral-950/0 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    <span className="flex items-center gap-1 p-4 text-sm font-semibold text-orange-400">
-                      View product <ArrowRight className="h-3.5 w-3.5" />
-                    </span>
+                <Card
+                  className="group cursor-pointer overflow-hidden rounded-2xl border shadow-sm transition-all hover:shadow-xl hover:-translate-y-1"
+                  onClick={() => handleWishlistItemClick(item.product.slug)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleWishlistItemClick(item.product.slug);
+                    }
+                  }}
+                >
+                  <div className="relative aspect-square overflow-hidden bg-muted">
+                    <Image
+                      src={item.product.primaryImage || "/placeholder.png"}
+                      alt={item.product.name}
+                      width={400}
+                      height={400}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-foreground/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="rounded-full shadow-lg"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleWishlistItemClick(item.product.slug);
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </Button>
+                    </div>
+                    <Badge 
+                      className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-foreground border-0"
+                    >
+                      <Heart className="h-3 w-3 fill-rose-500 text-rose-500 mr-1" />
+                      Wishlist
+                    </Badge>
                   </div>
-                </div>
-                <CardContent className="p-4">
-                  <p className="line-clamp-1 text-sm font-medium text-neutral-900">
-                    {item.product.name}
-                  </p>
-                  <p className="mt-1 font-mono text-sm font-semibold text-neutral-900">
-                    {formatPrice(item.product.price)}
-                  </p>
-                </CardContent>
-              </Card>
+                  <CardContent className="p-4">
+                    <p className="line-clamp-1 text-sm font-medium text-foreground">
+                      {item.product.name}
+                    </p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="font-bold text-foreground">
+                        {formatPrice(item.product.price)}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-full h-8 w-8 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleWishlistItemClick(item.product.slug);
+                        }}
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         )}
       </section>
-    </div>
+    </motion.div>
   );
 }
 
@@ -558,51 +718,57 @@ export function CustomerDashboard({
 function DashboardSkeleton() {
   return (
     <div className="space-y-10" aria-busy="true" aria-label="Loading dashboard">
+      {/* Welcome skeleton */}
+      <div className="p-6 rounded-2xl border bg-muted/10">
+        <Skeleton className="h-8 w-48 mb-2" />
+        <Skeleton className="h-4 w-64" />
+      </div>
+
       {/* Overview cards skeleton */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i} className="overflow-hidden rounded-2xl border-0 bg-neutral-950 p-0">
-            <CardContent className="p-5 pb-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i} className="overflow-hidden rounded-2xl border shadow-sm">
+            <CardContent className="p-6">
               <div className="flex items-start justify-between">
-                <Skeleton className="h-3 w-20 bg-white/10" />
-                <Skeleton className="h-8 w-8 rounded-full bg-white/10" />
+                <div className="space-y-3">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-9 w-12" />
+                </div>
+                <Skeleton className="h-12 w-12 rounded-full" />
               </div>
-              <Skeleton className="mt-4 h-10 w-16 bg-white/10" />
+              <Skeleton className="mt-4 h-4 w-32" />
             </CardContent>
-            <div className="border-t border-dashed border-neutral-800 px-5 py-2.5">
-              <Skeleton className="h-3 w-24 bg-white/10" />
-            </div>
           </Card>
         ))}
       </div>
 
       {/* Recent orders skeleton */}
       <section>
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <Skeleton className="mb-2 h-3 w-14" />
-            <Skeleton className="h-5 w-32" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="space-y-1">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-6 w-32" />
           </div>
           <Skeleton className="h-9 w-20" />
         </div>
-        <Card className="hidden overflow-hidden rounded-2xl border-0 p-0 shadow-sm md:block">
-          <Skeleton className="h-11 w-full rounded-none bg-neutral-900" />
+        <Card className="hidden overflow-hidden rounded-2xl border shadow-sm md:block">
+          <Skeleton className="h-12 w-full rounded-none" />
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full rounded-none border-b border-neutral-100 last:border-b-0" />
+            <Skeleton key={i} className="h-16 w-full rounded-none border-t" />
           ))}
         </Card>
         <div className="flex flex-col gap-3 md:hidden">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="rounded-2xl border-0 p-0 shadow-sm">
+            <Card key={i} className="rounded-2xl border shadow-sm">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-2">
+                  <div className="space-y-2">
                     <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-32" />
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <Skeleton className="h-4 w-16 rounded-full" />
+                  <div className="text-right space-y-2">
                     <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-4 ml-auto" />
                   </div>
                 </div>
               </CardContent>
@@ -613,20 +779,23 @@ function DashboardSkeleton() {
 
       {/* Wishlist skeleton */}
       <section>
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <Skeleton className="mb-2 h-3 w-12" />
-            <Skeleton className="h-5 w-28" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="space-y-1">
+            <Skeleton className="h-3 w-14" />
+            <Skeleton className="h-6 w-28" />
           </div>
           <Skeleton className="h-9 w-20" />
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="overflow-hidden rounded-2xl border-0 p-0 shadow-sm">
-              <Skeleton className="aspect-square w-full rounded-none" />
-              <CardContent className="space-y-2 p-4">
+            <Card key={i} className="overflow-hidden rounded-2xl border shadow-sm">
+              <Skeleton className="aspect-square w-full" />
+              <CardContent className="p-4 space-y-2">
                 <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                </div>
               </CardContent>
             </Card>
           ))}

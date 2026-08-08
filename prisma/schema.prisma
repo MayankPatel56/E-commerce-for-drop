@@ -65,7 +65,7 @@ model Tag {
   productTags ProductTag[]
 }
 
-/// Products table
+/// Products table - UPDATED with new fields
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Product {
   id             Int              @id @default(autoincrement())
@@ -73,6 +73,11 @@ model Product {
   slug           String           @unique
   description    String?
   price          Float
+  compareAtPrice Float?            // 🔥 NEW: Original price for discount display
+  badgeText      String?           // 🔥 NEW: Promo badge (e.g., "Sale", "New")
+  soldLabel      String?           // 🔥 NEW: Custom sold-out label
+  videoUrl       String?           // 🔥 NEW: Product video URL
+  features       Json?             // 🔥 NEW: Product features (JSON array)
   primaryImage   String?
   galleryImages  Json?
   seoTitle       String?
@@ -92,7 +97,7 @@ model Product {
   @@index([price], map: "idx_products_price")
 }
 
-/// Product Variants table
+/// Product Variants table - UPDATED with new field
 /// isOutOfStock maintained by DB trigger: set_is_out_of_stock
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ProductVariant {
@@ -101,6 +106,7 @@ model ProductVariant {
   productId     Int
   variantType   String
   variantValue  String
+  colorHex      String?      // 🔥 NEW: Hex color code for color variants
   price         Float?
   stockQuantity Int         @default(0)
   isOutOfStock  Boolean     @default(false)

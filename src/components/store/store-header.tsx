@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,13 +29,20 @@ import {
   Heart,
   Star,
   ChevronDown,
-  ShieldCheck, // ✓ FIX 1: Added ShieldCheck import
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
+  Package,
+  X,
+  ArrowRight,
 } from "lucide-react";
 
 interface Category {
   id: number;
   name: string;
   slug: string;
+  is_active?: boolean;
+  parent_id?: number | null;
 }
 
 interface StoreHeaderProps {
@@ -45,13 +53,13 @@ interface StoreHeaderProps {
   onLogout: () => void;
   isAuthenticated: boolean;
   userName?: string;
-  userRole?: string;        
+  userRole?: string;
   currentView?: string;
 }
 
 const NAV_LINKS = [
-  { id: "home", label: "Home" },
-  { id: "shop", label: "Shop" },
+  { id: "home", label: "Home", icon: "🏠" },
+  { id: "shop", label: "Shop", icon: "🛍️" },
 ] as const;
 
 const SECONDARY_NAV_LINKS = [
@@ -61,21 +69,21 @@ const SECONDARY_NAV_LINKS = [
 ] as const;
 
 const ALL_MOBILE_LINKS = [
-  { id: "home", label: "Home" },
-  { id: "shop", label: "Shop" },
-  { id: "about", label: "About Us" },
-  { id: "track-order", label: "Track Order" },
-  { id: "contact", label: "Contact Us" },
+  { id: "home", label: "Home", icon: "🏠" },
+  { id: "shop", label: "Shop", icon: "🛍️" },
+  { id: "about", label: "About Us", icon: "ℹ️" },
+  { id: "track-order", label: "Track Order", icon: "📦" },
+  { id: "contact", label: "Contact Us", icon: "📧" },
 ] as const;
 
 const CUSTOMER_NAV_LINKS = [
-  { id: "customer-dashboard", label: "My Account", icon: LayoutDashboard },
+  { id: "customer-dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "customer-wishlist", label: "Wishlist", icon: Heart },
+  { id: "customer-orders", label: "My Orders", icon: Package },
   { id: "customer-reviews", label: "My Reviews", icon: Star },
   { id: "customer-profile", label: "Profile", icon: User },
 ] as const;
 
-// ✓ FIX 2: Added userRole to MobileNav destructuring
 function MobileNav({
   onNavigate,
   onOpenCart,
@@ -105,115 +113,144 @@ function MobileNav({
   };
 
   return (
-    <div className="flex flex-col h-full bg-black text-white">
-      <SheetHeader>
-        <SheetTitle className="flex items-center text-white">
-          <Image
-            src="/logo.png"
-            alt="Indicore Originals"
-            width={220}
-            height={60}
-            className="object-contain"
-          />
-        </SheetTitle>
+    <motion.div 
+      initial={{ x: "100%" }}
+      animate={{ x: 0 }}
+      exit={{ x: "100%" }}
+      className="flex flex-col h-full bg-gradient-to-b from-black to-neutral-900 text-white"
+    >
+      <SheetHeader className="border-b border-white/10 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <SheetTitle className="flex items-center text-white">
+            <Image
+              src="/logo.png"
+              alt="Indicore Originals"
+              width={180}
+              height={50}
+              className="object-contain"
+            />
+          </SheetTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-11 min-w-11 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full"
+            onClick={onClose}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
       </SheetHeader>
 
-      <nav className="flex-1 py-4" aria-label="Mobile navigation">
+      <nav className="flex-1 overflow-y-auto px-4 py-6" aria-label="Mobile navigation">
         <ul className="space-y-1">
           {ALL_MOBILE_LINKS.map((link) => (
-            <li key={link.id}>
+            <motion.li 
+              key={link.id}
+              whileHover={{ x: 4 }}
+              transition={{ duration: 0.2 }}
+            >
               <button
                 type="button"
                 onClick={() => handleNav(link.id)}
-                className="flex items-center w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-11 text-left text-white/90 hover:bg-white/10 hover:text-orange-400"
+                className="flex items-center gap-3 w-full rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 min-h-12 text-left text-white/80 hover:bg-white/10 hover:text-orange-400 group"
               >
-                {link.label}
+                <span className="text-lg">{link.icon}</span>
+                <span>{link.label}</span>
+                <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
               </button>
-            </li>
+            </motion.li>
           ))}
         </ul>
-      </nav>
 
-      <div className="border-t border-white/10 pt-4 space-y-2">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 min-h-11 text-white/90 hover:bg-white/10 hover:text-orange-400"
-          onClick={() => handleNav("search")}
-        >
-          <Search className="h-4 w-4" />
-          Search
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 min-h-11 text-white/90 hover:bg-white/10 hover:text-orange-400"
-          onClick={handleCart}
-        >
-          <ShoppingCart className="h-4 w-4" />
-          Cart
-          {cartCount > 0 && (
-            <Badge variant="default" className="ml-auto bg-orange-500">
-              {cartCount}
-            </Badge>
-          )}
-        </Button>
-
-        {/* ✓ FIX 3: Fixed nested ternary - replaced entire broken block */}
-        {isAuthenticated ? (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 px-3 py-2 text-sm text-white/60">
-              <User className="h-4 w-4" />
-              <span className="truncate">{userName ?? "Account"}</span>
-            </div>
-            {userRole === "admin" && (
-              <button
-                type="button"
-                onClick={() => handleNav("admin")}
-                className="flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-11 text-left text-orange-400 hover:bg-white/10"
-              >
-                <ShieldCheck className="h-4 w-4 shrink-0" />
-                <span>Admin Panel</span>
-              </button>
-            )}
-            {CUSTOMER_NAV_LINKS.map((link) => {
-              const Icon = link.icon;
-              return (
-                <button
-                  key={link.id}
-                  type="button"
-                  onClick={() => handleNav(link.id)}
-                  className="flex items-center gap-3 w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-h-11 text-left text-white/70 hover:bg-white/10 hover:text-orange-400"
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span>{link.label}</span>
-                </button>
-              );
-            })}
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 min-h-11 text-white/70 hover:text-red-400 hover:bg-red-500/10"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
-          </div>
-        ) : (
+        <div className="mt-6 border-t border-white/10 pt-6 space-y-2">
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 min-h-11 text-white/90 hover:bg-white/10 hover:text-orange-400"
-            onClick={handleLogin}
+            className="w-full justify-start gap-3 min-h-12 text-white/80 hover:bg-white/10 hover:text-orange-400 rounded-xl"
+            onClick={() => handleNav("search")}
           >
-            <LogIn className="h-4 w-4" />
-            Login
+            <Search className="h-4 w-4" />
+            Search Products
           </Button>
-        )}
-      </div>
-    </div>
+
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 min-h-12 text-white/80 hover:bg-white/10 hover:text-orange-400 rounded-xl"
+            onClick={handleCart}
+          >
+            <ShoppingCart className="h-4 w-4" />
+            Cart
+            {cartCount > 0 && (
+              <Badge className="ml-auto bg-orange-500 text-white border-0">
+                {cartCount}
+              </Badge>
+            )}
+          </Button>
+
+          {isAuthenticated ? (
+            <div className="space-y-1">
+              <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-orange-400 text-white font-semibold text-sm">
+                  {userName?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">{userName}</p>
+                  <p className="text-xs text-white/40">{userRole === "admin" ? "Administrator" : "Customer"}</p>
+                </div>
+              </div>
+
+              {userRole === "admin" && (
+                <button
+                  type="button"
+                  onClick={() => handleNav("admin")}
+                  className="flex items-center gap-3 w-full rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 min-h-12 text-left bg-orange-500/10 text-orange-400 hover:bg-orange-500/20"
+                >
+                  <ShieldCheck className="h-4 w-4 shrink-0" />
+                  <span>Admin Panel</span>
+                  <ShieldCheck className="h-3 w-3 ml-auto opacity-50" />
+                </button>
+              )}
+
+              {CUSTOMER_NAV_LINKS.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <motion.button
+                    key={link.id}
+                    type="button"
+                    onClick={() => handleNav(link.id)}
+                    whileHover={{ x: 4 }}
+                    className="flex items-center gap-3 w-full rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 min-h-12 text-left text-white/70 hover:bg-white/10 hover:text-orange-400"
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{link.label}</span>
+                  </motion.button>
+                );
+              })}
+
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 min-h-12 text-white/60 hover:text-red-400 hover:bg-red-500/10 rounded-xl mt-2"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="default"
+              className="w-full justify-center gap-2 min-h-12 rounded-xl bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white shadow-lg shadow-orange-500/20"
+              onClick={handleLogin}
+            >
+              <LogIn className="h-4 w-4" />
+              Sign In
+            </Button>
+          )}
+        </div>
+      </nav>
+    </motion.div>
   );
 }
 
-// ✓ FIX 4: Added userRole to StoreHeader destructuring
 export function StoreHeader({
   onNavigate,
   onOpenCart,
@@ -227,39 +264,102 @@ export function StoreHeader({
 }: StoreHeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
 
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Fetch categories
   useEffect(() => {
     let active = true;
-    fetch("/api/homepage")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (active && json?.categories) {
-          setCategories(json.categories);
+    setLoading(true);
+    
+    fetch("/api/categories?active=true")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch categories");
+        return res.json();
+      })
+      .then((data) => {
+        if (active) {
+          const activeCategories = Array.isArray(data) 
+            ? data.filter((cat: Category) => cat.is_active !== false)
+            : [];
+          setCategories(activeCategories);
         }
       })
       .catch(() => {
-        // Dropdown silently falls back to a plain "Browse all" link
+        // Silent fail
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
+      
     return () => {
       active = false;
     };
   }, []);
 
   const linkClass = (id: string) =>
-    `px-3 py-2 text-sm font-medium transition-colors min-h-11 rounded-md ${
+    `px-3 py-2 text-sm font-medium transition-all duration-200 min-h-11 rounded-lg ${
       currentView === id
-        ? "text-orange-400"
-        : "text-white/80 hover:text-orange-400 hover:bg-white/5"
+        ? "text-orange-400 bg-white/5"
+        : "text-white/70 hover:text-orange-400 hover:bg-white/5"
     }`;
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-black border-b border-white/10">
+    <motion.header 
+      className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+        scrolled 
+          ? "bg-black/95 backdrop-blur-xl border-b border-white/10 shadow-2xl shadow-black/20" 
+          : "bg-black border-b border-white/5"
+      }`}
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Top announcement bar */}
+      <div className="hidden md:block bg-gradient-to-r from-orange-500/10 via-orange-500/5 to-transparent border-b border-white/5">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-4 text-white/40">
+              <span className="flex items-center gap-1">
+                <Sparkles className="h-3 w-3 text-orange-400" />
+                Free shipping on orders above ₹499
+              </span>
+              <span className="text-white/10">|</span>
+              <span className="flex items-center gap-1">
+                <TrendingUp className="h-3 w-3 text-orange-400" />
+                COD available
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-white/30">
+              <span className="flex items-center gap-1">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                </span>
+                Live
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left: Logo */}
-        <button
+        <motion.button
           type="button"
           onClick={() => onNavigate("home")}
           className="flex items-center shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 rounded-sm"
+          whileHover={{ scale: 1.02 }}
+          transition={{ duration: 0.2 }}
         >
           <Image
             src="/logo.png"
@@ -267,52 +367,73 @@ export function StoreHeader({
             width={400}
             height={174}
             priority
-            className="h-12 w-auto object-contain sm:h-20"
+            className="h-10 w-auto object-contain sm:h-12"
           />
-        </button>
+        </motion.button>
 
         {/* Center: Desktop nav links */}
         <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
           {NAV_LINKS.map((link) => (
-            <button
+            <motion.button
               key={link.id}
               type="button"
               onClick={() => onNavigate(link.id)}
               className={linkClass(link.id)}
+              whileHover={{ y: -1 }}
+              transition={{ duration: 0.2 }}
             >
-              {link.label}
-            </button>
+              <span className="flex items-center gap-1.5">
+                <span>{link.icon}</span>
+                {link.label}
+              </span>
+            </motion.button>
           ))}
 
           {/* Categories dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
+              <motion.button
                 type="button"
                 className={`${linkClass("categories")} flex items-center gap-1`}
+                whileHover={{ y: -1 }}
+                aria-label="Browse product categories"
               >
-                Categories
+                <span>📂 Categories</span>
                 <ChevronDown className="h-3.5 w-3.5" />
-              </button>
+              </motion.button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="bg-neutral-900 border-white/10 text-white"
+              className="bg-neutral-900/95 backdrop-blur-xl border-white/10 text-white min-w-[220px] shadow-2xl rounded-2xl p-1"
             >
-              {categories.length > 0 ? (
-                categories.map((cat) => (
+              {loading ? (
+                <DropdownMenuItem disabled className="text-white/40">
+                  Loading categories...
+                </DropdownMenuItem>
+              ) : categories.length > 0 ? (
+                <>
                   <DropdownMenuItem
-                    key={cat.id}
-                    onClick={() => onNavigate("shop", { category: cat.slug })}
-                    className="cursor-pointer focus:bg-white/10 focus:text-orange-400"
+                    onClick={() => onNavigate("shop")}
+                    className="cursor-pointer focus:bg-white/10 focus:text-orange-400 font-medium rounded-xl m-1"
                   >
-                    {cat.name}
+                    <span className="flex items-center gap-2">
+                      <span>🛍️</span> All Products
+                    </span>
                   </DropdownMenuItem>
-                ))
+                  {categories.map((cat) => (
+                    <DropdownMenuItem
+                      key={cat.id}
+                      onClick={() => onNavigate("shop", { category: cat.slug })}
+                      className="cursor-pointer focus:bg-white/10 focus:text-orange-400 rounded-xl m-1"
+                    >
+                      {cat.name}
+                    </DropdownMenuItem>
+                  ))}
+                </>
               ) : (
                 <DropdownMenuItem
                   onClick={() => onNavigate("shop")}
-                  className="cursor-pointer focus:bg-white/10 focus:text-orange-400"
+                  className="cursor-pointer focus:bg-white/10 focus:text-orange-400 rounded-xl m-1"
                 >
                   Browse all products
                 </DropdownMenuItem>
@@ -321,14 +442,16 @@ export function StoreHeader({
           </DropdownMenu>
 
           {SECONDARY_NAV_LINKS.map((link) => (
-            <button
+            <motion.button
               key={link.id}
               type="button"
               onClick={() => onNavigate(link.id)}
               className={linkClass(link.id)}
+              whileHover={{ y: -1 }}
+              transition={{ duration: 0.2 }}
             >
               {link.label}
-            </button>
+            </motion.button>
           ))}
         </nav>
 
@@ -337,91 +460,118 @@ export function StoreHeader({
           <Button
             variant="ghost"
             size="sm"
-            className="min-h-11 min-w-11 p-2 hidden md:inline-flex text-white/80 hover:text-orange-400 hover:bg-white/5"
+            className="hidden md:inline-flex min-h-11 min-w-11 p-2 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-all duration-200"
             onClick={() => onNavigate("search")}
             aria-label="Search products"
           >
             <Search className="h-5 w-5" />
           </Button>
 
-          <div className="hidden md:flex items-center">
-            {/* ✓ FIX 5: Fixed desktop authenticated block with proper ternary and admin button */}
+          <div className="hidden md:flex items-center gap-1">
             {isAuthenticated ? (
               <>
                 {userRole === "admin" && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="min-h-11 gap-1.5 px-2 text-white/80 hover:text-orange-400 hover:bg-white/5"
+                    className="min-h-11 gap-1.5 px-3 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-all duration-200"
                     onClick={() => onNavigate("admin")}
                   >
                     <ShieldCheck className="h-4 w-4" />
-                    <span className="text-xs">Admin Panel</span>
+                    <span className="text-xs font-medium">Admin</span>
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="min-h-11 gap-1.5 px-2 text-white/80 hover:text-orange-400 hover:bg-white/5"
-                  onClick={() => onNavigate("customer-dashboard")}
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  <span className="max-w-25 truncate text-xs">{userName}</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="min-h-11 min-w-11 p-2 text-white/60 hover:text-red-400 hover:bg-red-500/10"
-                  onClick={onLogout}
-                  aria-label="Logout"
-                >
-                  <LogOut className="h-5 w-5" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="min-h-11 gap-2 px-3 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-all duration-200"
+                    >
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-orange-400 text-white font-semibold text-xs">
+                        {userName?.charAt(0).toUpperCase() || "U"}
+                      </div>
+                      <span className="max-w-20 truncate text-sm font-medium">
+                        {userName}
+                      </span>
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="bg-neutral-900/95 backdrop-blur-xl border-white/10 text-white min-w-[200px] shadow-2xl rounded-2xl p-1"
+                  >
+                    {CUSTOMER_NAV_LINKS.map((link) => {
+                      const Icon = link.icon;
+                      return (
+                        <DropdownMenuItem
+                          key={link.id}
+                          onClick={() => onNavigate(link.id)}
+                          className="cursor-pointer focus:bg-white/10 focus:text-orange-400 rounded-xl m-1 gap-2"
+                        >
+                          <Icon className="h-4 w-4" />
+                          {link.label}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                    <DropdownMenuItem
+                      onClick={onLogout}
+                      className="cursor-pointer focus:bg-red-500/10 focus:text-red-400 rounded-xl m-1 gap-2 text-red-400"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <Button
                 variant="ghost"
                 size="sm"
-                className="min-h-11 min-w-11 p-2 text-white/80 hover:text-orange-400 hover:bg-white/5"
+                className="min-h-11 gap-2 px-4 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-all duration-200"
                 onClick={onOpenLogin}
-                aria-label="Login"
               >
-                <User className="h-5 w-5" />
+                <User className="h-4 w-4" />
+                <span className="text-sm font-medium hidden sm:inline">Sign In</span>
               </Button>
             )}
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="relative min-h-11 min-w-11 p-2 text-white/80 hover:text-orange-400 hover:bg-white/5"
-            onClick={onOpenCart}
-            aria-label={`Cart with ${cartCount} item${cartCount !== 1 ? "s" : ""}`}
-          >
-            <ShoppingCart className="h-5 w-5" />
-            {cartCount > 0 && (
-              <Badge
-                variant="default"
-                className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center px-1 text-[10px] font-bold bg-orange-500 border-0"
-              >
-                {cartCount > 99 ? "99+" : cartCount}
-              </Badge>
-            )}
-          </Button>
+          {/* Cart Button */}
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="relative min-h-11 min-w-11 p-2 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-all duration-200"
+              onClick={onOpenCart}
+              aria-label={`Cart with ${cartCount} item${cartCount !== 1 ? "s" : ""}`}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-orange-400 px-1 text-[10px] font-bold text-white shadow-lg shadow-orange-500/30"
+                >
+                  {cartCount > 99 ? "99+" : cartCount}
+                </motion.span>
+              )}
+            </Button>
+          </motion.div>
 
+          {/* Mobile Menu Button */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="min-h-11 min-w-11 p-2 md:hidden text-white/80 hover:text-orange-400 hover:bg-white/5"
+                className="min-h-11 min-w-11 p-2 md:hidden text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-all duration-200"
                 aria-label="Open navigation menu"
               >
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72 p-0">
-              {/* ✓ FIX 6: Pass userRole to MobileNav */}
+            <SheetContent side="right" className="w-80 p-0 border-l border-white/10">
               <MobileNav
                 onNavigate={onNavigate}
                 onOpenCart={onOpenCart}
@@ -437,6 +587,6 @@ export function StoreHeader({
           </Sheet>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 }

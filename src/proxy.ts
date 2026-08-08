@@ -9,18 +9,22 @@ export async function proxy(req: NextRequest) {
     const token = await getToken({
       req,
       secret: process.env.NEXTAUTH_SECRET,
+      // Secure cookie check add kiya taaki production/localhost dono mein refresh handle ho sake
+      secureCookie: process.env.NODE_ENV === "production",
     });
 
+    // 1. Agar token nahi milta
     if (!token) {
-      const loginUrl = new URL("/", req.url);
+      const loginUrl = new URL("/login", req.url); // Direct /login par bhejo, home page par nahi
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
 
-    if (token.role !== "admin") {
-      const loginUrl = new URL("/", req.url);
-      loginUrl.searchParams.set("error", "access_denied");
-      return NextResponse.redirect(loginUrl);
+    // 2. Agar user role admin nahi hai
+    if (token.role !== "admin" && token.role !== "ADMIN") {
+      const homeUrl = new URL("/shop", req.url);
+      homeUrl.searchParams.set("error", "access_denied");
+      return NextResponse.redirect(homeUrl);
     }
   }
 
@@ -29,10 +33,11 @@ export async function proxy(req: NextRequest) {
     const token = await getToken({
       req,
       secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: process.env.NODE_ENV === "production",
     });
 
     if (!token) {
-      const loginUrl = new URL("/", req.url);
+      const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }

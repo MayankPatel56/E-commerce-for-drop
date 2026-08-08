@@ -9,6 +9,7 @@ const createVariantSchema = z.object({
   sku: z.string().min(1, "SKU is required"),
   variantType: z.string().min(1, "Variant type is required"),
   variantValue: z.string().min(1, "Variant value is required"),
+  colorHex: z.string().optional().nullable(),
   price: z.number().min(0, "Price must be non-negative").optional().nullable(),
   stockQuantity: z.number().int("Stock must be an integer"),
 });
@@ -63,6 +64,7 @@ export async function POST(
         sku: data.sku,
         variantType: data.variantType,
         variantValue: data.variantValue,
+        colorHex: data.colorHex ?? null,
         price: data.price ?? null,
         stockQuantity: data.stockQuantity,
         // isOutOfStock is set automatically by DB trigger (set_is_out_of_stock)

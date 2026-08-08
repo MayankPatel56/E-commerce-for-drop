@@ -8,7 +8,20 @@ import {
   Package,
   MapPin,
   AlertCircle,
+  Truck,
+  CreditCard,
+  CheckCircle,
+  ChevronRight,
+  User,
+  Phone,
+  Mail,
+  Home,
+  Building2,
+  MapPinIcon,
+  IndianRupee,
+  ShoppingBag,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +37,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 import { useCart } from "@/context/cart-context";
 import Image from "next/image";
@@ -152,6 +166,7 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   // ─── Fetch COD Settings ─────────────────────────────────────────────────
 
@@ -200,7 +215,6 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
     (field: keyof FormData, value: string | boolean) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
 
-      // Live-validate if field has been touched
       if (touched[field]) {
         const error =
           typeof value === "string"
@@ -221,6 +235,10 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
     [formData]
   );
 
+  const handleFocus = useCallback((field: string) => {
+    setFocusedField(field);
+  }, []);
+
   // ─── Form Validity ──────────────────────────────────────────────────────
 
   const isFormValid = useMemo(() => {
@@ -237,10 +255,8 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
       e.preventDefault();
       setSubmitError(null);
 
-      // Validate all fields
       const errors = validateForm(formData);
       if (Object.keys(errors).length > 0) {
-        // Mark all fields as touched
         setTouched({
           name: true,
           phone: true,
@@ -251,6 +267,10 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
           email: true,
         });
         setFieldErrors(errors);
+        const firstError = document.querySelector('[aria-invalid="true"]');
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
         return;
       }
 
@@ -285,12 +305,10 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
         const data = await res.json();
 
         if (!res.ok) {
-          // Handle 400 validation errors with field-level details
           if (res.status === 400 && data.details) {
             const apiErrors: FieldErrors = {};
             const details = data.details as Record<string, string[]>;
 
-            // Map API field names to form field names
             const fieldMap: Record<string, keyof FieldErrors> = {
               name: "name",
               phone: "phone",
@@ -301,20 +319,15 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
               email: "email",
             };
 
-            // Check address sub-fields
-            if (details.address) {
-              // details.address could be an object with nested field errors
-              if (typeof details.address === "object" && !Array.isArray(details.address)) {
-                const addrDetails = details.address as Record<string, string[]>;
-                for (const [key, messages] of Object.entries(addrDetails)) {
-                  if (fieldMap[key]) {
-                    apiErrors[fieldMap[key]] = messages[0];
-                  }
+            if (details.address && typeof details.address === "object" && !Array.isArray(details.address)) {
+              const addrDetails = details.address as Record<string, string[]>;
+              for (const [key, messages] of Object.entries(addrDetails)) {
+                if (fieldMap[key]) {
+                  apiErrors[fieldMap[key]] = messages[0];
                 }
               }
             }
 
-            // Check top-level fields
             for (const [key, messages] of Object.entries(details)) {
               if (key === "address" || key === "cart" || key === "consent") continue;
               if (fieldMap[key] && messages.length > 0) {
@@ -322,7 +335,6 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
               }
             }
 
-            // Also check for address.street, address.city etc. (flattened Zod errors)
             for (const key of Object.keys(details)) {
               if (key.startsWith("address.") && details[key] != null) {
                 const subField = key.replace("address.", "");
@@ -353,7 +365,6 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
           return;
         }
 
-        // Success — clear cart BEFORE redirecting (Resolution #10)
         clearCart();
         onOrderSuccess(data.orderNumber);
       } catch {
@@ -369,109 +380,144 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
 
   if (items.length === 0) {
     return (
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center gap-4 py-12">
-            <Package className="size-16 text-muted-foreground/50" />
-            <p className="text-lg font-medium text-muted-foreground">
-              Your cart is empty
-            </p>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      >
+        <Card className="border-2 border-dashed">
+          <CardContent className="flex flex-col items-center justify-center gap-6 py-16">
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/5 rounded-full blur-2xl" />
+              <ShoppingBag className="size-20 text-muted-foreground/30 relative" />
+            </div>
+            <div className="text-center space-y-2">
+              <p className="text-2xl font-semibold">Your cart is empty</p>
+              <p className="text-muted-foreground">
+                Looks like you haven't added any items yet.
+              </p>
+            </div>
             <Button
-              variant="outline"
-              className="min-h-[44px]"
+              variant="default"
+              className="min-h-[48px] px-8 rounded-full shadow-lg shadow-primary/20"
               onClick={() => onNavigate("home")}
             >
-              <ArrowLeft className="size-4" />
+              <ArrowLeft className="size-4 mr-2" />
               Continue Shopping
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
     );
   }
 
   // ─── Render: Main Checkout ───────────────────────────────────────────────
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      {/* Back Button */}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8"
+    >
       <Button
         variant="ghost"
-        className="mb-6 min-h-[44px] gap-2 px-2 text-muted-foreground hover:text-foreground -ml-2"
+        className="mb-6 min-h-[44px] gap-2 px-2 text-muted-foreground hover:text-foreground -ml-2 group"
         onClick={() => onNavigate("home")}
       >
-        <ArrowLeft className="size-4" />
+        <ArrowLeft className="size-4 group-hover:-translate-x-1 transition-transform" />
         Back to Cart
       </Button>
 
-      {/* Page Title */}
-      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-6 sm:mb-8">
-        Checkout
-      </h1>
+      <div className="mb-8">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight flex items-center gap-3">
+          <span>Checkout</span>
+          <Badge variant="secondary" className="text-sm font-normal">
+            {totalItems} {totalItems === 1 ? "item" : "items"}
+          </Badge>
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Complete your order with cash on delivery
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-6 lg:gap-8 items-start">
-        {/* ── Left Column: Order Summary (sticky on desktop) ── */}
+        {/* ── Left Column: Order Summary ── */}
         <div className="lg:sticky lg:top-6">
-          <Card>
-            <CardHeader>
+          <Card className="border-2 shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Package className="size-5" />
+                <Package className="size-5 text-primary" />
                 Order Summary
               </CardTitle>
-              <CardDescription>
-                {totalItems} {totalItems === 1 ? "item" : "items"}
+              <CardDescription className="flex items-center gap-2">
+                <span>{totalItems} {totalItems === 1 ? "item" : "items"}</span>
+                <span className="text-muted-foreground/30">|</span>
+                <span className="text-primary font-medium">{formatPrice(cartTotal)}</span>
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-0">
-              {/* Cart Items */}
-              <div className="space-y-3">
+            <CardContent className="space-y-0 pt-4">
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                 {items.map((item, index) => (
                   <React.Fragment key={item.variantId}>
-                    <div className="flex items-start gap-3">
-                      {/* Thumbnail 64x64 */}
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.productName}
-                        width={64}
-                        height={64}
-                        className="size-16 shrink-0 rounded-md object-cover"
-                      />
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="flex items-start gap-3 p-2 rounded-xl hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="relative">
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.productName}
+                          width={64}
+                          height={64}
+                          className="size-16 shrink-0 rounded-xl object-cover border shadow-sm"
+                        />
+                        <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg">
+                          {item.quantity}
+                        </div>
+                      </div>
 
-                      {/* Product details */}
-                      <div className="flex flex-1 flex-col gap-0.5 min-w-0">
-                        <p className="font-medium leading-tight line-clamp-2 text-sm sm:text-base">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium leading-tight line-clamp-2 text-sm">
                           {item.productName}
                         </p>
-                        <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
+                        <p className="text-xs text-muted-foreground line-clamp-1">
                           {item.variantDescription}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.quantity} &times; {formatPrice(item.price)}
+                        <p className="text-xs font-medium text-primary mt-0.5">
+                          {formatPrice(item.price)} × {item.quantity}
                         </p>
                       </div>
 
-                      {/* Line total */}
-                      <p className="font-medium text-sm sm:text-base shrink-0 tabular-nums">
+                      <p className="font-semibold text-sm shrink-0 tabular-nums">
                         {formatPrice(item.price * item.quantity)}
                       </p>
-                    </div>
+                    </motion.div>
 
-                    {index < items.length - 1 && <Separator className="my-3" />}
+                    {index < items.length - 1 && <Separator className="my-2" />}
                   </React.Fragment>
                 ))}
               </div>
 
-              {/* Subtotal */}
               <Separator className="my-4" />
-              <div className="flex items-center justify-between">
-                <span className="text-base font-medium">Subtotal</span>
-                <span className="text-lg font-bold tabular-nums">
-                  {formatPrice(cartTotal)}
-                </span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-medium">{formatPrice(cartTotal)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Delivery</span>
+                  <span className="text-green-600 font-medium">Free</span>
+                </div>
+                <Separator className="my-2" />
+                <div className="flex items-center justify-between text-lg font-bold">
+                  <span>Total</span>
+                  <span className="text-primary">{formatPrice(cartTotal)}</span>
+                </div>
               </div>
 
-              {/* COD Range Notice */}
               {codLoading && (
                 <div className="mt-4 space-y-2">
                   <Skeleton className="h-4 w-3/4" />
@@ -480,309 +526,408 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
               )}
 
               {!codLoading && codSettings && (
-                <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                  <ShieldCheck className="size-3.5 shrink-0" />
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-4 flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl"
+                >
+                  <ShieldCheck className="size-4 shrink-0 text-primary" />
                   <span>
-                    Pay on Delivery &middot; Orders {formatPrice(codSettings.cod_min)}&ndash;{formatPrice(codSettings.cod_max)}
+                    Pay on Delivery · Orders {formatPrice(codSettings.cod_min)}–{formatPrice(codSettings.cod_max)}
                   </span>
-                </div>
+                </motion.div>
               )}
             </CardContent>
           </Card>
         </div>
 
         {/* ── Right Column: Checkout Form ── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <MapPin className="size-5" />
-              Delivery Details
-            </CardTitle>
-            <CardDescription>
-              Enter your shipping address and contact information
-            </CardDescription>
-          </CardHeader>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card className="border-2 shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <MapPin className="size-5 text-primary" />
+                Delivery Details
+              </CardTitle>
+              <CardDescription>
+                Enter your shipping address and contact information
+              </CardDescription>
+            </CardHeader>
 
-          <CardContent>
-            {/* COD Out of Range Error */}
-            {!codLoading && codOutOfRange && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertCircle className="size-4" />
-                <AlertTitle>Cash on Delivery Unavailable</AlertTitle>
-                <AlertDescription>
-                  {codOutOfRange.type === "below"
-                    ? `COD available for orders above ${formatPrice(codOutOfRange.min)}`
-                    : `COD available for orders up to ${formatPrice(codOutOfRange.max)}`}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Settings Fetch Error */}
-            {codFetchError && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertCircle className="size-4" />
-                <AlertTitle>Settings Error</AlertTitle>
-                <AlertDescription>{codFetchError}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* Submit Error */}
-            {submitError && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertCircle className="size-4" />
-                <AlertTitle>Order Failed</AlertTitle>
-                <AlertDescription>{submitError}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* Loading Skeleton (COD settings fetching) */}
-            {codLoading ? (
-              <div className="space-y-5">
-                {[...Array(7)].map((_, i) => (
-                  <div key={i} className="space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-9 w-full" />
-                  </div>
-                ))}
-                <Skeleton className="h-11 w-full mt-4" />
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} noValidate className="space-y-5">
-                {/* Full Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="name">
-                    Full Name <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={formData.name}
-                    onChange={(e) => handleFieldChange("name", e.target.value)}
-                    onBlur={() => handleBlur("name")}
-                    aria-invalid={touched.name && !!fieldErrors.name}
-                    aria-describedby={
-                      touched.name && fieldErrors.name ? "name-error" : undefined
-                    }
-                    className="min-h-[44px]"
-                  />
-                  {touched.name && fieldErrors.name && (
-                    <p id="name-error" className="text-sm text-destructive">
-                      {fieldErrors.name}
-                    </p>
-                  )}
-                </div>
-
-                {/* Phone Number */}
-                <div className="space-y-2">
-                  <Label htmlFor="phone">
-                    Phone Number <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="10-digit mobile number"
-                    value={formData.phone}
-                    onChange={(e) => {
-                      // Allow only digits, max 10
-                      const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
-                      handleFieldChange("phone", val);
-                    }}
-                    onBlur={() => handleBlur("phone")}
-                    aria-invalid={touched.phone && !!fieldErrors.phone}
-                    aria-describedby={
-                      touched.phone && fieldErrors.phone ? "phone-error" : undefined
-                    }
-                    className="min-h-[44px]"
-                    inputMode="numeric"
-                  />
-                  {touched.phone && fieldErrors.phone && (
-                    <p id="phone-error" className="text-sm text-destructive">
-                      {fieldErrors.phone}
-                    </p>
-                  )}
-                </div>
-
-                {/* Street Address */}
-                <div className="space-y-2">
-                  <Label htmlFor="street">
-                    Street Address <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="street"
-                    type="text"
-                    placeholder="House no., building, street"
-                    value={formData.street}
-                    onChange={(e) => handleFieldChange("street", e.target.value)}
-                    onBlur={() => handleBlur("street")}
-                    aria-invalid={touched.street && !!fieldErrors.street}
-                    aria-describedby={
-                      touched.street && fieldErrors.street ? "street-error" : undefined
-                    }
-                    className="min-h-[44px]"
-                  />
-                  {touched.street && fieldErrors.street && (
-                    <p id="street-error" className="text-sm text-destructive">
-                      {fieldErrors.street}
-                    </p>
-                  )}
-                </div>
-
-                {/* City & State (side by side on sm+) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="city">
-                      City <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="city"
-                      type="text"
-                      placeholder="City"
-                      value={formData.city}
-                      onChange={(e) => handleFieldChange("city", e.target.value)}
-                      onBlur={() => handleBlur("city")}
-                      aria-invalid={touched.city && !!fieldErrors.city}
-                      aria-describedby={
-                        touched.city && fieldErrors.city ? "city-error" : undefined
-                      }
-                      className="min-h-[44px]"
-                    />
-                    {touched.city && fieldErrors.city && (
-                      <p id="city-error" className="text-sm text-destructive">
-                        {fieldErrors.city}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="state">
-                      State <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="state"
-                      type="text"
-                      placeholder="State"
-                      value={formData.state}
-                      onChange={(e) => handleFieldChange("state", e.target.value)}
-                      onBlur={() => handleBlur("state")}
-                      aria-invalid={touched.state && !!fieldErrors.state}
-                      aria-describedby={
-                        touched.state && fieldErrors.state ? "state-error" : undefined
-                      }
-                      className="min-h-[44px]"
-                    />
-                    {touched.state && fieldErrors.state && (
-                      <p id="state-error" className="text-sm text-destructive">
-                        {fieldErrors.state}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Pincode */}
-                <div className="space-y-2">
-                  <Label htmlFor="pincode">
-                    Pincode <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="pincode"
-                    type="text"
-                    placeholder="6-digit pincode"
-                    value={formData.pincode}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
-                      handleFieldChange("pincode", val);
-                    }}
-                    onBlur={() => handleBlur("pincode")}
-                    aria-invalid={touched.pincode && !!fieldErrors.pincode}
-                    aria-describedby={
-                      touched.pincode && fieldErrors.pincode ? "pincode-error" : undefined
-                    }
-                    className="min-h-[44px]"
-                    inputMode="numeric"
-                  />
-                  {touched.pincode && fieldErrors.pincode && (
-                    <p id="pincode-error" className="text-sm text-destructive">
-                      {fieldErrors.pincode}
-                    </p>
-                  )}
-                </div>
-
-                {/* Email */}
-                <div className="space-y-2">
-                  <Label htmlFor="email">
-                    Email Address (For order updates) <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={formData.email}
-                    onChange={(e) => handleFieldChange("email", e.target.value)}
-                    onBlur={() => handleBlur("email")}
-                    aria-invalid={touched.email && !!fieldErrors.email}
-                    aria-describedby={
-                      touched.email && fieldErrors.email ? "email-error" : undefined
-                    }
-                    className="min-h-[44px]"
-                  />
-                  {touched.email && fieldErrors.email && (
-                    <p id="email-error" className="text-sm text-destructive">
-                      {fieldErrors.email}
-                    </p>
-                  )}
-                </div>
-
-                {/* Consent Checkbox */}
-                <div className="flex items-start gap-3 pt-2">
-                  <Checkbox
-                    id="consent"
-                    checked={formData.consent}
-                    onCheckedChange={(checked) =>
-                      handleFieldChange("consent", checked === true)
-                    }
-                    className="mt-0.5"
-                  />
-                  <Label
-                    htmlFor="consent"
-                    className="text-sm font-normal leading-relaxed text-muted-foreground cursor-pointer"
+            <CardContent className="pt-6">
+              <AnimatePresence>
+                {!codLoading && codOutOfRange && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
                   >
-                    I agree to receive marketing communications from Indicore
-                    Originals
-                  </Label>
+                    <Alert variant="destructive" className="mb-6 rounded-xl">
+                      <AlertCircle className="size-4" />
+                      <AlertTitle>Cash on Delivery Unavailable</AlertTitle>
+                      <AlertDescription>
+                        {codOutOfRange.type === "below"
+                          ? `COD available for orders above ${formatPrice(codOutOfRange.min)}`
+                          : `COD available for orders up to ${formatPrice(codOutOfRange.max)}`}
+                      </AlertDescription>
+                    </Alert>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {submitError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <Alert variant="destructive" className="mb-6 rounded-xl">
+                      <AlertCircle className="size-4" />
+                      <AlertTitle>Order Failed</AlertTitle>
+                      <AlertDescription>{submitError}</AlertDescription>
+                    </Alert>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {codLoading ? (
+                <div className="space-y-5">
+                  {[...Array(7)].map((_, i) => (
+                    <div key={i} className="space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-11 w-full" />
+                    </div>
+                  ))}
+                  <Skeleton className="h-12 w-full mt-4 rounded-xl" />
                 </div>
+              ) : (
+                <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="flex items-center gap-2 text-sm font-medium">
+                      <User className="size-3.5 text-muted-foreground" />
+                      Full Name <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={formData.name}
+                      onChange={(e) => handleFieldChange("name", e.target.value)}
+                      onBlur={() => handleBlur("name")}
+                      onFocus={() => handleFocus("name")}
+                      aria-invalid={touched.name && !!fieldErrors.name}
+                      className={`min-h-[48px] rounded-xl transition-all ${
+                        touched.name && !fieldErrors.name && formData.name
+                          ? "border-green-500 focus:border-green-500"
+                          : ""
+                      } ${
+                        touched.name && fieldErrors.name
+                          ? "border-destructive focus:border-destructive"
+                          : ""
+                      }`}
+                    />
+                    {touched.name && fieldErrors.name && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="size-3.5" />
+                        {fieldErrors.name}
+                      </p>
+                    )}
+                    {touched.name && !fieldErrors.name && formData.name && (
+                      <p className="text-sm text-green-600 flex items-center gap-1">
+                        <CheckCircle className="size-3.5" />
+                        Looks good
+                      </p>
+                    )}
+                  </div>
 
-                <Separator className="my-6" />
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
+                      <Phone className="size-3.5 text-muted-foreground" />
+                      Phone Number <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="10-digit mobile number"
+                      value={formData.phone}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
+                        handleFieldChange("phone", val);
+                      }}
+                      onBlur={() => handleBlur("phone")}
+                      onFocus={() => handleFocus("phone")}
+                      aria-invalid={touched.phone && !!fieldErrors.phone}
+                      className={`min-h-[48px] rounded-xl transition-all ${
+                        touched.phone && !fieldErrors.phone && formData.phone
+                          ? "border-green-500 focus:border-green-500"
+                          : ""
+                      } ${
+                        touched.phone && fieldErrors.phone
+                          ? "border-destructive focus:border-destructive"
+                          : ""
+                      }`}
+                      inputMode="numeric"
+                    />
+                    {touched.phone && fieldErrors.phone && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="size-3.5" />
+                        {fieldErrors.phone}
+                      </p>
+                    )}
+                    {touched.phone && !fieldErrors.phone && formData.phone && (
+                      <p className="text-sm text-green-600 flex items-center gap-1">
+                        <CheckCircle className="size-3.5" />
+                        Valid phone number
+                      </p>
+                    )}
+                  </div>
 
-                {/* Place Order Button */}
-                <Button
-                  type="submit"
-                  disabled={!canSubmit}
-                  className="w-full min-h-[44px] text-base font-semibold"
-                  size="lg"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      Placing Order...
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck className="size-4" />
-                      Place Order &middot; {formatPrice(cartTotal)}
-                    </>
-                  )}
-                </Button>
+                  <div className="space-y-2">
+                    <Label htmlFor="street" className="flex items-center gap-2 text-sm font-medium">
+                      <Home className="size-3.5 text-muted-foreground" />
+                      Street Address <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="street"
+                      type="text"
+                      placeholder="House no., building, street"
+                      value={formData.street}
+                      onChange={(e) => handleFieldChange("street", e.target.value)}
+                      onBlur={() => handleBlur("street")}
+                      onFocus={() => handleFocus("street")}
+                      aria-invalid={touched.street && !!fieldErrors.street}
+                      className={`min-h-[48px] rounded-xl transition-all ${
+                        touched.street && !fieldErrors.street && formData.street
+                          ? "border-green-500 focus:border-green-500"
+                          : ""
+                      } ${
+                        touched.street && fieldErrors.street
+                          ? "border-destructive focus:border-destructive"
+                          : ""
+                      }`}
+                    />
+                    {touched.street && fieldErrors.street && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="size-3.5" />
+                        {fieldErrors.street}
+                      </p>
+                    )}
+                  </div>
 
-                {/* COD Info */}
-                <p className="text-center text-xs text-muted-foreground">
-                  Cash on Delivery only &middot; No online payment required
-                </p>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="city" className="flex items-center gap-2 text-sm font-medium">
+                        <Building2 className="size-3.5 text-muted-foreground" />
+                        City <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="city"
+                        type="text"
+                        placeholder="City"
+                        value={formData.city}
+                        onChange={(e) => handleFieldChange("city", e.target.value)}
+                        onBlur={() => handleBlur("city")}
+                        onFocus={() => handleFocus("city")}
+                        aria-invalid={touched.city && !!fieldErrors.city}
+                        className={`min-h-[48px] rounded-xl transition-all ${
+                          touched.city && !fieldErrors.city && formData.city
+                            ? "border-green-500 focus:border-green-500"
+                            : ""
+                        } ${
+                          touched.city && fieldErrors.city
+                            ? "border-destructive focus:border-destructive"
+                            : ""
+                        }`}
+                      />
+                      {touched.city && fieldErrors.city && (
+                        <p className="text-sm text-destructive flex items-center gap-1">
+                          <AlertCircle className="size-3.5" />
+                          {fieldErrors.city}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="state" className="flex items-center gap-2 text-sm font-medium">
+                        <MapPinIcon className="size-3.5 text-muted-foreground" />
+                        State <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="state"
+                        type="text"
+                        placeholder="State"
+                        value={formData.state}
+                        onChange={(e) => handleFieldChange("state", e.target.value)}
+                        onBlur={() => handleBlur("state")}
+                        onFocus={() => handleFocus("state")}
+                        aria-invalid={touched.state && !!fieldErrors.state}
+                        className={`min-h-[48px] rounded-xl transition-all ${
+                          touched.state && !fieldErrors.state && formData.state
+                            ? "border-green-500 focus:border-green-500"
+                            : ""
+                        } ${
+                          touched.state && fieldErrors.state
+                            ? "border-destructive focus:border-destructive"
+                            : ""
+                        }`}
+                      />
+                      {touched.state && fieldErrors.state && (
+                        <p className="text-sm text-destructive flex items-center gap-1">
+                          <AlertCircle className="size-3.5" />
+                          {fieldErrors.state}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="pincode" className="flex items-center gap-2 text-sm font-medium">
+                      <IndianRupee className="size-3.5 text-muted-foreground" />
+                      Pincode <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="pincode"
+                      type="text"
+                      placeholder="6-digit pincode"
+                      value={formData.pincode}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
+                        handleFieldChange("pincode", val);
+                      }}
+                      onBlur={() => handleBlur("pincode")}
+                      onFocus={() => handleFocus("pincode")}
+                      aria-invalid={touched.pincode && !!fieldErrors.pincode}
+                      className={`min-h-[48px] rounded-xl transition-all ${
+                        touched.pincode && !fieldErrors.pincode && formData.pincode
+                          ? "border-green-500 focus:border-green-500"
+                          : ""
+                      } ${
+                        touched.pincode && fieldErrors.pincode
+                          ? "border-destructive focus:border-destructive"
+                          : ""
+                      }`}
+                      inputMode="numeric"
+                    />
+                    {touched.pincode && fieldErrors.pincode && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="size-3.5" />
+                        {fieldErrors.pincode}
+                      </p>
+                    )}
+                    {touched.pincode && !fieldErrors.pincode && formData.pincode && (
+                      <p className="text-sm text-green-600 flex items-center gap-1">
+                        <CheckCircle className="size-3.5" />
+                        Valid pincode
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="flex items-center gap-2 text-sm font-medium">
+                      <Mail className="size-3.5 text-muted-foreground" />
+                      Email Address <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={formData.email}
+                      onChange={(e) => handleFieldChange("email", e.target.value)}
+                      onBlur={() => handleBlur("email")}
+                      onFocus={() => handleFocus("email")}
+                      aria-invalid={touched.email && !!fieldErrors.email}
+                      className={`min-h-[48px] rounded-xl transition-all ${
+                        touched.email && !fieldErrors.email && formData.email
+                          ? "border-green-500 focus:border-green-500"
+                          : ""
+                      } ${
+                        touched.email && fieldErrors.email
+                          ? "border-destructive focus:border-destructive"
+                          : ""
+                      }`}
+                    />
+                    {touched.email && fieldErrors.email && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="size-3.5" />
+                        {fieldErrors.email}
+                      </p>
+                    )}
+                    {touched.email && !fieldErrors.email && formData.email && (
+                      <p className="text-sm text-green-600 flex items-center gap-1">
+                        <CheckCircle className="size-3.5" />
+                        Valid email
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-start gap-3 pt-2 p-4 bg-muted/20 rounded-xl">
+                    <Checkbox
+                      id="consent"
+                      checked={formData.consent}
+                      onCheckedChange={(checked) =>
+                        handleFieldChange("consent", checked === true)
+                      }
+                      className="mt-0.5 size-5"
+                    />
+                    <Label
+                      htmlFor="consent"
+                      className="text-sm font-normal leading-relaxed text-muted-foreground cursor-pointer"
+                    >
+                      I agree to receive marketing communications from Indicore Originals
+                    </Label>
+                  </div>
+
+                  <Separator className="my-6" />
+
+                  <div className="space-y-3">
+                    <Button
+                      type="submit"
+                      disabled={!canSubmit}
+                      className="w-full min-h-[52px] text-base font-semibold rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl transition-all"
+                      size="lg"
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="size-5 animate-spin mr-2" />
+                          Placing Order...
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="size-5 mr-2" />
+                          Place Order · {formatPrice(cartTotal)}
+                          <ChevronRight className="size-4 ml-2" />
+                        </>
+                      )}
+                    </Button>
+
+                    <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Truck className="size-3.5" />
+                        Free Delivery
+                      </span>
+                      <span className="text-muted-foreground/30">|</span>
+                      <span className="flex items-center gap-1">
+                        <ShieldCheck className="size-3.5" />
+                        COD Only
+                      </span>
+                      <span className="text-muted-foreground/30">|</span>
+                      <span className="flex items-center gap-1">
+                        <CreditCard className="size-3.5" />
+                        No Online Payment
+                      </span>
+                    </div>
+                  </div>
+                </form>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

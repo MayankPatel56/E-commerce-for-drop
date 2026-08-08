@@ -440,7 +440,7 @@ export function AdminReviewsTable({ onRefresh }: AdminReviewsTableProps) {
                     {/* Product */}
                     <TableCell>
                       <a
-                        href={`/product/${review.product.slug}`}
+                        href={`/shop/products/${review.product.slug}`}
                         className="text-sm font-medium text-primary underline-offset-2 hover:underline"
                         target="_blank"
                         rel="noopener noreferrer"

@@ -11,6 +11,7 @@ const variantSchema = z.object({
   sku: z.string().min(1, "SKU is required"),
   variantType: z.string().min(1, "Variant type is required"),
   variantValue: z.string().min(1, "Variant value is required"),
+  colorHex: z.string().optional().nullable(),
   price: z.number().min(0, "Price must be non-negative").optional().nullable(),
   stockQuantity: z.number().int("Stock must be an integer"),
 });
@@ -20,6 +21,11 @@ const createProductSchema = z.object({
   slug: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   price: z.number().min(0, "Price must be non-negative"),
+  compareAtPrice: z.number().min(0).optional().nullable(),
+  badgeText: z.string().max(40).optional().nullable(),
+  soldLabel: z.string().max(80).optional().nullable(),
+  videoUrl: z.string().optional().nullable(),
+  features: z.array(z.object({ icon: z.string(), label: z.string() })).optional().default([]),
   categoryId: z.number().int().positive("Category ID is required"),
   primaryImage: z.string().optional().nullable(),
   galleryImages: z.array(z.string()).optional().default([]),
@@ -96,7 +102,7 @@ export async function GET(request: NextRequest) {
         take: limit,
         include: {
           category: { select: { name: true } },
-          variants: {select: {id: true,stockQuantity: true,isOutOfStock: true,},},
+          variants: { select: { id: true, stockQuantity: true, isOutOfStock: true } },
           productTags: {
             include: { tag: { select: { name: true } } },
           },
@@ -111,6 +117,11 @@ export async function GET(request: NextRequest) {
       slug: p.slug,
       description: p.description,
       price: p.price,
+      compareAtPrice: p.compareAtPrice,
+      badgeText: p.badgeText,
+      soldLabel: p.soldLabel,
+      videoUrl: p.videoUrl,
+      features: p.features ?? [],
       primaryImage: p.primaryImage,
       galleryImages: p.galleryImages,
       seoTitle: p.seoTitle,
@@ -119,7 +130,8 @@ export async function GET(request: NextRequest) {
       categoryId: p.categoryId,
       categoryName: p.category.name,
       variantCount: p.variants.length,
-      inStock: p.variants.some((v) => !v.isOutOfStock && v.stockQuantity > 0),totalStock: p.variants.reduce((sum, v) => sum + v.stockQuantity,0),
+      inStock: p.variants.some((v) => !v.isOutOfStock && v.stockQuantity > 0),
+      totalStock: p.variants.reduce((sum, v) => sum + v.stockQuantity, 0),
       tagNames: p.productTags.map((pt) => pt.tag.name),
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
@@ -213,6 +225,11 @@ export async function POST(request: NextRequest) {
         slug,
         description: data.description ?? null,
         price: data.price,
+        compareAtPrice: data.compareAtPrice ?? null,
+        badgeText: data.badgeText ?? null,
+        soldLabel: data.soldLabel ?? null,
+        videoUrl: data.videoUrl ?? null,
+        features: (data.features.length > 0 ? data.features : null) as any,
         categoryId: data.categoryId,
         primaryImage: data.primaryImage ?? null,
         galleryImages: (data.galleryImages.length > 0 ? data.galleryImages : null) as any,
@@ -224,6 +241,7 @@ export async function POST(request: NextRequest) {
             sku: v.sku,
             variantType: v.variantType,
             variantValue: v.variantValue,
+            colorHex: v.colorHex ?? null,
             price: v.price ?? null,
             stockQuantity: v.stockQuantity,
             // isOutOfStock set by DB trigger
@@ -240,7 +258,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // ✅ Fix: Correct revalidateTag usage - no expire option needed
     revalidateTag("products", { expire: 0 });
 
     return NextResponse.json(product, { status: 201 });

@@ -321,7 +321,7 @@ function HomePageContent({
       if (slug) {
         setProductSlug(slug);
         setAppView("product");
-        router.push(`/product/${slug}`);
+        router.push(`/shop/products/${slug}`);
       }
       return;
     }

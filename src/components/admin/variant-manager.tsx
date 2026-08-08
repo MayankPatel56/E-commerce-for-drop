@@ -56,6 +56,7 @@ interface Variant {
   variantType: string;
   variantValue: string;
   priceOverride: number | null;
+  colorHex: string | null;
   stockQuantity: number;
   isOutOfStock: boolean;
 }
@@ -88,6 +89,7 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
   const [formType, setFormType] = useState<string>("");
   const [formValue, setFormValue] = useState("");
   const [formPriceOverride, setFormPriceOverride] = useState("");
+  const [formColorHex, setFormColorHex] = useState("#7C3AED");
   const [formStock, setFormStock] = useState("0");
 
   // Fetch variants from product detail API
@@ -115,6 +117,7 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
     setFormType("");
     setFormValue("");
     setFormPriceOverride("");
+    setFormColorHex("#7C3AED");
     setFormStock("0");
     setEditingVariant(null);
   };
@@ -130,6 +133,7 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
     setFormType(variant.variantType);
     setFormValue(variant.variantValue);
     setFormPriceOverride(variant.priceOverride ? String(variant.priceOverride) : "");
+    setFormColorHex(variant.colorHex || "#7C3AED");
     setFormStock(String(variant.stockQuantity));
     setDialogOpen(true);
   };
@@ -161,6 +165,7 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
         variantType: formType,
         variantValue: formValue.trim(),
         priceOverride: formPriceOverride ? Number(formPriceOverride) : null,
+        colorHex: formType === "Color" ? formColorHex : null,
         stockQuantity: Number(formStock),
       };
 
@@ -288,7 +293,17 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
                       {variant.variantType}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm">{variant.variantValue}</TableCell>
+                  <TableCell className="text-sm">
+                    <div className="flex items-center gap-2">
+                      {variant.variantType === "Color" && variant.colorHex && (
+                        <span
+                          className="inline-block h-4 w-4 rounded-full border"
+                          style={{ backgroundColor: variant.colorHex }}
+                        />
+                      )}
+                      {variant.variantValue}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-sm">
                     {variant.priceOverride ? `₹${variant.priceOverride.toLocaleString("en-IN")}` : "—"}
                   </TableCell>
@@ -393,6 +408,32 @@ export function VariantManager({ productId, onVariantChange }: VariantManagerPro
                 />
               </div>
             </div>
+
+            {formType === "Color" && (
+              <div className="space-y-2">
+                <Label htmlFor="variant-color">Swatch Color</Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    id="variant-color"
+                    type="color"
+                    value={formColorHex}
+                    onChange={(e) => setFormColorHex(e.target.value)}
+                    disabled={isSubmitting}
+                    className="h-11 w-16 cursor-pointer rounded-md border"
+                  />
+                  <Input
+                    value={formColorHex}
+                    onChange={(e) => setFormColorHex(e.target.value)}
+                    disabled={isSubmitting}
+                    placeholder="#7C3AED"
+                    className="font-mono"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Ye color-dot ke roop mein product page pe dikhega
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
