@@ -16,6 +16,10 @@ import {
   Store,
   Share2,
   Settings,
+  ShieldCheck,
+  RotateCcw,
+  Truck,
+  Lock,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -118,6 +122,127 @@ function extractValue(
   }
 
   return String(raw);
+}
+
+// ─── Trust Badges Editor ────────────────────────────────────────────────────
+
+interface TrustBadgeItem {
+  icon: string;
+  title: string;
+  subtitle: string;
+}
+
+const TRUST_ICON_OPTIONS = ["RotateCcw", "Truck", "ShieldCheck", "Lock"] as const;
+const TRUST_ICON_PREVIEW: Record<string, React.ReactNode> = {
+  RotateCcw: <RotateCcw className="h-4 w-4" />,
+  Truck: <Truck className="h-4 w-4" />,
+  ShieldCheck: <ShieldCheck className="h-4 w-4" />,
+  Lock: <Lock className="h-4 w-4" />,
+};
+
+const DEFAULT_TRUST_BADGES: TrustBadgeItem[] = [
+  { icon: "RotateCcw", title: "7 Days", subtitle: "Easy Returns" },
+  { icon: "Truck", title: "Free", subtitle: "Shipping" },
+  { icon: "ShieldCheck", title: "1 Year", subtitle: "Warranty" },
+  { icon: "Lock", title: "Secure", subtitle: "Payment" },
+];
+
+function TrustBadgesSection({
+  settings,
+  isSavingKey,
+  onSave,
+}: {
+  settings: SettingsKV;
+  isSavingKey: string | null;
+  onSave: (key: string, value: unknown) => Promise<void>;
+}) {
+  const initial = Array.isArray(settings.trust_badges)
+    ? (settings.trust_badges as TrustBadgeItem[])
+    : DEFAULT_TRUST_BADGES;
+
+  const [badges, setBadges] = useState<TrustBadgeItem[]>(initial);
+  const isSaving = isSavingKey === "trust_badges";
+
+  const updateBadge = (idx: number, field: keyof TrustBadgeItem, value: string) => {
+    setBadges((prev) => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], [field]: value };
+      return next;
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center h-9 w-9 rounded-md bg-primary/10 text-primary shrink-0">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <CardTitle className="text-base">Trust Badges</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Ye row har product page pe same dikhta hai (Returns, Shipping, Warranty, Payment)
+            </p>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Separator />
+        {badges.map((badge, idx) => (
+          <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+            <div className="space-y-1.5">
+              <Label>Icon</Label>
+              <div className="flex gap-1.5">
+                {TRUST_ICON_OPTIONS.map((iconName) => (
+                  <button
+                    key={iconName}
+                    type="button"
+                    onClick={() => updateBadge(idx, "icon", iconName)}
+                    className={`flex items-center justify-center h-10 w-10 rounded-md border-2 transition-colors ${
+                      badge.icon === iconName
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/40"
+                    }`}
+                    aria-label={iconName}
+                  >
+                    {TRUST_ICON_PREVIEW[iconName]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Title</Label>
+              <Input
+                value={badge.title}
+                onChange={(e) => updateBadge(idx, "title", e.target.value)}
+                placeholder="7 Days"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Subtitle</Label>
+              <Input
+                value={badge.subtitle}
+                onChange={(e) => updateBadge(idx, "subtitle", e.target.value)}
+                placeholder="Easy Returns"
+              />
+            </div>
+          </div>
+        ))}
+        <Button
+          onClick={() => onSave("trust_badges", badges)}
+          disabled={isSaving}
+          className="min-h-11"
+        >
+          {isSaving ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
+          Save Trust Badges
+        </Button>
+      </CardContent>
+    </Card>
+  );
 }
 
 // ─── Section Component ──────────────────────────────────────────────────────
@@ -237,7 +362,7 @@ function SingleField({
             onChange={(e) => setLocalValue(e.target.value)}
             placeholder={field.placeholder}
             disabled={isSaving}
-            className="min-h-[44px]"
+            className="min-h-11"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -254,7 +379,7 @@ function SingleField({
         <Button
           onClick={handleSave}
           disabled={isSaving}
-          className="min-h-[44px] min-w-[80px] shrink-0 mt-0"
+          className="min-h-11 min-w-20 shrink-0 mt-0"
         >
           {isSaving ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -322,7 +447,7 @@ function SocialLinksGroup({
               }
               placeholder={field.placeholder}
               disabled={isSaving}
-              className="min-h-[44px]"
+              className="min-h-11"
             />
             {field.description && (
               <p className="text-xs text-muted-foreground">
@@ -336,7 +461,7 @@ function SocialLinksGroup({
         <Button
           onClick={handleSave}
           disabled={isSaving}
-          className="min-h-[44px] min-w-[80px]"
+          className="min-h-11 min-w-20"
         >
           {isSaving ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -446,7 +571,7 @@ export function SettingsManager() {
         <AlertCircle className="h-12 w-12 text-destructive/50 mb-4" />
         <h3 className="text-lg font-medium">Failed to load settings</h3>
         <p className="text-sm text-muted-foreground mt-1">{error}</p>
-        <Button onClick={fetchSettings} className="mt-4 min-h-[44px]">
+        <Button onClick={fetchSettings} className="mt-4 min-h-11">
           Try Again
         </Button>
       </div>
@@ -496,6 +621,13 @@ export function SettingsManager() {
         icon={<Share2 className="h-5 w-5" />}
         description="Social media profile URLs for the storefront"
         fields={SOCIAL_SETTINGS}
+        settings={settings}
+        isSavingKey={isSavingKey}
+        onSave={handleSave}
+      />
+
+      {/* Trust Badges */}
+      <TrustBadgesSection
         settings={settings}
         isSavingKey={isSavingKey}
         onSave={handleSave}

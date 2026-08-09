@@ -202,9 +202,9 @@ export default function StorefrontHomepage({
           />
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/30" />
+        <div className="absolute inset-0 bg-linear-to-r from-black via-black/85 to-black/30" />
 
-        <div className="relative mx-auto flex min-h-[460px] max-w-7xl items-center px-4 py-16 sm:px-6 md:min-h-[520px] lg:min-h-[600px] lg:px-8">
+        <div className="relative mx-auto flex min-h-115 max-w-7xl items-center px-4 py-16 sm:px-6 md:min-h-130 lg:min-h-150 lg:px-8">
           <motion.div 
             className="max-w-xl text-left"
             initial={{ opacity: 0, y: 30 }}
@@ -230,7 +230,7 @@ export default function StorefrontHomepage({
                   Original Products.
                   <br />
                   Curated for{" "}
-                  <span className="bg-gradient-to-r from-orange-400 to-orange-300 bg-clip-text text-transparent">
+                  <span className="bg-linear-to-r from-orange-400 to-orange-300 bg-clip-text text-transparent">
                     Modern Living.
                   </span>
                 </>

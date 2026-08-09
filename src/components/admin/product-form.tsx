@@ -78,6 +78,13 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
   const [seoDescription, setSeoDescription] = useState("");
   const [isPublished, setIsPublished] = useState(false);
 
+  // Marketing fields
+  const [compareAtPrice, setCompareAtPrice] = useState("");
+  const [badgeText, setBadgeText] = useState("");
+  const [soldLabel, setSoldLabel] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [features, setFeatures] = useState<{ icon: string; label: string }[]>([]);
+
   // Images
   const [primaryImage, setPrimaryImage] = useState<string | null>(null);
   const [primaryFile, setPrimaryFile] = useState<File | null>(null);
@@ -126,7 +133,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
         if (catRes.ok) {
           const catData = await catRes.json();
           setCategories(Array.isArray(catData) ? catData : catData.categories || []);
-}
+        }
         if (tagRes.ok) {
           const tagData = await tagRes.json();
           setTags(tagData.tags || []);
@@ -148,35 +155,40 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
       setIsLoading(true);
       try {
         const res = await fetch(`/api/admin/products/${productId}`);
-         if (!res.ok) throw new Error("Failed to fetch product");
-         const p = await res.json();
+        if (!res.ok) throw new Error("Failed to fetch product");
+        const p = await res.json();
 
-    setName(p.name || "");
-    setSlug(p.slug || "");
-    setDescription(p.description || "");
-    setPrice(String(p.price || ""));
-    setCategoryId(String(p.categoryId || ""));
-    setSeoTitle(p.seoTitle || "");
-    setSeoDescription(p.seoDescription || "");
-    setIsPublished(p.isPublished || false);
-    setSlugManuallyEdited(Boolean(p.slug));
+        setName(p.name || "");
+        setSlug(p.slug || "");
+        setDescription(p.description || "");
+        setPrice(String(p.price || ""));
+        setCategoryId(String(p.categoryId || ""));
+        setSeoTitle(p.seoTitle || "");
+        setSeoDescription(p.seoDescription || "");
+        setIsPublished(p.isPublished || false);
+        setSlugManuallyEdited(Boolean(p.slug));
+        setCompareAtPrice(p.compareAtPrice != null ? String(p.compareAtPrice) : "");
+        setBadgeText(p.badgeText || "");
+        setSoldLabel(p.soldLabel || "");
+        setVideoUrl(p.videoUrl || "");
+        setFeatures(Array.isArray(p.features) ? p.features : []);
 
-    // Images
-     if (p.primaryImage) {
-     setPrimaryImage(p.primaryImage);
-     setPrimaryPreview(p.primaryImage);
-     }
+        // Images
+        if (p.primaryImage) {
+          setPrimaryImage(p.primaryImage);
+          setPrimaryPreview(p.primaryImage);
+        }
 
-     // Gallery images - API returns parsed array (native Json column)
-       if (p.galleryImages && Array.isArray(p.galleryImages)) {
-      setGalleryImages(p.galleryImages);
-     setGalleryPreviews(p.galleryImages);
-     }
+        // Gallery images - API returns parsed array (native Json column)
+        if (p.galleryImages && Array.isArray(p.galleryImages)) {
+          setGalleryImages(p.galleryImages);
+          setGalleryPreviews(p.galleryImages);
+        }
 
-     // Tags - route returns productTags: [{ tag: { id, name } }, ...]
-     if (p.productTags && Array.isArray(p.productTags)) {
-      setSelectedTagIds(p.productTags.map((pt: { tag: Tag }) => pt.tag.id));
-      }
+        // Tags - route returns productTags: [{ tag: { id, name } }, ...]
+        if (p.productTags && Array.isArray(p.productTags)) {
+          setSelectedTagIds(p.productTags.map((pt: { tag: Tag }) => pt.tag.id));
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load product");
       } finally {
@@ -300,6 +312,11 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
         slug: slug.trim() || generateSlug(name),
         description: description.trim(),
         price: Number(price),
+        compareAtPrice: compareAtPrice.trim() ? Number(compareAtPrice) : null,
+        badgeText: badgeText.trim() || null,
+        soldLabel: soldLabel.trim() || null,
+        videoUrl: videoUrl.trim() || null,
+        features,
         categoryId: Number(categoryId),
         seoTitle: seoTitle.trim() || null,
         seoDescription: seoDescription.trim() || null,
@@ -453,6 +470,116 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
               ))}
             </SelectContent>
           </Select>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Marketing */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-medium">Marketing &amp; Display</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="product-compare-price">Original Price (₹) — for discount strikethrough</Label>
+            <Input
+              id="product-compare-price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Leave blank for no discount shown"
+              value={compareAtPrice}
+              onChange={(e) => setCompareAtPrice(e.target.value)}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="product-badge">Badge Text</Label>
+            <Input
+              id="product-badge"
+              placeholder="e.g., BEST SELLER, NEW"
+              maxLength={40}
+              value={badgeText}
+              onChange={(e) => setBadgeText(e.target.value)}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="product-sold-label">Social Proof Text</Label>
+            <Input
+              id="product-sold-label"
+              placeholder="e.g., 500+ sold this month"
+              maxLength={80}
+              value={soldLabel}
+              onChange={(e) => setSoldLabel(e.target.value)}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="product-video">Video URL (optional)</Label>
+            <Input
+              id="product-video"
+              placeholder="https://..."
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              disabled={isSubmitting}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Feature Highlights</Label>
+          <p className="text-xs text-muted-foreground">
+            Icon name (Lucide icon, e.g. &quot;Zap&quot;, &quot;Battery&quot;, &quot;Volume2&quot;) + short label — shown as icons below the product image.
+          </p>
+          {features.map((f, idx) => (
+            <div key={idx} className="flex gap-2 items-start">
+              <Input
+                placeholder="Icon name (e.g. Zap)"
+                value={f.icon}
+                onChange={(e) => {
+                  const next = [...features];
+                  next[idx] = { ...next[idx], icon: e.target.value };
+                  setFeatures(next);
+                }}
+                disabled={isSubmitting}
+                className="w-1/3"
+              />
+              <Input
+                placeholder="Label (e.g. LED Power Display)"
+                value={f.label}
+                onChange={(e) => {
+                  const next = [...features];
+                  next[idx] = { ...next[idx], label: e.target.value };
+                  setFeatures(next);
+                }}
+                disabled={isSubmitting}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFeatures(features.filter((_, i) => i !== idx))}
+                disabled={isSubmitting}
+                className="min-h-11 min-w-11"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setFeatures([...features, { icon: "", label: "" }])}
+            disabled={isSubmitting || features.length >= 6}
+            className="min-h-11"
+          >
+            + Add Feature
+          </Button>
         </div>
       </div>
 

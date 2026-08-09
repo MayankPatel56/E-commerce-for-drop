@@ -24,12 +24,13 @@ import {
   PenSquare,
   LogIn,
   X,
-  Heart,
-  Share2,
+  Play,
   Truck,
-  Shield,
-  RefreshCw,
-  Clock,
+  ShieldCheck,
+  RotateCcw,
+  Lock,
+  Zap,
+  Heart,
   Minus,
   Plus,
 } from "lucide-react";
@@ -39,6 +40,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import * as LucideIcons from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -54,6 +56,7 @@ interface ProductReview {
 interface ProductVariantOption {
   value: string;
   variantId: number;
+  colorHex?: string | null;
   price: number | null;
   stockQuantity: number;
   isOutOfStock: boolean;
@@ -65,8 +68,11 @@ interface Product {
   slug: string;
   description: string;
   price: number;
-  compareAtPrice?: number | null;
-  badgeText?: string | null;
+  compareAtPrice: number | null;
+  badgeText: string | null;
+  soldLabel: string | null;
+  videoUrl: string | null;
+  features: { icon: string; label: string }[];
   primaryImage: string | null;
   galleryImages: string[];
   seoTitle: string;
@@ -77,10 +83,10 @@ interface Product {
     sku: string;
     variantType: string;
     variantValue: string;
+    colorHex?: string | null;
     price: number | null;
     stockQuantity: number;
     isOutOfStock: boolean;
-    colorHex?: string | null;
   }[];
   variantTypes: Record<string, ProductVariantOption[]>;
   tags: { id: number; name: string }[];
@@ -94,6 +100,33 @@ interface ProductDetailProps {
   onNavigate: (view: string, data?: Record<string, unknown>) => void;
   isAuthenticated?: boolean;
 }
+
+const TRUST_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  RotateCcw,
+  Truck,
+  ShieldCheck,
+  Lock,
+};
+
+// ─── Helper Functions ──────────────────────────────────────────────────────
+
+function getFeatureIcon(name: string): React.ComponentType<{ className?: string }> {
+  const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[name];
+  return Icon || Zap;
+}
+
+interface TrustBadge {
+  icon: string;
+  title: string;
+  subtitle: string;
+}
+
+const DEFAULT_TRUST_BADGES: TrustBadge[] = [
+  { icon: "RotateCcw", title: "7 Days", subtitle: "Easy Returns" },
+  { icon: "Truck", title: "Free", subtitle: "Shipping" },
+  { icon: "ShieldCheck", title: "1 Year", subtitle: "Warranty" },
+  { icon: "Lock", title: "Secure", subtitle: "Payment" },
+];
 
 // ─── Helper ─────────────────────────────────────────────────────────────────
 
@@ -213,7 +246,7 @@ function ProductNotFound({ onNavigate }: { onNavigate: (view: string) => void })
       <Button
         variant="default"
         onClick={() => onNavigate("shop")}
-        className="min-h-[48px] px-8 rounded-full"
+        className="min-h-12 px-8 rounded-full"
       >
         <ArrowLeft className="size-4 mr-2" />
         Back to Shop
@@ -347,7 +380,7 @@ function ReviewForm({ productId, onSubmitted }: { productId: number; onSubmitted
             <button
               key={star}
               type="button"
-              className="p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-yellow-50 transition-all"
+              className="p-1.5 min-h-11 min-w-11 flex items-center justify-center rounded-full hover:bg-yellow-50 transition-all"
               onMouseEnter={() => setHoveredStar(star)}
               onMouseLeave={() => setHoveredStar(0)}
               onClick={() => setRating(star)}
@@ -398,12 +431,12 @@ function ReviewForm({ productId, onSubmitted }: { productId: number; onSubmitted
         <Button 
           onClick={handleSubmit} 
           disabled={submitting} 
-          className="min-h-[48px] px-8 rounded-full"
+          className="min-h-12 px-8 rounded-full"
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
           {submitting ? "Submitting..." : "Submit Review"}
         </Button>
-        <Button variant="ghost" onClick={onSubmitted} className="min-h-[48px] rounded-full">
+        <Button variant="ghost" onClick={onSubmitted} className="min-h-12 rounded-full">
           Cancel
         </Button>
       </div>
@@ -437,8 +470,24 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
   const [quantity, setQuantity] = useState<number>(1);
   const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
+  const [trustBadges, setTrustBadges] = useState<TrustBadge[]>(DEFAULT_TRUST_BADGES);
+  const [showVideo, setShowVideo] = useState<boolean>(false);
 
   const { addItem } = useCart();
+
+  // ── Fetch global trust badges (same across all products) ──
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.trust_badges) && data.trust_badges.length > 0) {
+          setTrustBadges(data.trust_badges);
+        }
+      })
+      .catch(() => {
+        // keep defaults on failure
+      });
+  }, []);
 
   // ── Fetch product with immediate state reset ──
   useEffect(() => {
@@ -570,7 +619,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
         <Button
           variant="outline"
           onClick={() => onNavigate("shop")}
-          className="min-h-[48px] px-8 rounded-full"
+          className="min-h-12 px-8 rounded-full"
         >
           <ArrowLeft className="size-4 mr-2" />
           Back to Shop
@@ -604,7 +653,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
       <button
         type="button"
         onClick={() => onNavigate("shop")}
-        className="group mb-6 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all min-h-[44px]"
+        className="group mb-6 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all min-h-11"
       >
         <ArrowLeft className="size-4 group-hover:-translate-x-1 transition-transform" />
         Back to Shop
@@ -657,7 +706,44 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                 {discountPercent}% OFF
               </Badge>
             )}
+
+            {/* Video overlay */}
+            {product.videoUrl && (
+              <button
+                type="button"
+                onClick={() => setShowVideo(true)}
+                className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors group"
+              >
+                <div className="rounded-full bg-white/90 p-4 shadow-lg group-hover:scale-110 transition-transform">
+                  <Play className="size-8 text-primary fill-primary" />
+                </div>
+              </button>
+            )}
           </motion.div>
+
+          {/* Video Modal */}
+          {showVideo && product.videoUrl && (
+            <div 
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+              onClick={() => setShowVideo(false)}
+            >
+              <div className="relative w-full max-w-3xl aspect-video" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setShowVideo(false)}
+                  className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors min-h-11 min-w-11"
+                >
+                  <X className="size-8" />
+                </button>
+                <iframe
+                  src={product.videoUrl}
+                  className="w-full h-full rounded-2xl"
+                  allow="autoplay; encrypted-media; fullscreen"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          )}
 
           {/* Thumbnail row */}
           {allImages.length > 1 && (
@@ -670,7 +756,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                     setMainImage(img);
                     setImageLoaded(false);
                   }}
-                  className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all min-h-[44px] min-w-[44px] ${
+                  className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all min-h-11 min-w-11 ${
                     mainImage === img
                       ? "border-primary ring-2 ring-primary/30 shadow-md"
                       : "border-transparent hover:border-primary/30"
@@ -738,6 +824,13 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
             {product.name}
           </h1>
 
+          {/* Sold Label - Social Proof */}
+          {product.soldLabel && (
+            <p className="text-sm text-green-600 font-medium">
+              {product.soldLabel}
+            </p>
+          )}
+
           {/* Rating */}
           {product.reviewCount > 0 && (
             <div className="flex items-center gap-3">
@@ -753,7 +846,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
             <span className="text-3xl font-bold text-primary">
               {formatPrice(displayPrice)}
             </span>
-            {hasPriceOverride && product.compareAtPrice && (
+            {product.compareAtPrice && (
               <span className="text-lg text-muted-foreground line-through">
                 {formatPrice(product.compareAtPrice)}
               </span>
@@ -764,6 +857,21 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
               </Badge>
             )}
           </div>
+
+          {/* Features */}
+          {product.features && product.features.length > 0 && (
+            <div className="flex flex-wrap gap-3 pt-1">
+              {product.features.map((feature, idx) => {
+                const IconComponent = getFeatureIcon(feature.icon);
+                return (
+                  <div key={idx} className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-full">
+                    <IconComponent className="size-4 text-primary" />
+                    <span>{feature.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Description */}
           {product.description && (
@@ -805,7 +913,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                         type="button"
                         disabled={isOOS}
                         onClick={() => handleVariantSelect(type, option)}
-                        className={`relative min-h-[48px] rounded-xl border-2 px-5 py-2.5 text-sm font-medium transition-all ${
+                        className={`relative min-h-12 rounded-xl border-2 px-5 py-2.5 text-sm font-medium transition-all ${
                           isSelected
                             ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                             : isOOS
@@ -878,12 +986,27 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
             </div>
           )}
 
+          {/* Stock Urgency Bar */}
+          {allVariantTypesSelected && !isCurrentVariantOutOfStock && maxStock > 0 && maxStock <= 20 && (
+            <div className="rounded-xl bg-orange-50 border border-orange-200 px-4 py-3 space-y-2">
+              <p className="text-sm font-medium text-orange-700">
+                🔥 HURRY! Only {maxStock} {maxStock === 1 ? "item" : "items"} left in stock
+              </p>
+              <div className="h-2 w-full rounded-full bg-orange-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-linear-to-r from-orange-400 to-red-500 transition-all"
+                  style={{ width: `${Math.max(15, 100 - (maxStock / 20) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="pt-2 space-y-3">
             {noVariantsAvailable ? (
               <Button
                 disabled
-                className="w-full min-h-[52px] text-base font-semibold rounded-2xl"
+                className="w-full min-h-13 text-base font-semibold rounded-2xl"
               >
                 <ShoppingCart className="size-5 mr-2" />
                 No variants available
@@ -891,7 +1014,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
             ) : isCurrentVariantOutOfStock && allVariantTypesSelected ? (
               <Button
                 disabled
-                className="w-full min-h-[52px] text-base font-semibold rounded-2xl"
+                className="w-full min-h-13 text-base font-semibold rounded-2xl"
               >
                 <ShoppingCart className="size-5 mr-2" />
                 Out of Stock
@@ -902,7 +1025,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                   <Button
                     disabled={isVariantDisabled || isAddingToCart}
                     onClick={handleAddToCart}
-                    className="flex-1 min-h-[52px] text-base font-semibold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl transition-shadow"
+                    className="flex-1 min-h-13 text-base font-semibold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl transition-shadow"
                   >
                     {isAddingToCart ? (
                       <Loader2 className="size-5 animate-spin mr-2" />
@@ -919,7 +1042,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                   <Button
                     variant="outline"
                     size="icon"
-                    className="min-h-[52px] min-w-[52px] rounded-2xl border-2"
+                    className="min-h-13 min-w-13 rounded-2xl border-2"
                     onClick={() => setIsWishlisted(!isWishlisted)}
                   >
                     <Heart className={`size-5 transition-all ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
@@ -933,7 +1056,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                     onNavigate("checkout");
                   }}
                   variant="outline"
-                  className="w-full min-h-[52px] text-base font-semibold rounded-2xl border-2 hover:bg-primary hover:text-primary-foreground transition-all"
+                  className="w-full min-h-13 text-base font-semibold rounded-2xl border-2 hover:bg-primary hover:text-primary-foreground transition-all"
                 >
                   Buy Now
                 </Button>
@@ -941,24 +1064,18 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
             )}
           </div>
 
-          {/* Shipping Info */}
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl">
-              <Truck className="size-4 text-primary" />
-              <span>Free Delivery</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl">
-              <Shield className="size-4 text-primary" />
-              <span>Secure Payment</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl">
-              <RefreshCw className="size-4 text-primary" />
-              <span>7-Day Returns</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground bg-muted/30 p-3 rounded-xl">
-              <Clock className="size-4 text-primary" />
-              <span>24/7 Support</span>
-            </div>
+          {/* Trust Badges */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+            {trustBadges.map((badge, idx) => {
+              const IconComponent = TRUST_ICONS[badge.icon] || ShieldCheck;
+              return (
+                <div key={idx} className="flex flex-col items-center text-center p-3 rounded-xl bg-muted/30">
+                  <IconComponent className="size-5 text-primary mb-1" />
+                  <span className="text-sm font-semibold">{badge.title}</span>
+                  <span className="text-xs text-muted-foreground">{badge.subtitle}</span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Category Link */}
@@ -968,7 +1085,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
               onClick={() =>
                 onNavigate("shop", { category: product.category!.slug })
               }
-              className="inline-block text-sm font-medium text-primary hover:underline min-h-[44px]"
+              className="inline-block text-sm font-medium text-primary hover:underline min-h-11"
             >
               View all in {product.category.name}
             </button>
@@ -1002,7 +1119,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
           {isAuthenticated ? (
             <Button
               variant="outline"
-              className="min-h-[48px] gap-2 rounded-full px-6 border-2 hover:bg-primary hover:text-primary-foreground transition-all"
+              className="min-h-12 gap-2 rounded-full px-6 border-2 hover:bg-primary hover:text-primary-foreground transition-all"
               onClick={() => setShowReviewForm(true)}
             >
               <PenSquare className="h-4 w-4" />
@@ -1011,7 +1128,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
           ) : (
             <Button
               variant="outline"
-              className="min-h-[48px] gap-2 rounded-full px-6 border-2"
+              className="min-h-12 gap-2 rounded-full px-6 border-2"
               onClick={() => onNavigate("login")}
             >
               <LogIn className="h-4 w-4" />

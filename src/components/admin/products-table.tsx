@@ -191,12 +191,12 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
     <div className="space-y-2">
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 border-b">
-          <Skeleton className="h-5 w-full sm:w-[140px]" />
-          <Skeleton className="h-5 w-full sm:w-[80px]" />
-          <Skeleton className="h-5 w-full sm:w-[60px]" />
-          <Skeleton className="h-5 w-full sm:w-[40px]" />
-          <Skeleton className="h-5 w-full sm:w-[70px]" />
-          <Skeleton className="h-5 w-full sm:w-[60px]" />
+          <Skeleton className="h-5 w-full sm:w-35" />
+          <Skeleton className="h-5 w-full sm:w-20" />
+          <Skeleton className="h-5 w-full sm:w-15" />
+          <Skeleton className="h-5 w-full sm:w-10" />
+          <Skeleton className="h-5 w-full sm:w-17.5" />
+          <Skeleton className="h-5 w-full sm:w-15" />
         </div>
       ))}
     </div>
@@ -220,12 +220,12 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
               fetchProducts();
               onRefresh();
             }}
-            className="min-h-[44px] min-w-[44px]"
+            className="min-h-11 min-w-11"
           >
             <RefreshCw className="h-4 w-4 mr-2 sm:mr-2" />
             <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button onClick={onCreate} className="min-h-[44px] min-w-[44px]">
+          <Button onClick={onCreate} className="min-h-11 min-w-11">
             <Plus className="h-4 w-4 mr-2 sm:mr-2" />
             <span className="hidden sm:inline">Add Product</span>
           </Button>
@@ -235,19 +235,19 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
         {/* Search */}
-        <form onSubmit={handleSearchSubmit} className="flex-1 min-w-[200px] relative">
+        <form onSubmit={handleSearchSubmit} className="flex-1 min-w-50 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search products..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-9 min-h-[44px] w-full"
+            className="pl-9 min-h-11 w-full"
           />
         </form>
 
         {/* Category Filter */}
         <Select value={categoryFilter} onValueChange={(val) => { setCategoryFilter(val); setPage(1); }}>
-          <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]">
+          <SelectTrigger className="w-full sm:w-45 min-h-11">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
@@ -262,7 +262,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
 
         {/* Sort */}
         <Select value={sort} onValueChange={(val) => { setSort(val); setPage(1); }}>
-          <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]">
+          <SelectTrigger className="w-full sm:w-45 min-h-11">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
@@ -273,7 +273,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
         </Select>
 
         {/* In Stock Toggle */}
-        <div className="flex items-center gap-2 px-3 min-h-[44px] border rounded-md bg-background">
+        <div className="flex items-center gap-2 px-3 min-h-11 border rounded-md bg-background">
           <Switch
             id="in-stock-toggle"
             checked={inStockOnly}
@@ -307,7 +307,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
               : "Get started by adding your first product"}
           </p>
           {!search && categoryFilter === "all" && (
-            <Button onClick={onCreate} className="mt-4 min-h-[44px] w-full sm:w-auto">
+            <Button onClick={onCreate} className="mt-4 min-h-11 w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Button>
@@ -319,17 +319,17 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
       {!isLoading && !error && products.length > 0 && (
         <>
           <div className="max-h-[50vh] sm:max-h-none overflow-auto rounded-md border">
-            <div className="min-w-[640px]">
+            <div className="min-w-160">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[160px]">Name</TableHead>
-                    <TableHead className="min-w-[100px]">Category</TableHead>
-                    <TableHead className="min-w-[80px]">Price</TableHead>
-                    <TableHead className="min-w-[60px] text-center">Variants</TableHead>
-                    <TableHead className="min-w-[90px]">Stock</TableHead>
-                    <TableHead className="min-w-[90px]">Status</TableHead>
-                    <TableHead className="min-w-[44px]">
+                    <TableHead className="min-w-40">Name</TableHead>
+                    <TableHead className="min-w-25">Category</TableHead>
+                    <TableHead className="min-w-20">Price</TableHead>
+                    <TableHead className="min-w-15 text-center">Variants</TableHead>
+                    <TableHead className="min-w-22.5">Stock</TableHead>
+                    <TableHead className="min-w-22.5">Status</TableHead>
+                    <TableHead className="min-w-11">
                       <span className="sr-only">Actions</span>
                     </TableHead>
                   </TableRow>
@@ -337,7 +337,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
                 <TableBody>
                   {products.map((product) => (
                     <TableRow key={product.id}>
-                      <TableCell className="min-w-[250px]">
+                      <TableCell className="min-w-62.5">
                         <div className="flex items-center gap-3">
                           {product.primaryImage ? (
                             <div className="h-9 w-9 rounded-md overflow-hidden bg-muted shrink-0">
@@ -354,7 +354,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
                               <Package className="h-4 w-4 text-muted-foreground" />
                             </div>
                           )}
-                          <span className="font-medium block max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">{product.name}</span>
+                          <span className="font-medium block max-w-50 overflow-hidden text-ellipsis whitespace-nowrap">{product.name}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -391,7 +391,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="min-h-[44px] min-w-[44px] p-2"
+                              className="min-h-11 min-w-11 p-2"
                             >
                               <MoreHorizontal className="h-4 w-4" />
                               <span className="sr-only">Actions</span>
@@ -400,7 +400,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               onClick={() => onEdit(product.id)}
-                              className="min-h-[44px] cursor-pointer"
+                              className="min-h-11 cursor-pointer"
                             >
                               <Pencil className="h-4 w-4 mr-2" />
                               Edit
@@ -408,7 +408,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => handleDelete(product.id)}
-                              className="min-h-[44px] text-destructive focus:text-destructive cursor-pointer"
+                              className="min-h-11 text-destructive focus:text-destructive cursor-pointer"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
@@ -435,7 +435,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
                   size="sm"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="min-h-[44px] min-w-[44px]"
+                  className="min-h-11 min-w-11"
                 >
                   <ChevronLeft className="h-4 w-4" />
                   <span className="sr-only sm:not-sr-only">Previous</span>
@@ -445,7 +445,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
                   size="sm"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="min-h-[44px] min-w-[44px]"
+                  className="min-h-11 min-w-11"
                 >
                   <span className="sr-only sm:not-sr-only">Next</span>
                   <ChevronRight className="h-4 w-4" />
