@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -113,12 +112,7 @@ function MobileNav({
   };
 
   return (
-    <motion.div 
-      initial={{ x: "100%" }}
-      animate={{ x: 0 }}
-      exit={{ x: "100%" }}
-      className="flex flex-col h-full bg-gradient-to-b from-black to-neutral-900 text-white"
-    >
+    <div className="flex flex-col h-full bg-linear-to-b from-black to-neutral-900 text-white">
       <SheetHeader className="border-b border-white/10 px-6 py-4">
         <div className="flex items-center justify-between">
           <SheetTitle className="flex items-center text-white">
@@ -144,21 +138,17 @@ function MobileNav({
       <nav className="flex-1 overflow-y-auto px-4 py-6" aria-label="Mobile navigation">
         <ul className="space-y-1">
           {ALL_MOBILE_LINKS.map((link) => (
-            <motion.li 
-              key={link.id}
-              whileHover={{ x: 4 }}
-              transition={{ duration: 0.2 }}
-            >
+            <li key={link.id}>
               <button
                 type="button"
                 onClick={() => handleNav(link.id)}
-                className="flex items-center gap-3 w-full rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 min-h-12 text-left text-white/80 hover:bg-white/10 hover:text-orange-400 group"
+                className="flex items-center gap-3 w-full rounded-xl px-4 py-3 text-sm font-medium transition-colors duration-200 min-h-12 text-left text-white/80 hover:bg-white/10 hover:text-orange-400 group"
               >
                 <span className="text-lg">{link.icon}</span>
                 <span>{link.label}</span>
-                <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
               </button>
-            </motion.li>
+            </li>
           ))}
         </ul>
 
@@ -189,7 +179,7 @@ function MobileNav({
           {isAuthenticated ? (
             <div className="space-y-1">
               <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-orange-400 text-white font-semibold text-sm">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-r from-orange-500 to-orange-400 text-white font-semibold text-sm">
                   {userName?.charAt(0).toUpperCase() || "U"}
                 </div>
                 <div>
@@ -202,7 +192,7 @@ function MobileNav({
                 <button
                   type="button"
                   onClick={() => handleNav("admin")}
-                  className="flex items-center gap-3 w-full rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 min-h-12 text-left bg-orange-500/10 text-orange-400 hover:bg-orange-500/20"
+                  className="flex items-center gap-3 w-full rounded-xl px-4 py-3 text-sm font-medium transition-colors duration-200 min-h-12 text-left bg-orange-500/10 text-orange-400 hover:bg-orange-500/20"
                 >
                   <ShieldCheck className="h-4 w-4 shrink-0" />
                   <span>Admin Panel</span>
@@ -213,16 +203,15 @@ function MobileNav({
               {CUSTOMER_NAV_LINKS.map((link) => {
                 const Icon = link.icon;
                 return (
-                  <motion.button
+                  <button
                     key={link.id}
                     type="button"
                     onClick={() => handleNav(link.id)}
-                    whileHover={{ x: 4 }}
-                    className="flex items-center gap-3 w-full rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 min-h-12 text-left text-white/70 hover:bg-white/10 hover:text-orange-400"
+                    className="flex items-center gap-3 w-full rounded-xl px-4 py-3 text-sm font-medium transition-colors duration-200 min-h-12 text-left text-white/70 hover:bg-white/10 hover:text-orange-400"
                   >
                     <Icon className="h-4 w-4 shrink-0" />
                     <span>{link.label}</span>
-                  </motion.button>
+                  </button>
                 );
               })}
 
@@ -238,7 +227,7 @@ function MobileNav({
           ) : (
             <Button
               variant="default"
-              className="w-full justify-center gap-2 min-h-12 rounded-xl bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white shadow-lg shadow-orange-500/20"
+              className="w-full justify-center gap-2 min-h-12 rounded-xl bg-linear-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white shadow-lg shadow-orange-500/20"
               onClick={handleLogin}
             >
               <LogIn className="h-4 w-4" />
@@ -247,7 +236,7 @@ function MobileNav({
           )}
         </div>
       </nav>
-    </motion.div>
+    </div>
   );
 }
 
@@ -307,25 +296,22 @@ export function StoreHeader({
   }, []);
 
   const linkClass = (id: string) =>
-    `px-3 py-2 text-sm font-medium transition-all duration-200 min-h-11 rounded-lg ${
+    `px-3 py-2 text-sm font-medium transition-colors duration-200 min-h-11 rounded-lg ${
       currentView === id
         ? "text-orange-400 bg-white/5"
         : "text-white/70 hover:text-orange-400 hover:bg-white/5"
     }`;
 
   return (
-    <motion.header 
-      className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+    <header 
+      className={`sticky top-0 z-40 w-full transition-colors duration-300 ${
         scrolled 
           ? "bg-black/95 backdrop-blur-xl border-b border-white/10 shadow-2xl shadow-black/20" 
           : "bg-black border-b border-white/5"
       }`}
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5 }}
     >
       {/* Top announcement bar */}
-      <div className="hidden md:block bg-gradient-to-r from-orange-500/10 via-orange-500/5 to-transparent border-b border-white/5">
+      <div className="hidden md:block bg-linear-to-r from-orange-500/10 via-orange-500/5 to-transparent border-b border-white/5">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-1.5">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-4 text-white/40">
@@ -354,12 +340,10 @@ export function StoreHeader({
 
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left: Logo */}
-        <motion.button
+        <button
           type="button"
           onClick={() => onNavigate("home")}
           className="flex items-center shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 rounded-sm"
-          whileHover={{ scale: 1.02 }}
-          transition={{ duration: 0.2 }}
         >
           <Image
             src="/logo.png"
@@ -369,42 +353,39 @@ export function StoreHeader({
             priority
             className="h-10 w-auto object-contain sm:h-12"
           />
-        </motion.button>
+        </button>
 
         {/* Center: Desktop nav links */}
         <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
           {NAV_LINKS.map((link) => (
-            <motion.button
+            <button
               key={link.id}
               type="button"
               onClick={() => onNavigate(link.id)}
               className={linkClass(link.id)}
-              whileHover={{ y: -1 }}
-              transition={{ duration: 0.2 }}
             >
               <span className="flex items-center gap-1.5">
                 <span>{link.icon}</span>
                 {link.label}
               </span>
-            </motion.button>
+            </button>
           ))}
 
           {/* Categories dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <motion.button
+              <button
                 type="button"
                 className={`${linkClass("categories")} flex items-center gap-1`}
-                whileHover={{ y: -1 }}
                 aria-label="Browse product categories"
               >
                 <span>📂 Categories</span>
                 <ChevronDown className="h-3.5 w-3.5" />
-              </motion.button>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="bg-neutral-900/95 backdrop-blur-xl border-white/10 text-white min-w-[220px] shadow-2xl rounded-2xl p-1"
+              className="bg-neutral-900/95 backdrop-blur-xl border-white/10 text-white min-w-55 shadow-2xl rounded-2xl p-1"
             >
               {loading ? (
                 <DropdownMenuItem disabled className="text-white/40">
@@ -442,16 +423,14 @@ export function StoreHeader({
           </DropdownMenu>
 
           {SECONDARY_NAV_LINKS.map((link) => (
-            <motion.button
+            <button
               key={link.id}
               type="button"
               onClick={() => onNavigate(link.id)}
               className={linkClass(link.id)}
-              whileHover={{ y: -1 }}
-              transition={{ duration: 0.2 }}
             >
               {link.label}
-            </motion.button>
+            </button>
           ))}
         </nav>
 
@@ -460,7 +439,7 @@ export function StoreHeader({
           <Button
             variant="ghost"
             size="sm"
-            className="hidden md:inline-flex min-h-11 min-w-11 p-2 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-all duration-200"
+            className="hidden md:inline-flex min-h-11 min-w-11 p-2 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-colors duration-200"
             onClick={() => onNavigate("search")}
             aria-label="Search products"
           >
@@ -474,7 +453,7 @@ export function StoreHeader({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="min-h-11 gap-1.5 px-3 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-all duration-200"
+                    className="min-h-11 gap-1.5 px-3 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-colors duration-200"
                     onClick={() => onNavigate("admin")}
                   >
                     <ShieldCheck className="h-4 w-4" />
@@ -486,9 +465,9 @@ export function StoreHeader({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="min-h-11 gap-2 px-3 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-all duration-200"
+                      className="min-h-11 gap-2 px-3 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-colors duration-200"
                     >
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-orange-400 text-white font-semibold text-xs">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-linear-to-r from-orange-500 to-orange-400 text-white font-semibold text-xs">
                         {userName?.charAt(0).toUpperCase() || "U"}
                       </div>
                       <span className="max-w-20 truncate text-sm font-medium">
@@ -499,7 +478,7 @@ export function StoreHeader({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="end"
-                    className="bg-neutral-900/95 backdrop-blur-xl border-white/10 text-white min-w-[200px] shadow-2xl rounded-2xl p-1"
+                    className="bg-neutral-900/95 backdrop-blur-xl border-white/10 text-white min-w-50 shadow-2xl rounded-2xl p-1"
                   >
                     {CUSTOMER_NAV_LINKS.map((link) => {
                       const Icon = link.icon;
@@ -528,7 +507,7 @@ export function StoreHeader({
               <Button
                 variant="ghost"
                 size="sm"
-                className="min-h-11 gap-2 px-4 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-all duration-200"
+                className="min-h-11 gap-2 px-4 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-colors duration-200"
                 onClick={onOpenLogin}
               >
                 <User className="h-4 w-4" />
@@ -538,26 +517,20 @@ export function StoreHeader({
           </div>
 
           {/* Cart Button */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="relative min-h-11 min-w-11 p-2 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-all duration-200"
-              onClick={onOpenCart}
-              aria-label={`Cart with ${cartCount} item${cartCount !== 1 ? "s" : ""}`}
-            >
-              <ShoppingCart className="h-5 w-5" />
-              {cartCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-orange-400 px-1 text-[10px] font-bold text-white shadow-lg shadow-orange-500/30"
-                >
-                  {cartCount > 99 ? "99+" : cartCount}
-                </motion.span>
-              )}
-            </Button>
-          </motion.div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="relative min-h-11 min-w-11 p-2 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-colors duration-200"
+            onClick={onOpenCart}
+            aria-label={`Cart with ${cartCount} item${cartCount !== 1 ? "s" : ""}`}
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-linear-to-r from-orange-500 to-orange-400 px-1 text-[10px] font-bold text-white shadow-lg shadow-orange-500/30">
+                {cartCount > 99 ? "99+" : cartCount}
+              </span>
+            )}
+          </Button>
 
           {/* Mobile Menu Button */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -565,7 +538,7 @@ export function StoreHeader({
               <Button
                 variant="ghost"
                 size="sm"
-                className="min-h-11 min-w-11 p-2 md:hidden text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-all duration-200"
+                className="min-h-11 min-w-11 p-2 md:hidden text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-colors duration-200"
                 aria-label="Open navigation menu"
               >
                 <Menu className="h-5 w-5" />
@@ -587,6 +560,6 @@ export function StoreHeader({
           </Sheet>
         </div>
       </div>
-    </motion.header>
+    </header>
   );
 }
