@@ -140,7 +140,7 @@ function validateForm(formData: FormData): FieldErrors {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) {
-  const { items, cartTotal, totalItems, clearCart } = useCart();
+  const { items, cartTotal, totalItems, clearCart, subtotal, bundleDiscount } = useCart();
 
   // COD settings state
   const [codSettings, setCodSettings] = useState<CodSettings | null>(null);
@@ -440,7 +440,25 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-6 lg:gap-8 items-start">
+      {bundleDiscount > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-center gap-3"
+        >
+          <div className="flex-shrink-0 text-2xl">💚</div>
+          <div>
+            <p className="font-semibold text-green-900 dark:text-green-100">
+              You're saving {formatPrice(bundleDiscount)} with bundle discounts!
+            </p>
+            <p className="text-sm text-green-700 dark:text-green-300">
+              Your cart includes discounted bundle offers. Continue to complete your purchase.
+            </p>
+          </div>
+        </motion.div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-4 sm:gap-6 md:gap-8 lg:gap-10 items-start">
         {/* ── Left Column: Order Summary ── */}
         <div className="lg:sticky lg:top-6">
           <Card className="border-2 shadow-sm">
@@ -453,6 +471,12 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                 <span>{totalItems} {totalItems === 1 ? "item" : "items"}</span>
                 <span className="text-muted-foreground/30">|</span>
                 <span className="text-primary font-medium">{formatPrice(cartTotal)}</span>
+                {bundleDiscount > 0 && (
+                  <>
+                    <span className="text-muted-foreground/30">|</span>
+                    <span className="text-green-600 font-medium text-sm">💚 Saved {formatPrice(bundleDiscount)}</span>
+                  </>
+                )}
               </CardDescription>
             </CardHeader>
 
@@ -505,15 +529,29 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">{formatPrice(cartTotal)}</span>
+                  <span className="font-medium">{formatPrice(subtotal)}</span>
                 </div>
+                {bundleDiscount > 0 && (
+                  <div className="flex items-center justify-between bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded-lg">
+                    <span className="text-green-700 dark:text-green-400 font-medium flex items-center gap-2">
+                      <span>✨ Bundle Savings</span>
+                    </span>
+                    <span className="font-bold text-green-700 dark:text-green-400">
+                      -{formatPrice(bundleDiscount)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Delivery</span>
                   <span className="text-green-600 font-medium">Free</span>
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Taxes</span>
+                  <span className="text-green-600 font-medium">₹0.00</span>
+                </div>
                 <Separator className="my-2" />
                 <div className="flex items-center justify-between text-lg font-bold">
-                  <span>Total</span>
+                  <span>Total Payable</span>
                   <span className="text-primary">{formatPrice(cartTotal)}</span>
                 </div>
               </div>
@@ -719,7 +757,7 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3 xs:gap-3.5 sm:gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="city" className="flex items-center gap-2 text-sm font-medium">
                         <Building2 className="size-3.5 text-muted-foreground" />

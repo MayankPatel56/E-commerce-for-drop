@@ -28,7 +28,7 @@ function formatPrice(price: number): string {
 const FREE_SHIPPING_THRESHOLD = 499;
 
 export function CartDrawer({ open, onOpenChange, onNavigate }: CartDrawerProps) {
-  const { items, removeItem, updateQuantity, clearCart, totalItems, cartTotal } = useCart();
+  const { items, removeItem, updateQuantity, clearCart, totalItems, cartTotal, subtotal, bundleDiscount } = useCart();
 
   const handleContinueShopping = () => {
     onOpenChange(false);
@@ -40,8 +40,8 @@ export function CartDrawer({ open, onOpenChange, onNavigate }: CartDrawerProps) 
     onNavigate("checkout");
   };
 
-  const shippingProgress = Math.min((cartTotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
-  const isFreeShipping = cartTotal >= FREE_SHIPPING_THRESHOLD;
+  const shippingProgress = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
+  const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
   const total = cartTotal;
 
   return (
@@ -140,6 +140,13 @@ export function CartDrawer({ open, onOpenChange, onNavigate }: CartDrawerProps) 
                         <p className="text-sm font-bold text-primary">
                           {formatPrice(item.price * item.quantity)}
                         </p>
+                        {item.bundleDiscount && item.bundleDiscount > 0 && (
+                          <div className="inline-block bg-green-100 dark:bg-green-950/50 px-2 py-1 rounded-full">
+                            <span className="text-[10px] text-green-700 dark:text-green-400 font-bold">
+                              💚 Saved {formatPrice(item.bundleDiscount)}
+                            </span>
+                          </div>
+                        )}
                         {item.stockAvailable <= 5 && (
                           <span className="text-[10px] text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded-full">
                             Only {item.stockAvailable} left
@@ -152,14 +159,14 @@ export function CartDrawer({ open, onOpenChange, onNavigate }: CartDrawerProps) 
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-7 min-w-[28px] min-h-[28px] rounded-full hover:bg-background"
+                            className="h-10 w-10 xs:h-11 xs:w-11 min-h-10 min-w-10 xs:min-h-11 xs:min-w-11 rounded-lg xs:rounded-full hover:bg-muted transition-colors"
                             disabled={item.quantity <= 1}
                             onClick={() =>
                               updateQuantity(item.variantId, item.quantity - 1)
                             }
                             aria-label="Decrease quantity"
                           >
-                            <Minus className="size-3" />
+                            <Minus className="size-4 xs:size-4.5" />
                           </Button>
                           <span className="w-6 text-center text-sm font-medium tabular-nums">
                             {item.quantity}
@@ -167,24 +174,24 @@ export function CartDrawer({ open, onOpenChange, onNavigate }: CartDrawerProps) 
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-7 min-w-[28px] min-h-[28px] rounded-full hover:bg-background"
+                            className="h-10 w-10 xs:h-11 xs:w-11 min-h-10 min-w-10 xs:min-h-11 xs:min-w-11 rounded-lg xs:rounded-full hover:bg-muted transition-colors"
                             disabled={item.quantity >= item.stockAvailable}
                             onClick={() =>
                               updateQuantity(item.variantId, item.quantity + 1)
                             }
                             aria-label="Increase quantity"
                           >
-                            <Plus className="size-3" />
+                            <Plus className="size-4 xs:size-4.5" />
                           </Button>
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-7 min-w-[28px] min-h-[28px] rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                          className="h-10 w-10 xs:h-11 xs:w-11 min-h-10 min-w-10 xs:min-h-11 xs:min-w-11 rounded-lg xs:rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
                           onClick={() => removeItem(item.variantId)}
                           aria-label={`Remove ${item.productName}`}
                         >
-                          <Trash2 className="size-3.5" />
+                          <Trash2 className="size-4 xs:size-5" />
                         </Button>
                       </div>
                     </div>
@@ -205,7 +212,7 @@ export function CartDrawer({ open, onOpenChange, onNavigate }: CartDrawerProps) 
                     {isFreeShipping ? (
                       <span className="text-green-600 font-medium">✨ Free Shipping</span>
                     ) : (
-                      <span>Add {formatPrice(FREE_SHIPPING_THRESHOLD - cartTotal)} more for free shipping</span>
+                      <span>Add {formatPrice(FREE_SHIPPING_THRESHOLD - subtotal)} more for free shipping</span>
                     )}
                   </span>
                   <span className="font-medium">{Math.round(shippingProgress)}%</span>
@@ -222,11 +229,25 @@ export function CartDrawer({ open, onOpenChange, onNavigate }: CartDrawerProps) 
               <div className="space-y-2 mb-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">{formatPrice(cartTotal)}</span>
+                  <span className="font-medium">{formatPrice(subtotal)}</span>
                 </div>
+                {bundleDiscount > 0 && (
+                  <div className="flex items-center justify-between text-sm bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded-lg">
+                    <span className="text-green-700 dark:text-green-400 font-medium flex items-center gap-2">
+                      <span>✨ Bundle Savings</span>
+                    </span>
+                    <span className="font-bold text-green-700 dark:text-green-400">
+                      -{formatPrice(bundleDiscount)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Delivery</span>
                   <span className="font-medium text-green-600">Free</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Taxes</span>
+                  <span className="font-medium text-green-600">₹0.00</span>
                 </div>
                 <Separator className="my-2" />
                 <div className="flex items-center justify-between text-lg font-bold">

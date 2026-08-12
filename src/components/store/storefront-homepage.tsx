@@ -222,7 +222,7 @@ export default function StorefrontHomepage({
               New Collection
             </motion.div>
 
-            <h1 className="text-4xl font-bold leading-tight text-white sm:text-5xl md:text-6xl">
+            <h1 className="text-2xl font-bold leading-tight text-white xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl">
               {data.heroBanner?.text ? (
                 data.heroBanner.text
               ) : (
@@ -236,11 +236,11 @@ export default function StorefrontHomepage({
                 </>
               )}
             </h1>
-            <p className="mt-4 max-w-md text-base text-white/60 sm:text-lg">
+            <p className="mt-3 xs:mt-4 max-w-md text-sm xs:text-base sm:text-lg text-white/60">
               Unique, high-quality products selected for people who value
               originality.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-6 xs:mt-8 flex flex-col gap-2.5 xs:gap-3 sm:flex-row">
               {data.heroBanner?.cta_text && (
                 <motion.div
                   whileHover={{ scale: 1.05 }}
@@ -248,7 +248,7 @@ export default function StorefrontHomepage({
                 >
                   <Button
                     size="lg"
-                    className="min-h-[48px] gap-2 bg-gradient-to-r from-orange-500 to-orange-400 px-8 text-base font-semibold text-black shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all"
+                    className="min-h-12 xs:min-h-14 gap-2 bg-gradient-to-r from-orange-500 to-orange-400 px-6 xs:px-8 text-sm xs:text-base font-semibold text-black shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all rounded-lg xs:rounded-xl"
                     onClick={() => onNavigate("shop")}
                   >
                     {data.heroBanner.cta_text}
@@ -281,7 +281,7 @@ export default function StorefrontHomepage({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-5 sm:grid-cols-4 sm:px-6 lg:px-8">
+            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-3 px-3 py-4 xs:grid-cols-2 xs:gap-3 sm:grid-cols-4 sm:gap-5 sm:px-6 lg:gap-6 lg:py-6 lg:px-8">
               {data.whyChooseUs.map((usp, idx) => {
                 const IconComp = iconMap[usp.icon] ?? Package;
                 return (

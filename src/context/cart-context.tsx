@@ -9,10 +9,15 @@ export interface CartItem {
   productId: number;
   productName: string;
   variantDescription: string; // e.g. "Size: M, Color: Black"
-  price: number;
+  price: number; // Effective price (after bundle discount if applied)
   quantity: number;
   imageUrl: string;
   stockAvailable: number;
+  // Bundle offer fields (optional)
+  originalPrice?: number; // Price before bundle discount
+  bundleLabel?: string; // e.g., "Buy 3, Save 20%"
+  bundleDiscount?: number; // Total savings for this item (originalPrice * quantity - price * quantity)
+  bundleQuantity?: number; // Minimum quantity for the bundle tier
 }
 
 interface CartState {
@@ -35,6 +40,8 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   cartTotal: number;
+  subtotal: number; // Sum of original prices (before bundle discount)
+  bundleDiscount: number; // Total savings from bundle offers
 }
 
 // ─── Context ────────────────────────────────────────────────────────────────
@@ -155,7 +162,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-  const cartTotal = state.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const subtotal = state.items.reduce((sum, i) => {
+    const original = i.originalPrice ?? i.price;
+    return sum + original * i.quantity;
+  }, 0);
+  const bundleDiscount = state.items.reduce((sum, i) => sum + (i.bundleDiscount ?? 0), 0);
+  const cartTotal = subtotal - bundleDiscount;
 
   return (
     <CartContext.Provider
@@ -166,6 +178,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         updateQuantity,
         clearCart,
         totalItems,
+        subtotal,
+        bundleDiscount,
         cartTotal,
       }}
     >

@@ -82,7 +82,7 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
 
       {/* Main footer content */}
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 xs:gap-7 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4 lg:gap-10">
           {/* Column 1: Brand */}
           <motion.div 
             className="space-y-4"
@@ -217,7 +217,7 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
 
         {/* Trust Badges */}
         <motion.div 
-          className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-4"
+          className="mt-8 xs:mt-10 sm:mt-12 grid grid-cols-1 gap-3 xs:grid-cols-2 xs:gap-2.5 sm:grid-cols-4 sm:gap-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}

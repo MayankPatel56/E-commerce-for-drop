@@ -171,34 +171,34 @@ function getInitials(name: string): string {
 
 function ProductDetailSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6">
-      <Skeleton className="h-5 w-32" />
-      <div className="grid gap-8 md:grid-cols-2">
+    <div className="mx-auto w-full max-w-6xl space-y-4 sm:space-y-6 px-3 sm:px-4 py-4 sm:py-6">
+      <Skeleton className="h-5 w-28 sm:w-32" />
+      <div className="grid gap-4 sm:gap-6 md:gap-8 sm:grid-cols-1 md:grid-cols-2">
         <div className="space-y-3">
-          <Skeleton className="aspect-square w-full rounded-2xl" />
-          <div className="flex gap-2">
-            <Skeleton className="h-16 w-16 rounded-xl" />
-            <Skeleton className="h-16 w-16 rounded-xl" />
-            <Skeleton className="h-16 w-16 rounded-xl" />
-            <Skeleton className="h-16 w-16 rounded-xl" />
+          <Skeleton className="aspect-square w-full rounded-xl sm:rounded-2xl" />
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <Skeleton className="h-14 w-14 sm:h-16 sm:w-16 rounded-lg sm:rounded-xl shrink-0" />
+            <Skeleton className="h-14 w-14 sm:h-16 sm:w-16 rounded-lg sm:rounded-xl shrink-0" />
+            <Skeleton className="h-14 w-14 sm:h-16 sm:w-16 rounded-lg sm:rounded-xl shrink-0" />
+            <Skeleton className="h-14 w-14 sm:h-16 sm:w-16 rounded-lg sm:rounded-xl shrink-0" />
           </div>
         </div>
-        <div className="space-y-4">
-          <Skeleton className="h-4 w-48" />
-          <Skeleton className="h-8 w-3/4" />
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-8 w-24" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-4 w-40" />
+        <div className="space-y-3 sm:space-y-4">
+          <Skeleton className="h-3 w-32 sm:h-4 sm:w-48" />
+          <Skeleton className="h-6 w-3/4 sm:h-8" />
+          <Skeleton className="h-4 w-24 sm:h-5 sm:w-32" />
+          <Skeleton className="h-7 w-20 sm:h-8 sm:w-24" />
+          <Skeleton className="h-16 w-full sm:h-20" />
+          <Skeleton className="h-10 w-full sm:h-11" />
+          <Skeleton className="h-10 w-full sm:h-11" />
+          <Skeleton className="h-11 w-full sm:h-12" />
+          <Skeleton className="h-3 w-32 sm:h-4 sm:w-40" />
         </div>
       </div>
-      <div className="space-y-4">
-        <Skeleton className="h-7 w-48" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-24 w-full" />
+      <div className="space-y-3 sm:space-y-4">
+        <Skeleton className="h-6 w-40 sm:h-7 sm:w-48" />
+        <Skeleton className="h-20 w-full sm:h-24" />
+        <Skeleton className="h-20 w-full sm:h-24" />
       </div>
     </div>
   );
@@ -207,11 +207,11 @@ function ProductDetailSkeleton() {
 // ─── Star Rating Display ───────────────────────────────────────────────────
 
 function StarRating({ rating, size = "sm", showLabel = false }: { rating: number; size?: "sm" | "md" | "lg"; showLabel?: boolean }) {
-  const sizeMap = { sm: "size-3.5", md: "size-5", lg: "size-6" };
+  const sizeMap = { sm: "size-3 sm:size-3.5", md: "size-4 sm:size-5", lg: "size-5 sm:size-6" };
   const iconClass = sizeMap[size] || sizeMap.sm;
   
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1 sm:gap-1.5">
       <div className="flex items-center gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => {
           const filled = star <= Math.round(rating);
@@ -228,7 +228,7 @@ function StarRating({ rating, size = "sm", showLabel = false }: { rating: number
         })}
       </div>
       {showLabel && (
-        <span className="text-sm font-medium text-foreground">{rating.toFixed(1)}</span>
+        <span className="text-xs sm:text-sm font-medium text-foreground">{rating.toFixed(1)}</span>
       )}
     </div>
   );
@@ -241,19 +241,19 @@ function ProductNotFound({ onNavigate }: { onNavigate: (view: string) => void })
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center justify-center gap-6 px-4 py-20 text-center"
+      className="flex flex-col items-center justify-center gap-4 sm:gap-6 px-4 py-16 sm:py-20 text-center"
     >
-      <div className="rounded-full bg-muted p-6">
-        <Package className="size-16 text-muted-foreground" />
+      <div className="rounded-full bg-muted p-4 sm:p-6">
+        <Package className="size-12 sm:size-16 text-muted-foreground" />
       </div>
-      <h2 className="text-2xl font-bold">Product not found</h2>
-      <p className="text-muted-foreground max-w-md">
+      <h2 className="text-xl sm:text-2xl font-bold">Product not found</h2>
+      <p className="text-sm sm:text-base text-muted-foreground max-w-md px-2">
         The product you are looking for does not exist or has been removed.
       </p>
       <Button
         variant="default"
         onClick={() => onNavigate("shop")}
-        className="min-h-12 px-8 rounded-full"
+        className="min-h-[44px] sm:min-h-12 px-6 sm:px-8 rounded-full"
       >
         <ArrowLeft className="size-4 mr-2" />
         Back to Shop
@@ -332,19 +332,19 @@ function ReviewForm({ productId, onSubmitted }: { productId: number; onSubmitted
 
   if (!eligibilityChecked) {
     return (
-      <div className="rounded-2xl border p-8 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="rounded-xl sm:rounded-2xl border p-6 sm:p-8 flex items-center justify-center">
+        <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (!eligible) {
     return (
-      <Alert variant="destructive" className="mb-4 relative rounded-xl">
-        <AlertDescription className="pr-8">{ineligibleReason}</AlertDescription>
+      <Alert variant="destructive" className="mb-4 relative rounded-lg sm:rounded-xl">
+        <AlertDescription className="pr-8 text-sm sm:text-base">{ineligibleReason}</AlertDescription>
         <button
           onClick={onSubmitted}
-          className="absolute right-2 top-2 p-1.5 rounded-full hover:bg-destructive/10 transition-colors"
+          className="absolute right-2 top-2 p-1.5 rounded-full hover:bg-destructive/10 transition-colors min-h-[36px] min-w-[36px]"
           aria-label="Dismiss notice"
         >
           <X className="h-4 w-4" />
@@ -355,8 +355,8 @@ function ReviewForm({ productId, onSubmitted }: { productId: number; onSubmitted
 
   if (success) {
     return (
-      <Alert className="mb-4 border-green-200 bg-green-50 rounded-xl">
-        <AlertDescription className="text-green-700">
+      <Alert className="mb-4 border-green-200 bg-green-50 rounded-lg sm:rounded-xl">
+        <AlertDescription className="text-green-700 text-sm sm:text-base">
           ✅ Review submitted successfully! It will appear after admin approval.
         </AlertDescription>
       </Alert>
@@ -367,35 +367,35 @@ function ReviewForm({ productId, onSubmitted }: { productId: number; onSubmitted
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border bg-card/50 backdrop-blur-sm p-6 space-y-5 mb-4"
+      className="rounded-xl sm:rounded-2xl border bg-card/50 backdrop-blur-sm p-4 sm:p-6 space-y-4 sm:space-y-5 mb-4"
     >
-      <h3 className="text-lg font-semibold flex items-center gap-2">
-        <PenSquare className="h-5 w-5 text-primary" />
+      <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+        <PenSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
         Write Your Review
       </h3>
 
       {formError && (
-        <p className="text-sm text-destructive bg-destructive/10 px-4 py-2 rounded-lg">
+        <p className="text-sm text-destructive bg-destructive/10 px-3 sm:px-4 py-2 rounded-lg">
           {formError}
         </p>
       )}
 
       <div className="space-y-2">
         <Label className="text-sm font-medium">Rating</Label>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
-              className="p-1.5 min-h-11 min-w-11 flex items-center justify-center rounded-full hover:bg-yellow-50 transition-all"
+              className="p-1.5 min-h-[40px] min-w-[40px] sm:min-h-11 sm:min-w-11 flex items-center justify-center rounded-full hover:bg-yellow-50 transition-all"
               onMouseEnter={() => setHoveredStar(star)}
               onMouseLeave={() => setHoveredStar(0)}
               onClick={() => setRating(star)}
               aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
             >
               <Star
-                size={28}
-                className={`transition-all ${
+                size={24}
+                className={`transition-all sm:size-7 ${
                   star <= (hoveredStar || rating)
                     ? "fill-yellow-400 text-yellow-400 scale-110"
                     : "fill-muted/30 text-muted/30"
@@ -414,7 +414,7 @@ function ReviewForm({ productId, onSubmitted }: { productId: number; onSubmitted
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Summarize your experience"
           maxLength={100}
-          className="rounded-xl"
+          className="rounded-lg sm:rounded-xl min-h-[40px] sm:min-h-11"
         />
       </div>
 
@@ -427,23 +427,23 @@ function ReviewForm({ productId, onSubmitted }: { productId: number; onSubmitted
           placeholder="Tell us about your experience with this product..."
           rows={4}
           maxLength={1000}
-          className="rounded-xl"
+          className="rounded-lg sm:rounded-xl"
         />
         <p className="text-xs text-muted-foreground text-right">
           {comment.length}/1000
         </p>
       </div>
 
-      <div className="flex items-center gap-3 pt-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-2">
         <Button 
           onClick={handleSubmit} 
           disabled={submitting} 
-          className="min-h-12 px-8 rounded-full"
+          className="min-h-[44px] sm:min-h-12 px-6 sm:px-8 rounded-full w-full sm:w-auto"
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
           {submitting ? "Submitting..." : "Submit Review"}
         </Button>
-        <Button variant="ghost" onClick={onSubmitted} className="min-h-12 rounded-full">
+        <Button variant="ghost" onClick={onSubmitted} className="min-h-[44px] sm:min-h-12 rounded-full w-full sm:w-auto">
           Cancel
         </Button>
       </div>
@@ -607,12 +607,18 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
     const variantDescription = variantParts.join(", ");
 
     const selectedBundle = product.bundleOffers?.[selectedBundleIndex];
+    const basePrice = currentVariant.price ?? product.price;
     const effectivePrice = selectedBundle
       ? selectedBundle.price / selectedBundle.quantity
-      : currentVariant.price ?? product.price;
+      : basePrice;
     const effectiveDescription = selectedBundle
       ? [variantDescription, selectedBundle.label].filter(Boolean).join(" — ")
       : variantDescription;
+
+    // Calculate bundle discount if applicable
+    const bundleDiscount = selectedBundle
+      ? (basePrice - effectivePrice) * quantity
+      : 0;
 
     try {
       addItem({
@@ -624,6 +630,11 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
         quantity: quantity,
         imageUrl: product.primaryImage || "",
         stockAvailable: currentVariant.stockQuantity,
+        // Bundle offer fields
+        originalPrice: basePrice,
+        bundleLabel: selectedBundle?.label,
+        bundleDiscount: bundleDiscount,
+        bundleQuantity: selectedBundle?.quantity,
       });
     } catch {
       // silently handle
@@ -636,15 +647,15 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
   if (loading) return <ProductDetailSkeleton />;
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 px-4 py-20 text-center">
-        <div className="rounded-full bg-destructive/10 p-4">
-          <Package className="size-12 text-destructive" />
+      <div className="flex flex-col items-center justify-center gap-4 px-4 py-16 sm:py-20 text-center">
+        <div className="rounded-full bg-destructive/10 p-3 sm:p-4">
+          <Package className="size-10 sm:size-12 text-destructive" />
         </div>
-        <p className="text-lg text-destructive">Something went wrong loading this product.</p>
+        <p className="text-base sm:text-lg text-destructive">Something went wrong loading this product.</p>
         <Button
           variant="outline"
           onClick={() => onNavigate("shop")}
-          className="min-h-12 px-8 rounded-full"
+          className="min-h-[44px] sm:min-h-12 px-6 sm:px-8 rounded-full"
         >
           <ArrowLeft className="size-4 mr-2" />
           Back to Shop
@@ -673,24 +684,24 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="mx-auto w-full max-w-6xl px-4 py-6"
+      className="mx-auto w-full max-w-6xl px-3 sm:px-4 py-4 sm:py-6"
     >
       {/* Back navigation */}
       <button
         type="button"
         onClick={() => onNavigate("shop")}
-        className="group mb-6 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all min-h-11"
+        className="group mb-4 sm:mb-6 inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground transition-all min-h-[40px] sm:min-h-11"
       >
-        <ArrowLeft className="size-4 group-hover:-translate-x-1 transition-transform" />
+        <ArrowLeft className="size-3.5 sm:size-4 group-hover:-translate-x-1 transition-transform" />
         Back to Shop
       </button>
 
-      <div className="grid gap-8 md:gap-12 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:gap-8 lg:grid-cols-2 lg:gap-10">
         {/* ── Left Column: Image Gallery ── */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* Main image */}
           <motion.div 
-            className="relative aspect-square w-full overflow-hidden rounded-2xl border bg-muted/30"
+            className="relative aspect-square w-full overflow-hidden rounded-xl sm:rounded-2xl border bg-muted/30"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
@@ -710,25 +721,25 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                 />
                 {!imageLoaded && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-muted-foreground" />
                   </div>
                 )}
               </>
             ) : (
               <div className="flex size-full items-center justify-center">
-                <Package className="size-16 text-muted-foreground" />
+                <Package className="size-12 sm:size-16 text-muted-foreground" />
               </div>
             )}
             
             {/* Badge */}
             {product.badgeText && (
-              <Badge className="absolute top-4 left-4 bg-primary text-primary-foreground rounded-full px-4 py-1.5 text-sm font-semibold shadow-lg">
+              <Badge className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-primary text-primary-foreground rounded-full px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-sm font-semibold shadow-lg">
                 {product.badgeText}
               </Badge>
             )}
             
             {discountPercent > 0 && (
-              <Badge className="absolute top-4 right-4 bg-red-500 text-white rounded-full px-4 py-1.5 text-sm font-semibold shadow-lg">
+              <Badge className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-red-500 text-white rounded-full px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-sm font-semibold shadow-lg">
                 {discountPercent}% OFF
               </Badge>
             )}
@@ -740,8 +751,8 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                 onClick={() => setShowVideo(true)}
                 className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors group"
               >
-                <div className="rounded-full bg-white/90 p-4 shadow-lg group-hover:scale-110 transition-transform">
-                  <Play className="size-8 text-primary fill-primary" />
+                <div className="rounded-full bg-white/90 p-3 sm:p-4 shadow-lg group-hover:scale-110 transition-transform">
+                  <Play className="size-6 sm:size-8 text-primary fill-primary" />
                 </div>
               </button>
             )}
@@ -750,20 +761,20 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
           {/* Video Modal */}
           {showVideo && product.videoUrl && (
             <div 
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-4"
               onClick={() => setShowVideo(false)}
             >
               <div className="relative w-full max-w-3xl aspect-video" onClick={(e) => e.stopPropagation()}>
                 <button
                   type="button"
                   onClick={() => setShowVideo(false)}
-                  className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors min-h-11 min-w-11"
+                  className="absolute -top-10 sm:-top-12 right-0 text-white hover:text-gray-300 transition-colors min-h-[40px] min-w-[40px] sm:min-h-11 sm:min-w-11"
                 >
-                  <X className="size-8" />
+                  <X className="size-6 sm:size-8" />
                 </button>
                 <iframe
                   src={product.videoUrl}
-                  className="w-full h-full rounded-2xl"
+                  className="w-full h-full rounded-xl sm:rounded-2xl"
                   allow="autoplay; encrypted-media; fullscreen"
                   allowFullScreen
                 />
@@ -773,7 +784,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
 
           {/* Thumbnail row */}
           {allImages.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1">
               {allImages.map((img, idx) => (
                 <button
                   key={idx}
@@ -782,7 +793,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                     setMainImage(img);
                     setImageLoaded(false);
                   }}
-                  className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all min-h-11 min-w-11 ${
+                  className={`relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-lg sm:rounded-xl border-2 transition-all min-h-[40px] min-w-[40px] sm:min-h-11 sm:min-w-11 ${
                     mainImage === img
                       ? "border-primary ring-2 ring-primary/30 shadow-md"
                       : "border-transparent hover:border-primary/30"
@@ -803,7 +814,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
 
         {/* ── Right Column: Product Info ── */}
         <motion.div 
-          className="space-y-5"
+          className="space-y-4 sm:space-y-5"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
@@ -811,7 +822,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
           {/* Breadcrumb */}
           {product.category && (
             <Breadcrumb>
-              <BreadcrumbList>
+              <BreadcrumbList className="flex-wrap">
                 <BreadcrumbItem>
                   <BreadcrumbLink
                     href="#"
@@ -819,12 +830,12 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                       e.preventDefault();
                       onNavigate("shop");
                     }}
-                    className="hover:text-primary transition-colors"
+                    className="text-xs sm:text-sm hover:text-primary transition-colors"
                   >
                     Home
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator />
+                <BreadcrumbSeparator className="text-xs sm:text-sm" />
                 <BreadcrumbItem>
                   <BreadcrumbLink
                     href="#"
@@ -832,53 +843,53 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                       e.preventDefault();
                       onNavigate("shop", { category: product.category!.slug });
                     }}
-                    className="hover:text-primary transition-colors"
+                    className="text-xs sm:text-sm hover:text-primary transition-colors"
                   >
                     {product.category.name}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator />
+                <BreadcrumbSeparator className="text-xs sm:text-sm" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="line-clamp-1">{product.name}</BreadcrumbPage>
+                  <BreadcrumbPage className="line-clamp-1 text-xs sm:text-sm">{product.name}</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           )}
 
           {/* Title */}
-          <h1 className="text-2xl font-bold leading-tight md:text-3xl lg:text-4xl">
+          <h1 className="text-xl sm:text-2xl font-bold leading-tight md:text-3xl lg:text-4xl">
             {product.name}
           </h1>
 
           {/* Sold Label - Social Proof */}
           {product.soldLabel && (
-            <p className="text-sm text-green-600 font-medium">
+            <p className="text-xs sm:text-sm text-green-600 font-medium">
               {product.soldLabel}
             </p>
           )}
 
           {/* Rating */}
           {product.reviewCount > 0 && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <StarRating rating={product.averageRating} size="md" showLabel />
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 ({product.reviewCount} {product.reviewCount === 1 ? "review" : "reviews"})
               </span>
             </div>
           )}
 
           {/* Price */}
-          <div className="flex items-baseline gap-3">
-            <span className="text-3xl font-bold text-primary">
+          <div className="flex flex-wrap items-baseline gap-2 sm:gap-3">
+            <span className="text-2xl sm:text-3xl font-bold text-primary">
               {formatPrice(displayPrice)}
             </span>
             {product.compareAtPrice && (
-              <span className="text-lg text-muted-foreground line-through">
+              <span className="text-base sm:text-lg text-muted-foreground line-through">
                 {formatPrice(product.compareAtPrice)}
               </span>
             )}
             {discountPercent > 0 && (
-              <Badge variant="destructive" className="rounded-full px-3 py-1">
+              <Badge variant="destructive" className="rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs">
                 Save {discountPercent}%
               </Badge>
             )}
@@ -886,13 +897,13 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
 
           {/* Features */}
           {product.features && product.features.length > 0 && (
-            <div className="flex flex-wrap gap-3 pt-1">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-0.5 sm:pt-1">
               {product.features.map((feature, idx) => {
                 const IconComponent = getFeatureIcon(feature.icon);
                 return (
-                  <div key={idx} className="flex items-center gap-1.5 text-sm text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-full">
-                    <IconComponent className="size-4 text-primary" />
-                    <span>{feature.label}</span>
+                  <div key={idx} className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm text-muted-foreground bg-muted/30 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
+                    <IconComponent className="size-3 sm:size-4 text-primary" />
+                    <span className="truncate max-w-[80px] sm:max-w-none">{feature.label}</span>
                   </div>
                 );
               })}
@@ -916,18 +927,18 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
             const isColorType = type.toLowerCase() === "color";
 
             return (
-              <div key={type} className="space-y-3">
-                <div className="flex items-center justify-between">
+              <div key={type} className="space-y-2 sm:space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-1">
                   <label className="text-sm font-medium">
                     {type.charAt(0).toUpperCase() + type.slice(1)}
                   </label>
                   {selected && (
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-xs sm:text-sm text-muted-foreground">
                       Selected: {selected.value}
                     </span>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {options.map((option) => {
                     const isSelected = selected?.variantId === option.variantId;
                     const isOOS = option.isOutOfStock;
@@ -939,7 +950,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                         type="button"
                         disabled={isOOS}
                         onClick={() => handleVariantSelect(type, option)}
-                        className={`relative min-h-12 rounded-xl border-2 px-5 py-2.5 text-sm font-medium transition-all ${
+                        className={`relative min-h-[40px] sm:min-h-12 rounded-lg sm:rounded-xl border-2 px-3 sm:px-5 py-2 text-xs sm:text-sm font-medium transition-all ${
                           isSelected
                             ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                             : isOOS
@@ -948,21 +959,21 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                         }`}
                       >
                         {isColorType && colorHex ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
                             <span 
-                              className="size-5 rounded-full border shadow-inner"
+                              className="size-4 sm:size-5 rounded-full border shadow-inner shrink-0"
                               style={{ backgroundColor: colorHex }}
                             />
-                            {option.value}
+                            <span className="truncate max-w-[60px] sm:max-w-none">{option.value}</span>
                           </div>
                         ) : (
-                          option.value
+                          <span className="truncate max-w-[80px] sm:max-w-none">{option.value}</span>
                         )}
                         {isOOS && (
-                          <span className="ml-1.5 text-xs">(Out of Stock)</span>
+                          <span className="ml-1 text-[10px] sm:text-xs">(OOS)</span>
                         )}
                         {isSelected && (
-                          <Check className="ml-1.5 inline size-4" />
+                          <Check className="ml-1 inline size-3 sm:size-4" />
                         )}
                       </button>
                     );
@@ -974,9 +985,9 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
 
           {/* Tags */}
           {product.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1 sm:gap-1.5">
               {product.tags.map((tag) => (
-                <Badge key={tag.id} variant="secondary" className="rounded-full text-xs px-3 py-1">
+                <Badge key={tag.id} variant="secondary" className="rounded-full text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1">
                   #{tag.name}
                 </Badge>
               ))}
@@ -985,13 +996,13 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
 
           {/* Bundle & Save */}
           {product.bundleOffers && product.bundleOffers.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <div className="h-px flex-1 bg-border" />
-                <h3 className="text-sm font-bold tracking-wide uppercase">Bundle &amp; Save</h3>
+                <h3 className="text-xs sm:text-sm font-bold tracking-wide uppercase">Bundle &amp; Save</h3>
                 <div className="h-px flex-1 bg-border" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {product.bundleOffers.map((tier, idx) => {
                   const isSelected = selectedBundleIndex === idx;
                   const savings = tier.compareAtPrice ? tier.compareAtPrice - tier.price : 0;
@@ -1000,38 +1011,38 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                       key={idx}
                       type="button"
                       onClick={() => setSelectedBundleIndex(idx)}
-                      className={`relative w-full flex items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition-all ${
+                      className={`relative w-full flex flex-wrap items-center justify-between gap-2 rounded-lg sm:rounded-xl border-2 px-3 sm:px-4 py-2.5 sm:py-3 text-left transition-all ${
                         isSelected
                           ? "border-foreground bg-muted/50"
                           : "border-border hover:border-foreground/30"
                       }`}
                     >
                       {tier.badge && (
-                        <span className="absolute -top-2.5 right-4 bg-foreground text-background text-[11px] font-semibold px-2.5 py-1 rounded-full">
+                        <span className="absolute -top-2 right-2 sm:right-4 bg-foreground text-background text-[9px] sm:text-[11px] font-semibold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full">
                           {tier.badge}
                         </span>
                       )}
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         <span
-                          className={`flex size-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                          className={`flex size-4 sm:size-5 shrink-0 items-center justify-center rounded-full border-2 ${
                             isSelected ? "border-foreground" : "border-muted-foreground/40"
                           }`}
                         >
-                          {isSelected && <span className="size-2.5 rounded-full bg-foreground" />}
+                          {isSelected && <span className="size-2 sm:size-2.5 rounded-full bg-foreground" />}
                         </span>
-                        <div>
-                          <p className="font-semibold">{tier.label}</p>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm">{tier.label}</p>
                           {savings > 0 && (
-                            <p className="text-xs text-muted-foreground">
-                              You save {formatPrice(savings)}
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">
+                              Save {formatPrice(savings)}
                             </p>
                           )}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="font-bold">{formatPrice(tier.price)}</p>
+                        <p className="font-bold text-sm">{formatPrice(tier.price)}</p>
                         {tier.compareAtPrice && (
-                          <p className="text-xs text-muted-foreground line-through">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground line-through">
                             {formatPrice(tier.compareAtPrice)}
                           </p>
                         )}
@@ -1045,28 +1056,28 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
 
           {/* Quantity Selector */}
           {(!product.bundleOffers || product.bundleOffers.length === 0) && !noVariantsAvailable && !isCurrentVariantOutOfStock && allVariantTypesSelected && (
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <label className="text-sm font-medium">Quantity</label>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="h-10 w-10 rounded-xl border flex items-center justify-center hover:bg-muted transition-colors"
+                  className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl border flex items-center justify-center hover:bg-muted transition-colors min-h-[36px] min-w-[36px] sm:min-h-10 sm:min-w-10"
                   disabled={quantity <= 1}
                 >
-                  <Minus className="size-4" />
+                  <Minus className="size-3.5 sm:size-4" />
                 </button>
-                <span className="w-12 text-center font-medium text-lg">{quantity}</span>
+                <span className="w-10 sm:w-12 text-center font-medium text-base sm:text-lg">{quantity}</span>
                 <button
                   type="button"
                   onClick={() => setQuantity(Math.min(maxStock, quantity + 1))}
-                  className="h-10 w-10 rounded-xl border flex items-center justify-center hover:bg-muted transition-colors"
+                  className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl border flex items-center justify-center hover:bg-muted transition-colors min-h-[36px] min-w-[36px] sm:min-h-10 sm:min-w-10"
                   disabled={quantity >= maxStock}
                 >
-                  <Plus className="size-4" />
+                  <Plus className="size-3.5 sm:size-4" />
                 </button>
               </div>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 {maxStock} available
               </span>
             </div>
@@ -1074,13 +1085,13 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
 
           {/* Stock Urgency Bar */}
           {allVariantTypesSelected && !isCurrentVariantOutOfStock && maxStock > 0 && maxStock <= 20 && (
-            <div className="rounded-xl bg-orange-50 border border-orange-200 px-4 py-3 space-y-2">
-              <p className="text-sm font-medium text-orange-700">
+            <div className="rounded-lg sm:rounded-xl bg-orange-50 border border-orange-200 px-3 sm:px-4 py-2.5 sm:py-3 space-y-1.5 sm:space-y-2">
+              <p className="text-xs sm:text-sm font-medium text-orange-700">
                 🔥 HURRY! Only {maxStock} {maxStock === 1 ? "item" : "items"} left in stock
               </p>
-              <div className="h-2 w-full rounded-full bg-orange-100 overflow-hidden">
+              <div className="h-1.5 sm:h-2 w-full rounded-full bg-orange-100 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-linear-to-r from-orange-400 to-red-500 transition-all"
+                  className="h-full rounded-full bg-gradient-to-r from-orange-400 to-red-500 transition-all"
                   style={{ width: `${Math.max(15, 100 - (maxStock / 20) * 100)}%` }}
                 />
               </div>
@@ -1089,41 +1100,41 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
 
           {/* Bundle stock warning */}
           {product.bundleOffers && product.bundleOffers.length > 0 && quantity > maxStock && allVariantTypesSelected && (
-            <p className="text-sm text-destructive">
-              Sirf {maxStock} {maxStock === 1 ? "unit" : "units"} stock mein hai — ye bundle ({quantity} units) abhi available nahi hai.
+            <p className="text-xs sm:text-sm text-destructive">
+              Only {maxStock} {maxStock === 1 ? "unit" : "units"} in stock — this bundle ({quantity} units) is currently unavailable.
             </p>
           )}
 
           {/* Action Buttons */}
-          <div className="pt-2 space-y-3">
+          <div className="pt-1 sm:pt-2 space-y-2.5 sm:space-y-3">
             {noVariantsAvailable ? (
               <Button
                 disabled
-                className="w-full min-h-13 text-base font-semibold rounded-2xl"
+                className="w-full min-h-[48px] sm:min-h-13 text-sm sm:text-base font-semibold rounded-xl sm:rounded-2xl"
               >
-                <ShoppingCart className="size-5 mr-2" />
+                <ShoppingCart className="size-4 sm:size-5 mr-2" />
                 No variants available
               </Button>
             ) : isCurrentVariantOutOfStock && allVariantTypesSelected ? (
               <Button
                 disabled
-                className="w-full min-h-13 text-base font-semibold rounded-2xl"
+                className="w-full min-h-[48px] sm:min-h-13 text-sm sm:text-base font-semibold rounded-xl sm:rounded-2xl"
               >
-                <ShoppingCart className="size-5 mr-2" />
+                <ShoppingCart className="size-4 sm:size-5 mr-2" />
                 Out of Stock
               </Button>
             ) : (
               <>
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3">
                   <Button
                     disabled={isVariantDisabled || isAddingToCart || bundleExceedsStock}
                     onClick={handleAddToCart}
-                    className="flex-1 min-h-13 text-base font-semibold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl transition-shadow"
+                    className="flex-1 min-h-[48px] sm:min-h-13 text-sm sm:text-base font-semibold rounded-xl sm:rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl transition-shadow"
                   >
                     {isAddingToCart ? (
-                      <Loader2 className="size-5 animate-spin mr-2" />
+                      <Loader2 className="size-4 sm:size-5 animate-spin mr-2" />
                     ) : (
-                      <ShoppingCart className="size-5 mr-2" />
+                      <ShoppingCart className="size-4 sm:size-5 mr-2" />
                     )}
                     {isAddingToCart
                       ? "Adding..."
@@ -1135,10 +1146,10 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                   <Button
                     variant="outline"
                     size="icon"
-                    className="min-h-13 min-w-13 rounded-2xl border-2"
+                    className="min-h-[48px] min-w-[48px] sm:min-h-13 sm:min-w-13 rounded-xl sm:rounded-2xl border-2"
                     onClick={() => setIsWishlisted(!isWishlisted)}
                   >
-                    <Heart className={`size-5 transition-all ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
+                    <Heart className={`size-4 sm:size-5 transition-all ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
                   </Button>
                 </div>
 
@@ -1149,7 +1160,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                     onNavigate("checkout");
                   }}
                   variant="outline"
-                  className="w-full min-h-13 text-base font-semibold rounded-2xl border-2 hover:bg-primary hover:text-primary-foreground transition-all"
+                  className="w-full min-h-[48px] sm:min-h-13 text-sm sm:text-base font-semibold rounded-xl sm:rounded-2xl border-2 hover:bg-primary hover:text-primary-foreground transition-all"
                 >
                   Buy Now
                 </Button>
@@ -1158,14 +1169,14 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
           </div>
 
           {/* Trust Badges */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+          <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2.5 pt-1 sm:pt-2">
             {trustBadges.map((badge, idx) => {
               const IconComponent = TRUST_ICONS[badge.icon] || ShieldCheck;
               return (
-                <div key={idx} className="flex flex-col items-center text-center p-3 rounded-xl bg-muted/30">
-                  <IconComponent className="size-5 text-primary mb-1" />
-                  <span className="text-sm font-semibold">{badge.title}</span>
-                  <span className="text-xs text-muted-foreground">{badge.subtitle}</span>
+                <div key={idx} className="flex flex-col items-center text-center p-2 sm:p-3 rounded-lg sm:rounded-xl bg-muted/30">
+                  <IconComponent className="size-4 sm:size-5 text-primary mb-0.5 sm:mb-1" />
+                  <span className="text-[10px] sm:text-sm font-semibold leading-tight">{badge.title}</span>
+                  <span className="text-[8px] sm:text-xs text-muted-foreground leading-tight">{badge.subtitle}</span>
                 </div>
               );
             })}
@@ -1178,7 +1189,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
               onClick={() =>
                 onNavigate("shop", { category: product.category!.slug })
               }
-              className="inline-block text-sm font-medium text-primary hover:underline min-h-11"
+              className="inline-block text-xs sm:text-sm font-medium text-primary hover:underline min-h-[40px] sm:min-h-11"
             >
               View all in {product.category.name}
             </button>
@@ -1187,19 +1198,19 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
       </div>
 
       {/* ── Reviews Section ── */}
-      <Separator className="my-10" />
+      <Separator className="my-8 sm:my-10" />
 
       <motion.section 
-        className="space-y-6"
+        className="space-y-4 sm:space-y-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.2 }}
       >
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-xl sm:text-2xl font-bold">
               Customer Reviews
-              <span className="ml-2 text-base font-normal text-muted-foreground">
+              <span className="ml-2 text-sm sm:text-base font-normal text-muted-foreground">
                 ({product.reviewCount})
               </span>
             </h2>
@@ -1212,19 +1223,19 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
           {isAuthenticated ? (
             <Button
               variant="outline"
-              className="min-h-12 gap-2 rounded-full px-6 border-2 hover:bg-primary hover:text-primary-foreground transition-all"
+              className="min-h-[44px] sm:min-h-12 gap-2 rounded-full px-4 sm:px-6 border-2 hover:bg-primary hover:text-primary-foreground transition-all w-full sm:w-auto text-sm"
               onClick={() => setShowReviewForm(true)}
             >
-              <PenSquare className="h-4 w-4" />
+              <PenSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Write a Review
             </Button>
           ) : (
             <Button
               variant="outline"
-              className="min-h-12 gap-2 rounded-full px-6 border-2"
+              className="min-h-[44px] sm:min-h-12 gap-2 rounded-full px-4 sm:px-6 border-2 w-full sm:w-auto text-sm"
               onClick={() => onNavigate("login")}
             >
-              <LogIn className="h-4 w-4" />
+              <LogIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Login to Review
             </Button>
           )}
@@ -1242,23 +1253,23 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
         </AnimatePresence>
 
         {product.reviews.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {product.reviews.map((review, index) => (
               <motion.div
                 key={review.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="rounded-2xl border bg-card/50 backdrop-blur-sm p-5 space-y-3 hover:shadow-md transition-shadow"
+                className="rounded-xl sm:rounded-2xl border bg-card/50 backdrop-blur-sm p-4 sm:p-5 space-y-2.5 sm:space-y-3 hover:shadow-md transition-shadow"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex size-8 sm:size-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs sm:text-sm">
                       {getInitials(review.customerName)}
                     </div>
                     <div>
                       <p className="text-sm font-medium">{review.customerName}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
                         {formatDate(review.reviewedAt)}
                       </p>
                     </div>
@@ -1278,9 +1289,9 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
             ))}
           </div>
         ) : (
-          <div className="py-12 text-center border rounded-2xl bg-muted/10">
-            <Package className="size-12 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">No reviews yet. Be the first to review this product!</p>
+          <div className="py-10 sm:py-12 text-center border rounded-xl sm:rounded-2xl bg-muted/10">
+            <Package className="size-10 sm:size-12 text-muted-foreground mx-auto mb-2 sm:mb-3" />
+            <p className="text-sm sm:text-base text-muted-foreground px-4">No reviews yet. Be the first to review this product!</p>
           </div>
         )}
       </motion.section>

@@ -308,9 +308,9 @@ export function ProductListing({
 
   // --- Skeleton grid ---
   const SkeletonGrid = () => (
-    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 gap-2 xs:gap-2.5 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-6">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="space-y-3">
+        <div key={i} className="space-y-2">
           <Skeleton className="aspect-square w-full rounded-lg" />
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-3 w-1/2" />
@@ -322,9 +322,9 @@ export function ProductListing({
 
   // --- Filter sidebar content (shared between desktop & mobile) ---
   const FilterSidebarContent = () => (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Search */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label className="text-sm font-medium">Search</Label>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -332,7 +332,7 @@ export function ProductListing({
             placeholder="Search products..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-9 min-h-11"
+            className="pl-9 min-h-[44px]"
           />
         </div>
       </div>
@@ -340,7 +340,7 @@ export function ProductListing({
       <Separator />
 
       {/* Category Filter */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label className="text-sm font-medium">Category</Label>
         {isFiltersLoading ? (
           <div className="space-y-2">
@@ -353,7 +353,7 @@ export function ProductListing({
         ) : (
           <div className="space-y-1 max-h-52 overflow-y-auto custom-scrollbar">
             <label
-              className={`flex items-center gap-2 min-h-9 px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors ${
+              className={`flex items-center gap-2 min-h-[40px] px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors ${
                 selectedCategory === "" ? "bg-muted font-medium" : ""
               }`}
             >
@@ -372,11 +372,11 @@ export function ProductListing({
             {categories.map((cat) => (
               <label
                 key={cat.id}
-                className={`flex items-center justify-between gap-2 min-h-9 px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors ${
+                className={`flex items-center justify-between gap-2 min-h-[40px] px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors ${
                   selectedCategory === cat.slug ? "bg-muted font-medium" : ""
                 }`}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <input
                     type="radio"
                     name="category"
@@ -385,11 +385,11 @@ export function ProductListing({
                       setSelectedCategory(cat.slug);
                       setPage(1);
                     }}
-                    className="accent-primary"
+                    className="accent-primary shrink-0"
                   />
                   <span className="text-sm truncate">{cat.name}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground shrink-0">
                   {cat.productCount}
                 </span>
               </label>
@@ -401,7 +401,7 @@ export function ProductListing({
       <Separator />
 
       {/* Tags Filter */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <Label className="text-sm font-medium">
             Tags{" "}
@@ -417,7 +417,7 @@ export function ProductListing({
                 setSelectedTags([]);
                 setPage(1);
               }}
-              className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline min-h-7"
+              className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline min-h-[28px]"
             >
               Clear tags
             </button>
@@ -436,16 +436,17 @@ export function ProductListing({
             {tags.map((tag) => (
               <label
                 key={tag.id}
-                className="flex items-center justify-between gap-2 min-h-9 px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors"
+                className="flex items-center justify-between gap-2 min-h-[40px] px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <Checkbox
                     checked={selectedTags.includes(tag.id)}
                     onCheckedChange={() => toggleTag(tag.id)}
+                    className="shrink-0"
                   />
                   <span className="text-sm truncate">{tag.name}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground shrink-0">
                   {tag.productCount}
                 </span>
               </label>
@@ -457,7 +458,7 @@ export function ProductListing({
       <Separator />
 
       {/* Price Range */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label className="text-sm font-medium">Price Range</Label>
         <div className="flex items-center gap-2">
           <Input
@@ -465,7 +466,7 @@ export function ProductListing({
             placeholder="Min"
             value={minPrice}
             onChange={(e) => handleMinPriceChange(e.target.value)}
-            className="min-h-11 w-full"
+            className="min-h-[44px] w-full"
             min={0}
           />
           <span className="text-muted-foreground text-sm">-</span>
@@ -474,7 +475,7 @@ export function ProductListing({
             placeholder="Max"
             value={maxPrice}
             onChange={(e) => handleMaxPriceChange(e.target.value)}
-            className="min-h-11 w-full"
+            className="min-h-[44px] w-full"
             min={0}
           />
         </div>
@@ -483,7 +484,7 @@ export function ProductListing({
       <Separator />
 
       {/* In Stock Only */}
-      <div className="flex items-center justify-between min-h-11">
+      <div className="flex items-center justify-between min-h-[44px]">
         <Label htmlFor="in-stock-switch" className="text-sm font-medium cursor-pointer">
           In Stock Only
         </Label>
@@ -500,7 +501,7 @@ export function ProductListing({
       <Separator />
 
       {/* Sort By */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label className="text-sm font-medium">Sort By</Label>
         <Select
           value={sort}
@@ -509,7 +510,7 @@ export function ProductListing({
             setPage(1);
           }}
         >
-          <SelectTrigger className="min-h-11 w-full">
+          <SelectTrigger className="min-h-[44px] w-full">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
@@ -528,7 +529,7 @@ export function ProductListing({
       {hasActiveFilters && (
         <Button
           variant="outline"
-          className="w-full min-h-11"
+          className="w-full min-h-[44px]"
           onClick={clearAllFilters}
         >
           <X className="h-4 w-4 mr-2" />
@@ -539,7 +540,7 @@ export function ProductListing({
   );
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
       {/* --- Desktop Sidebar --- */}
       <aside className="hidden lg:block w-64 shrink-0">
         <div className="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar rounded-lg border bg-card p-4">
@@ -558,30 +559,30 @@ export function ProductListing({
 
       {/* --- Mobile Filter Button + Sheet --- */}
       <div className="lg:hidden">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-3">
           <Sheet
             open={mobileFiltersOpen}
             onOpenChange={setMobileFiltersOpen}
           >
             <SheetTrigger asChild>
-              <Button variant="outline" className="min-h-11 min-w-11">
-                <Filter className="h-4 w-4"/>
-                Filters
-                {hasActiveFilters && ( 
+              <Button variant="outline" className="min-h-[44px] min-w-[44px]">
+                <Filter className="h-4 w-4" />
+                <span className="ml-2">Filters</span>
+                {hasActiveFilters && (
                   <Badge variant="secondary" className="ml-2 text-xs">
                     Active
                   </Badge>
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-75 sm:w-[320px] overflow-y-auto">
-              <SheetHeader>
+            <SheetContent side="left" className="w-[85%] sm:w-[320px] overflow-y-auto p-4">
+              <SheetHeader className="text-left">
                 <SheetTitle>Filters</SheetTitle>
                 <SheetDescription>
                   Narrow down products by applying filters
                 </SheetDescription>
               </SheetHeader>
-              <div className="mt-2">
+              <div className="mt-4">
                 <FilterSidebarContent />
               </div>
             </SheetContent>
@@ -594,7 +595,7 @@ export function ProductListing({
               setPage(1);
             }}
           >
-            <SelectTrigger className="min-h-11 flex-1">
+            <SelectTrigger className="min-h-[44px] flex-1">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -611,7 +612,7 @@ export function ProductListing({
       {/* --- Main Content Area --- */}
       <main className="flex-1 min-w-0">
         {/* Desktop sort */}
-        <div className="hidden lg:flex items-center justify-between mb-6">
+        <div className="hidden lg:flex items-center justify-between mb-5">
           <p className="text-sm text-muted-foreground">
             {isLoading
               ? "Loading products..."
@@ -622,7 +623,7 @@ export function ProductListing({
         </div>
 
         {/* Mobile result count */}
-        <p className="text-sm text-muted-foreground mb-4 lg:hidden">
+        <p className="text-sm text-muted-foreground mb-3 lg:hidden">
           {isLoading
             ? "Loading products..."
             : pagination.total > 0
@@ -632,11 +633,11 @@ export function ProductListing({
 
         {/* Active filters chips */}
         {hasActiveFilters && (
-          <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="flex flex-wrap items-center gap-1.5 mb-3">
             {selectedCategory && (
               <Badge
                 variant="secondary"
-                className="min-h-7 cursor-pointer"
+                className="min-h-[28px] cursor-pointer text-xs"
                 onClick={() => {
                   setSelectedCategory("");
                   setPage(1);
@@ -653,7 +654,7 @@ export function ProductListing({
                 <Badge
                   key={tagId}
                   variant="secondary"
-                  className="min-h-7 cursor-pointer"
+                  className="min-h-[28px] cursor-pointer text-xs"
                   onClick={() => toggleTag(tagId)}
                 >
                   {tag.name}
@@ -664,7 +665,7 @@ export function ProductListing({
             {minPrice && (
               <Badge
                 variant="secondary"
-                className="min-h-7 cursor-pointer"
+                className="min-h-[28px] cursor-pointer text-xs"
                 onClick={() => {
                   setMinPrice("");
                   setPage(1);
@@ -677,7 +678,7 @@ export function ProductListing({
             {maxPrice && (
               <Badge
                 variant="secondary"
-                className="min-h-7 cursor-pointer"
+                className="min-h-[28px] cursor-pointer text-xs"
                 onClick={() => {
                   setMaxPrice("");
                   setPage(1);
@@ -690,7 +691,7 @@ export function ProductListing({
             {inStockOnly && (
               <Badge
                 variant="secondary"
-                className="min-h-7 cursor-pointer"
+                className="min-h-[28px] cursor-pointer text-xs"
                 onClick={() => {
                   setInStockOnly(false);
                   setPage(1);
@@ -703,7 +704,7 @@ export function ProductListing({
             {search && (
               <Badge
                 variant="secondary"
-                className="min-h-7 cursor-pointer"
+                className="min-h-[28px] cursor-pointer text-xs"
                 onClick={() => {
                   setSearch("");
                   setSearchInput("");
@@ -724,7 +725,7 @@ export function ProductListing({
             <Button
               variant="outline"
               size="sm"
-              className="mt-2 min-h-11"
+              className="mt-2 min-h-[44px]"
               onClick={fetchProducts}
             >
               Try Again
@@ -737,19 +738,19 @@ export function ProductListing({
 
         {/* Empty State */}
         {!isLoading && !error && products.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="rounded-full bg-muted p-6 mb-4">
-              <Package className="h-10 w-10 text-muted-foreground/50" />
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="rounded-full bg-muted p-5 mb-3">
+              <Package className="h-8 w-8 text-muted-foreground/50" />
             </div>
-            <h3 className="text-lg font-medium">No products found</h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+            <h3 className="text-base font-medium">No products found</h3>
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm px-4">
               {hasActiveFilters
                 ? "Try adjusting your filters or search terms to find what you're looking for."
                 : "There are no products available at the moment."}
             </p>
             {hasActiveFilters && (
               <Button
-                className="mt-4 min-h-11"
+                className="mt-4 min-h-[44px]"
                 onClick={clearAllFilters}
               >
                 <X className="h-4 w-4 mr-2" />
@@ -762,11 +763,11 @@ export function ProductListing({
         {/* Product Grid */}
         {!isLoading && !error && products.length > 0 && (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 gap-2 xs:gap-2.5 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-6">
               {products.map((product) => (
                 <Card
                   key={product.id}
-                  className="group cursor-pointer overflow-hidden border hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
+                  className="group cursor-pointer overflow-hidden border hover:shadow-md transition-all duration-200 active:scale-[0.98] lg:hover:scale-[1.02]"
                   onClick={() =>
                     onNavigate("product", { slug: product.slug })
                   }
@@ -784,13 +785,13 @@ export function ProductListing({
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-muted">
-                          <Package className="h-10 w-10 text-muted-foreground/40" />
+                          <Package className="h-8 w-8 text-muted-foreground/40" />
                         </div>
                       )}
                       {/* Out of Stock badge */}
                       {!product.inStock && (
-                        <div className="absolute top-2 left-2">
-                          <Badge variant="destructive" className="text-xs">
+                        <div className="absolute top-1.5 left-1.5">
+                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5">
                             Out of Stock
                           </Badge>
                         </div>
@@ -798,21 +799,21 @@ export function ProductListing({
                     </div>
 
                     {/* Info */}
-                    <div className="p-3 space-y-1.5">
+                    <div className="p-2.5 xs:p-3 space-y-1">
                       {/* Category */}
                       {product.category && (
-                        <p className="text-xs text-muted-foreground truncate">
+                        <p className="text-[10px] xs:text-xs text-muted-foreground truncate">
                           {product.category.name}
                         </p>
                       )}
 
                       {/* Name */}
-                      <h3 className="text-sm font-medium leading-tight line-clamp-2 min-h-10">
+                      <h3 className="text-xs xs:text-sm font-medium leading-tight line-clamp-2 min-h-[2.4rem] xs:min-h-10">
                         {product.name}
                       </h3>
 
                       {/* Price */}
-                      <p className="text-sm font-semibold">
+                      <p className="text-xs xs:text-sm font-semibold">
                         ₹{product.price.toLocaleString("en-IN")}
                       </p>
 
@@ -829,8 +830,8 @@ export function ProductListing({
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
-                <p className="text-sm text-muted-foreground order-2 sm:order-1">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+                <p className="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1">
                   Showing {showingFrom}&ndash;{showingTo} of{" "}
                   {pagination.total.toLocaleString("en-IN")} products
                 </p>
@@ -841,7 +842,7 @@ export function ProductListing({
                     size="sm"
                     onClick={() => handlePageChange(pagination.page - 1)}
                     disabled={pagination.page <= 1}
-                    className="min-h-11 min-w-11"
+                    className="min-h-[40px] min-w-[40px]"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     <span className="sr-only">Previous</span>
@@ -854,7 +855,7 @@ export function ProductListing({
                       variant={pageNum === pagination.page ? "default" : "outline"}
                       size="sm"
                       onClick={() => handlePageChange(pageNum)}
-                      className="min-h-11 min-w-11"
+                      className="min-h-[40px] min-w-[40px] text-sm"
                     >
                       {pageNum}
                     </Button>
@@ -866,7 +867,7 @@ export function ProductListing({
                     size="sm"
                     onClick={() => handlePageChange(pagination.page + 1)}
                     disabled={pagination.page >= pagination.totalPages}
-                    className="min-h-11 min-w-11"
+                    className="min-h-[40px] min-w-[40px]"
                   >
                     <ChevronRight className="h-4 w-4" />
                     <span className="sr-only">Next</span>
