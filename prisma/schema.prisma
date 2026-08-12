@@ -78,6 +78,7 @@ model Product {
   soldLabel      String?           // 🔥 NEW: Custom sold-out label
   videoUrl       String?           // 🔥 NEW: Product video URL
   features       Json?             // 🔥 NEW: Product features (JSON array)
+  bundleOffers   Json?             // 🔥 NEW: Product bundleOffers (JSON array)
   primaryImage   String?
   galleryImages  Json?
   seoTitle       String?

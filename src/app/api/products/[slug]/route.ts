@@ -109,6 +109,7 @@ export async function GET(
       soldLabel: product.soldLabel,
       videoUrl: product.videoUrl,
       features: product.features ?? [],
+      bundleOffers: product.bundleOffers ?? [],
       primaryImage: product.primaryImage,
       galleryImages,
       seoTitle: product.seoTitle,

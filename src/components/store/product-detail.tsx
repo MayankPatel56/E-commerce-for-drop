@@ -73,6 +73,13 @@ interface Product {
   soldLabel: string | null;
   videoUrl: string | null;
   features: { icon: string; label: string }[];
+  bundleOffers: {
+    quantity: number;
+    label: string;
+    price: number;
+    compareAtPrice: number | null;
+    badge: string | null;
+  }[];
   primaryImage: string | null;
   galleryImages: string[];
   seoTitle: string;
@@ -468,6 +475,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
   const [isAddingToCart, setIsAddingToCart] = useState<boolean>(false);
   const [showReviewForm, setShowReviewForm] = useState<boolean>(false);
   const [quantity, setQuantity] = useState<number>(1);
+  const [selectedBundleIndex, setSelectedBundleIndex] = useState<number>(0);
   const [isWishlisted, setIsWishlisted] = useState<boolean>(false);
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
   const [trustBadges, setTrustBadges] = useState<TrustBadge[]>(DEFAULT_TRUST_BADGES);
@@ -501,6 +509,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
       setMainImage("");
       setShowReviewForm(false);
       setQuantity(1);
+      setSelectedBundleIndex(0);
       setImageLoaded(false);
 
       try {
@@ -537,7 +546,15 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
     };
   }, [slug]);
 
-  // ── Variant matching ──
+  // ── Sync quantity with selected bundle tier ──
+  useEffect(() => {
+    if (product?.bundleOffers && product.bundleOffers.length > 0) {
+      const tier = product.bundleOffers[selectedBundleIndex];
+      if (tier) setQuantity(tier.quantity);
+    }
+  }, [product, selectedBundleIndex]);
+
+  // // ── Variant matching ──
   const variantTypeKeys = product ? Object.keys(product.variantTypes) : [];
 
   const allVariantTypesSelected =
@@ -589,13 +606,21 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
     );
     const variantDescription = variantParts.join(", ");
 
+    const selectedBundle = product.bundleOffers?.[selectedBundleIndex];
+    const effectivePrice = selectedBundle
+      ? selectedBundle.price / selectedBundle.quantity
+      : currentVariant.price ?? product.price;
+    const effectiveDescription = selectedBundle
+      ? [variantDescription, selectedBundle.label].filter(Boolean).join(" — ")
+      : variantDescription;
+
     try {
       addItem({
         variantId: currentVariant.id,
         productId: product.id,
         productName: product.name,
-        variantDescription,
-        price: currentVariant.price ?? product.price,
+        variantDescription: effectiveDescription,
+        price: effectivePrice,
         quantity: quantity,
         imageUrl: product.primaryImage || "",
         stockAvailable: currentVariant.stockQuantity,
@@ -605,7 +630,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
     } finally {
       setTimeout(() => setIsAddingToCart(false), 400);
     }
-  }, [product, currentVariant, selectedVariants, variantTypeKeys, isCurrentVariantOutOfStock, addItem, quantity]);
+  }, [product, currentVariant, selectedVariants, variantTypeKeys, isCurrentVariantOutOfStock, addItem, quantity, selectedBundleIndex]);
 
   // ── Render states ──
   if (loading) return <ProductDetailSkeleton />;
@@ -641,6 +666,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
     : 0;
 
   const maxStock = currentVariant?.stockQuantity || 0;
+  const bundleExceedsStock = Boolean(product.bundleOffers?.length) && quantity > maxStock;
 
   // ── Render ──
   return (
@@ -957,8 +983,68 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
             </div>
           )}
 
+          {/* Bundle & Save */}
+          {product.bundleOffers && product.bundleOffers.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <h3 className="text-sm font-bold tracking-wide uppercase">Bundle &amp; Save</h3>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <div className="space-y-2">
+                {product.bundleOffers.map((tier, idx) => {
+                  const isSelected = selectedBundleIndex === idx;
+                  const savings = tier.compareAtPrice ? tier.compareAtPrice - tier.price : 0;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedBundleIndex(idx)}
+                      className={`relative w-full flex items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition-all ${
+                        isSelected
+                          ? "border-foreground bg-muted/50"
+                          : "border-border hover:border-foreground/30"
+                      }`}
+                    >
+                      {tier.badge && (
+                        <span className="absolute -top-2.5 right-4 bg-foreground text-background text-[11px] font-semibold px-2.5 py-1 rounded-full">
+                          {tier.badge}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`flex size-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                            isSelected ? "border-foreground" : "border-muted-foreground/40"
+                          }`}
+                        >
+                          {isSelected && <span className="size-2.5 rounded-full bg-foreground" />}
+                        </span>
+                        <div>
+                          <p className="font-semibold">{tier.label}</p>
+                          {savings > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              You save {formatPrice(savings)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-bold">{formatPrice(tier.price)}</p>
+                        {tier.compareAtPrice && (
+                          <p className="text-xs text-muted-foreground line-through">
+                            {formatPrice(tier.compareAtPrice)}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Quantity Selector */}
-          {!noVariantsAvailable && !isCurrentVariantOutOfStock && allVariantTypesSelected && (
+          {(!product.bundleOffers || product.bundleOffers.length === 0) && !noVariantsAvailable && !isCurrentVariantOutOfStock && allVariantTypesSelected && (
             <div className="flex items-center gap-4">
               <label className="text-sm font-medium">Quantity</label>
               <div className="flex items-center gap-1">
@@ -1001,6 +1087,13 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
             </div>
           )}
 
+          {/* Bundle stock warning */}
+          {product.bundleOffers && product.bundleOffers.length > 0 && quantity > maxStock && allVariantTypesSelected && (
+            <p className="text-sm text-destructive">
+              Sirf {maxStock} {maxStock === 1 ? "unit" : "units"} stock mein hai — ye bundle ({quantity} units) abhi available nahi hai.
+            </p>
+          )}
+
           {/* Action Buttons */}
           <div className="pt-2 space-y-3">
             {noVariantsAvailable ? (
@@ -1023,7 +1116,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
               <>
                 <div className="flex gap-3">
                   <Button
-                    disabled={isVariantDisabled || isAddingToCart}
+                    disabled={isVariantDisabled || isAddingToCart || bundleExceedsStock}
                     onClick={handleAddToCart}
                     className="flex-1 min-h-13 text-base font-semibold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl transition-shadow"
                   >
@@ -1050,7 +1143,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
                 </div>
 
                 <Button
-                  disabled={isVariantDisabled || isAddingToCart}
+                  disabled={isVariantDisabled || isAddingToCart || bundleExceedsStock}
                   onClick={async () => {
                     await handleAddToCart();
                     onNavigate("checkout");

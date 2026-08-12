@@ -7,6 +7,14 @@ import { z } from "zod";
 
 // ─── Validation Schemas ───────────────────────────────────────────────────────
 
+const bundleTierSchema = z.object({
+  quantity: z.number().int().min(1, "Quantity must be at least 1"),
+  label: z.string().min(1, "Label is required"),
+  price: z.number().min(0, "Price must be non-negative"),
+  compareAtPrice: z.number().min(0).optional().nullable(),
+  badge: z.string().max(40).optional().nullable(),
+});
+
 const variantSchema = z.object({
   sku: z.string().min(1, "SKU is required"),
   variantType: z.string().min(1, "Variant type is required"),
@@ -26,6 +34,7 @@ const createProductSchema = z.object({
   soldLabel: z.string().max(80).optional().nullable(),
   videoUrl: z.string().optional().nullable(),
   features: z.array(z.object({ icon: z.string(), label: z.string() })).optional().default([]),
+  bundleOffers: z.array(bundleTierSchema).optional().default([]),
   categoryId: z.number().int().positive("Category ID is required"),
   primaryImage: z.string().optional().nullable(),
   galleryImages: z.array(z.string()).optional().default([]),
@@ -230,6 +239,7 @@ export async function POST(request: NextRequest) {
         soldLabel: data.soldLabel ?? null,
         videoUrl: data.videoUrl ?? null,
         features: (data.features.length > 0 ? data.features : null) as any,
+        bundleOffers: (data.bundleOffers.length > 0 ? data.bundleOffers : null) as any,
         categoryId: data.categoryId,
         primaryImage: data.primaryImage ?? null,
         galleryImages: (data.galleryImages.length > 0 ? data.galleryImages : null) as any,

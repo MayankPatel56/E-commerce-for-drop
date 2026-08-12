@@ -84,6 +84,15 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
   const [soldLabel, setSoldLabel] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [features, setFeatures] = useState<{ icon: string; label: string }[]>([]);
+  const [bundleOffers, setBundleOffers] = useState<
+    {
+      quantity: number;
+      label: string;
+      price: number;
+      compareAtPrice: number | null;
+      badge: string | null;
+    }[]
+  >([]);
 
   // Images
   const [primaryImage, setPrimaryImage] = useState<string | null>(null);
@@ -172,6 +181,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
         setSoldLabel(p.soldLabel || "");
         setVideoUrl(p.videoUrl || "");
         setFeatures(Array.isArray(p.features) ? p.features : []);
+    setBundleOffers(Array.isArray(p.bundleOffers) ? p.bundleOffers : []);
 
         // Images
         if (p.primaryImage) {
@@ -317,6 +327,7 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
         soldLabel: soldLabel.trim() || null,
         videoUrl: videoUrl.trim() || null,
         features,
+        bundleOffers: bundleOffers.filter((b) => b.label.trim() && b.price > 0),
         categoryId: Number(categoryId),
         seoTitle: seoTitle.trim() || null,
         seoDescription: seoDescription.trim() || null,
@@ -579,6 +590,117 @@ export function ProductForm({ productId, onSuccess, onCancel }: ProductFormProps
             className="min-h-11"
           >
             + Add Feature
+          </Button>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Bundle &amp; Save (quantity discount tiers)</Label>
+          <p className="text-xs text-muted-foreground">
+            Har tier ka Deal Price aur Original Price (strikethrough) independently set karo — original price sirf perceived-value ke liye hai, unit-price × quantity se automatically calculate nahi hota.
+          </p>
+          {bundleOffers.map((tier, idx) => (
+            <div key={idx} className="rounded-lg border p-3 space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Quantity</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={tier.quantity}
+                    onChange={(e) => {
+                      const next = [...bundleOffers];
+                      next[idx] = { ...next[idx], quantity: Number(e.target.value) || 1 };
+                      setBundleOffers(next);
+                    }}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="space-y-1 col-span-2 md:col-span-1">
+                  <Label className="text-xs">Label</Label>
+                  <Input
+                    placeholder="Buy 2 Get 1 FREE"
+                    value={tier.label}
+                    onChange={(e) => {
+                      const next = [...bundleOffers];
+                      next[idx] = { ...next[idx], label: e.target.value };
+                      setBundleOffers(next);
+                    }}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Deal Price (₹)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={tier.price}
+                    onChange={(e) => {
+                      const next = [...bundleOffers];
+                      next[idx] = { ...next[idx], price: Number(e.target.value) || 0 };
+                      setBundleOffers(next);
+                    }}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Original Price (₹)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="optional"
+                    value={tier.compareAtPrice ?? ""}
+                    onChange={(e) => {
+                      const next = [...bundleOffers];
+                      next[idx] = { ...next[idx], compareAtPrice: e.target.value ? Number(e.target.value) : null };
+                      setBundleOffers(next);
+                    }}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 items-end">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-xs">Badge (optional)</Label>
+                  <Input
+                    placeholder="Limited Time Deal"
+                    value={tier.badge ?? ""}
+                    onChange={(e) => {
+                      const next = [...bundleOffers];
+                      next[idx] = { ...next[idx], badge: e.target.value || null };
+                      setBundleOffers(next);
+                    }}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setBundleOffers(bundleOffers.filter((_, i) => i !== idx))}
+                  disabled={isSubmitting}
+                  className="min-h-11 min-w-11"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setBundleOffers([
+                ...bundleOffers,
+                { quantity: bundleOffers.length + 1, label: "", price: 0, compareAtPrice: null, badge: null },
+              ])
+            }
+            disabled={isSubmitting || bundleOffers.length >= 5}
+            className="min-h-11"
+          >
+            + Add Bundle Tier
           </Button>
         </div>
       </div>

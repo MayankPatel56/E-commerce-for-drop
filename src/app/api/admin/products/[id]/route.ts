@@ -7,6 +7,14 @@ import { z } from "zod";
 
 // ─── Validation Schemas ───────────────────────────────────────────────────────
 
+const bundleTierSchema = z.object({
+  quantity: z.number().int().min(1, "Quantity must be at least 1"),
+  label: z.string().min(1, "Label is required"),
+  price: z.number().min(0, "Price must be non-negative"),
+  compareAtPrice: z.number().min(0).optional().nullable(),
+  badge: z.string().max(40).optional().nullable(),
+});
+
 const variantSchema = z.object({
   id: z.number().int().optional(),
   sku: z.string().min(1, "SKU is required"),
@@ -27,6 +35,7 @@ const updateProductSchema = z.object({
   soldLabel: z.string().max(80).optional().nullable(),
   videoUrl: z.string().optional().nullable(),
   features: z.array(z.object({ icon: z.string(), label: z.string() })).optional(),
+  bundleOffers: z.array(bundleTierSchema).optional(),
   categoryId: z.number().int().positive("Category ID is required").optional(),
   primaryImage: z.string().optional().nullable(),
   galleryImages: z.array(z.string()).optional().nullable(),
@@ -212,6 +221,7 @@ export async function PUT(
     if (data.soldLabel !== undefined) updateData.soldLabel = data.soldLabel;
     if (data.videoUrl !== undefined) updateData.videoUrl = data.videoUrl;
     if (data.features !== undefined) updateData.features = (data.features.length > 0 ? data.features : null) as any;
+    if (data.bundleOffers !== undefined) updateData.bundleOffers = (data.bundleOffers.length > 0 ? data.bundleOffers : null) as any;
 
     // Update product
     const product = await db.product.update({
