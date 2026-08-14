@@ -82,6 +82,24 @@ interface ProductsTableProps {
   onRefresh: () => void;
 }
 
+// Table skeleton loader component
+function ProductsTableSkeleton() {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 border-b">
+          <Skeleton className="h-5 w-full sm:w-35" />
+          <Skeleton className="h-5 w-full sm:w-20" />
+          <Skeleton className="h-5 w-full sm:w-15" />
+          <Skeleton className="h-5 w-full sm:w-10" />
+          <Skeleton className="h-5 w-full sm:w-17.5" />
+          <Skeleton className="h-5 w-full sm:w-15" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -116,8 +134,8 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
     fetchCategories();
   }, []);
 
-  // Fetch products
-  const fetchProducts = useCallback(async () => {
+  // Fetch products (for manual refresh calls)
+  const refetchProducts = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -145,8 +163,33 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
   }, [search, categoryFilter, inStockOnly, sort, page]);
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    (async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const params = new URLSearchParams();
+        if (search) params.set("search", search);
+        if (categoryFilter && categoryFilter !== "all") params.set("category", categoryFilter);
+        if (inStockOnly) params.set("inStock", "true");
+        params.set("sort", sort);
+        params.set("page", String(page));
+        params.set("limit", String(limit));
+
+        const res = await fetch(`/api/admin/products?${params.toString()}`);
+        if (!res.ok) throw new Error("Failed to fetch products");
+
+        const data: ProductsResponse = await res.json();
+        setProducts(data.products || []);
+        setTotal(data.total || 0);
+        setTotalPages(data.totalPages || 0);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [search, categoryFilter, inStockOnly, sort, page]);
 
   // Debounced search
   useEffect(() => {
@@ -168,7 +211,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
       }
 
       toast.success(data.message || "Product deleted successfully");
-      fetchProducts();
+      refetchProducts();
       onRefresh();
     } catch {
       toast.error("Failed to delete product");
@@ -185,22 +228,6 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
   const hasStock = (product: Product): boolean => {
     return (product.variantCount ?? 0) > 0;
   };
-
-  // Skeleton for loading
-  const TableSkeleton = () => (
-    <div className="space-y-2">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 border-b">
-          <Skeleton className="h-5 w-full sm:w-35" />
-          <Skeleton className="h-5 w-full sm:w-20" />
-          <Skeleton className="h-5 w-full sm:w-15" />
-          <Skeleton className="h-5 w-full sm:w-10" />
-          <Skeleton className="h-5 w-full sm:w-17.5" />
-          <Skeleton className="h-5 w-full sm:w-15" />
-        </div>
-      ))}
-    </div>
-  );
 
   return (
     <div className="space-y-4">
@@ -294,7 +321,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
       )}
 
       {/* Loading State */}
-      {isLoading && <TableSkeleton />}
+      {isLoading && <ProductsTableSkeleton />}
 
       {/* Empty State */}
       {!isLoading && !error && products.length === 0 && (

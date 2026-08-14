@@ -2,13 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -26,16 +20,15 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import {
-  Search,
   SlidersHorizontal,
   X,
-  Star,
   Package,
   ChevronLeft,
   ChevronRight,
   Filter,
 } from "lucide-react";
 import Image from "next/image";
+import { StarRating, SkeletonGrid, FilterSidebarContent } from "./product-listing-helpers";
 
 // --- Interfaces ---
 
@@ -219,6 +212,12 @@ export function ProductListing({
     setPage(1);
   };
 
+  // --- Clear tags handler ---
+  const handleClearTags = () => {
+    setSelectedTags([]);
+    setPage(1);
+  };
+
   // --- Clear all filters ---
   const clearAllFilters = () => {
     setSearch("");
@@ -284,261 +283,6 @@ export function ProductListing({
     pagination.total
   );
 
-  // --- Star rating component ---
-  const StarRating = ({ rating, count }: { rating: number; count: number }) => {
-    if (rating <= 0) return null;
-    return (
-      <div className="flex items-center gap-1">
-        <div className="flex items-center">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <Star
-              key={star}
-              className={`h-3 w-3 ${
-                star <= Math.round(rating)
-                  ? "fill-amber-400 text-amber-400"
-                  : "text-muted-foreground/30"
-              }`}
-            />
-          ))}
-        </div>
-        <span className="text-xs text-muted-foreground">({count})</span>
-      </div>
-    );
-  };
-
-  // --- Skeleton grid ---
-  const SkeletonGrid = () => (
-    <div className="grid grid-cols-2 gap-2 xs:gap-2.5 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-6">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="space-y-2">
-          <Skeleton className="aspect-square w-full rounded-lg" />
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-3 w-1/2" />
-          <Skeleton className="h-4 w-1/3" />
-        </div>
-      ))}
-    </div>
-  );
-
-  // --- Filter sidebar content (shared between desktop & mobile) ---
-  const FilterSidebarContent = () => (
-    <div className="space-y-5">
-      {/* Search */}
-      <div className="space-y-1.5">
-        <Label className="text-sm font-medium">Search</Label>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search products..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-9 min-h-[44px]"
-          />
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Category Filter */}
-      <div className="space-y-1.5">
-        <Label className="text-sm font-medium">Category</Label>
-        {isFiltersLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-9 w-full" />
-            ))}
-          </div>
-        ) : categories.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No categories</p>
-        ) : (
-          <div className="space-y-1 max-h-52 overflow-y-auto custom-scrollbar">
-            <label
-              className={`flex items-center gap-2 min-h-[40px] px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors ${
-                selectedCategory === "" ? "bg-muted font-medium" : ""
-              }`}
-            >
-              <input
-                type="radio"
-                name="category"
-                checked={selectedCategory === ""}
-                onChange={() => {
-                  setSelectedCategory("");
-                  setPage(1);
-                }}
-                className="accent-primary"
-              />
-              <span className="text-sm">All Categories</span>
-            </label>
-            {categories.map((cat) => (
-              <label
-                key={cat.id}
-                className={`flex items-center justify-between gap-2 min-h-[40px] px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors ${
-                  selectedCategory === cat.slug ? "bg-muted font-medium" : ""
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <input
-                    type="radio"
-                    name="category"
-                    checked={selectedCategory === cat.slug}
-                    onChange={() => {
-                      setSelectedCategory(cat.slug);
-                      setPage(1);
-                    }}
-                    className="accent-primary shrink-0"
-                  />
-                  <span className="text-sm truncate">{cat.name}</span>
-                </div>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {cat.productCount}
-                </span>
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <Separator />
-
-      {/* Tags Filter */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <Label className="text-sm font-medium">
-            Tags{" "}
-            {selectedTags.length > 0 && (
-              <span className="text-muted-foreground">
-                ({selectedTags.length} selected)
-              </span>
-            )}
-          </Label>
-          {selectedTags.length > 0 && (
-            <button
-              onClick={() => {
-                setSelectedTags([]);
-                setPage(1);
-              }}
-              className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline min-h-[28px]"
-            >
-              Clear tags
-            </button>
-          )}
-        </div>
-        {isFiltersLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-8 w-full" />
-            ))}
-          </div>
-        ) : tags.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No tags available</p>
-        ) : (
-          <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
-            {tags.map((tag) => (
-              <label
-                key={tag.id}
-                className="flex items-center justify-between gap-2 min-h-[40px] px-2 py-1.5 rounded-md cursor-pointer hover:bg-muted transition-colors"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Checkbox
-                    checked={selectedTags.includes(tag.id)}
-                    onCheckedChange={() => toggleTag(tag.id)}
-                    className="shrink-0"
-                  />
-                  <span className="text-sm truncate">{tag.name}</span>
-                </div>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {tag.productCount}
-                </span>
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <Separator />
-
-      {/* Price Range */}
-      <div className="space-y-1.5">
-        <Label className="text-sm font-medium">Price Range</Label>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            placeholder="Min"
-            value={minPrice}
-            onChange={(e) => handleMinPriceChange(e.target.value)}
-            className="min-h-[44px] w-full"
-            min={0}
-          />
-          <span className="text-muted-foreground text-sm">-</span>
-          <Input
-            type="number"
-            placeholder="Max"
-            value={maxPrice}
-            onChange={(e) => handleMaxPriceChange(e.target.value)}
-            className="min-h-[44px] w-full"
-            min={0}
-          />
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* In Stock Only */}
-      <div className="flex items-center justify-between min-h-[44px]">
-        <Label htmlFor="in-stock-switch" className="text-sm font-medium cursor-pointer">
-          In Stock Only
-        </Label>
-        <Switch
-          id="in-stock-switch"
-          checked={inStockOnly}
-          onCheckedChange={(checked) => {
-            setInStockOnly(checked);
-            setPage(1);
-          }}
-        />
-      </div>
-
-      <Separator />
-
-      {/* Sort By */}
-      <div className="space-y-1.5">
-        <Label className="text-sm font-medium">Sort By</Label>
-        <Select
-          value={sort}
-          onValueChange={(val) => {
-            setSort(val);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="min-h-[44px] w-full">
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Separator />
-
-      {/* Clear All Filters */}
-      {hasActiveFilters && (
-        <Button
-          variant="outline"
-          className="w-full min-h-[44px]"
-          onClick={clearAllFilters}
-        >
-          <X className="h-4 w-4 mr-2" />
-          Clear All Filters
-        </Button>
-      )}
-    </div>
-  );
-
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
       {/* --- Desktop Sidebar --- */}
@@ -553,7 +297,37 @@ export function ProductListing({
               </Badge>
             )}
           </div>
-          <FilterSidebarContent />
+          <FilterSidebarContent
+            searchInput={searchInput}
+            onSearchInputChange={setSearchInput}
+            isFiltersLoading={isFiltersLoading}
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onCategoryChange={(slug) => {
+              setSelectedCategory(slug);
+              setPage(1);
+            }}
+            tags={tags}
+            selectedTags={selectedTags}
+            onTagToggle={toggleTag}
+            minPrice={minPrice}
+            onMinPriceChange={handleMinPriceChange}
+            maxPrice={maxPrice}
+            onMaxPriceChange={handleMaxPriceChange}
+            inStockOnly={inStockOnly}
+            onInStockOnlyChange={(checked) => {
+              setInStockOnly(checked);
+              setPage(1);
+            }}
+            sort={sort}
+            onSortChange={(val) => {
+              setSort(val);
+              setPage(1);
+            }}
+            hasActiveFilters={hasActiveFilters}
+            onClearAllFilters={clearAllFilters}
+            sortOptions={SORT_OPTIONS}
+          />
         </div>
       </aside>
 
@@ -583,7 +357,37 @@ export function ProductListing({
                 </SheetDescription>
               </SheetHeader>
               <div className="mt-4">
-                <FilterSidebarContent />
+                <FilterSidebarContent
+                  searchInput={searchInput}
+                  onSearchInputChange={setSearchInput}
+                  isFiltersLoading={isFiltersLoading}
+                  categories={categories}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={(slug) => {
+                    setSelectedCategory(slug);
+                    setPage(1);
+                  }}
+                  tags={tags}
+                  selectedTags={selectedTags}
+                  onTagToggle={toggleTag}
+                  minPrice={minPrice}
+                  onMinPriceChange={handleMinPriceChange}
+                  maxPrice={maxPrice}
+                  onMaxPriceChange={handleMaxPriceChange}
+                  inStockOnly={inStockOnly}
+                  onInStockOnlyChange={(checked) => {
+                    setInStockOnly(checked);
+                    setPage(1);
+                  }}
+                  sort={sort}
+                  onSortChange={(val) => {
+                    setSort(val);
+                    setPage(1);
+                  }}
+                  hasActiveFilters={hasActiveFilters}
+                  onClearAllFilters={clearAllFilters}
+                  sortOptions={SORT_OPTIONS}
+                />
               </div>
             </SheetContent>
           </Sheet>

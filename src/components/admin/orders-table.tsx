@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -31,6 +30,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { OrdersTableSkeleton, OrdersCardSkeleton, OrderMobileCard } from "./orders-table-helpers";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -163,6 +163,8 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
 
   // ── Fetch ────────────────────────────────────────────────────────────────
 
+  const fetchOrdersRef = useRef<() => void>(() => {});
+
   const fetchOrders = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -189,9 +191,14 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
     }
   }, [search, statusFilter, sortBy, page]);
 
+  // Update ref to always have the latest fetchOrders
+  useEffect(() => {
+    fetchOrdersRef.current = () => fetchOrders();
+  }, [fetchOrders]);
+
   useEffect(() => {
     fetchOrders();
-  }, [fetchOrders]);
+  }, []);
 
   // Debounced search (400ms)
   useEffect(() => {
@@ -234,42 +241,7 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
       return `No orders matching "${search}" found.`;
     }
     return "No orders yet. Orders will appear here once customers place them.";
-  })();
-
-  // ── Skeleton ─────────────────────────────────────────────────────────────
-
-  const TableSkeleton = () => (
-    <div className="space-y-2">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 border-b">
-          <Skeleton className="h-5 w-full sm:w-[110px]" />
-          <Skeleton className="h-5 w-full sm:w-[160px]" />
-          <Skeleton className="h-5 w-full sm:w-[50px]" />
-          <Skeleton className="h-5 w-full sm:w-[80px]" />
-          <Skeleton className="h-5 w-full sm:w-[80px]" />
-          <Skeleton className="h-5 w-full sm:w-[90px]" />
-          <Skeleton className="h-5 w-full sm:w-[60px]" />
-        </div>
-      ))}
-    </div>
-  );
-
-  const CardSkeleton = () => (
-    <div className="space-y-3">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-[110px]" />
-              <Skeleton className="h-5 w-[80px]" />
-            </div>
-            <Skeleton className="h-4 w-[140px]" />
-            <Skeleton className="h-4 w-[80px]" />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
+  });
 
   // ── Mobile Card ──────────────────────────────────────────────────────────
 
@@ -405,10 +377,10 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
       )}
 
       {/* Loading State – Mobile Cards */}
-      {isLoading && <div className="md:hidden"><CardSkeleton /></div>}
+      {isLoading && <div className="md:hidden"><OrdersCardSkeleton /></div>}
 
       {/* Loading State – Desktop Table */}
-      {isLoading && <div className="hidden md:block"><TableSkeleton /></div>}
+      {isLoading && <div className="hidden md:block"><OrdersTableSkeleton /></div>}
 
       {/* Empty State */}
       {!isLoading && !error && orders.length === 0 && (

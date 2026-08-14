@@ -63,24 +63,22 @@ export function CategoriesManager() {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const fetchCategories = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/admin/categories");
-      if (!res.ok) throw new Error("Failed to fetch categories");
-      const data = await res.json();
-      setCategories(data.categories || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load categories");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+    (async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/admin/categories");
+        if (!res.ok) throw new Error("Failed to fetch categories");
+        const data = await res.json();
+        setCategories(data.categories || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load categories");
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
 
   const handleAdd = async () => {
     const trimmed = newName.trim();
