@@ -244,7 +244,7 @@ export function ProductsTable({ onEdit, onCreate, onRefresh }: ProductsTableProp
             variant="outline"
             size="sm"
             onClick={() => {
-              fetchProducts();
+              refetchProducts();
               onRefresh();
             }}
             className="min-h-11 min-w-11"

@@ -168,31 +168,36 @@ export function AdminDashboard({ onNavigate, onViewOrder }: AdminDashboardProps)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [analyticsRes, ordersRes] = await Promise.all([
-          fetch("/api/admin/analytics?range=today"),
-          fetch("/api/admin/orders?limit=5&sortBy=newest"),
-        ]);
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [analyticsRes, ordersRes] = await Promise.all([
+        fetch("/api/admin/analytics?range=today"),
+        fetch("/api/admin/orders?limit=5&sortBy=newest"),
+      ]);
 
-        if (!analyticsRes.ok || !ordersRes.ok) {
-          throw new Error("Failed to load dashboard data");
-        }
-
-        const analyticsJson = await analyticsRes.json();
-        const ordersJson = await ordersRes.json();
-
-        setAnalytics(analyticsJson);
-        setRecentOrders(ordersJson.orders ?? []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An unexpected error occurred");
-      } finally {
-        setLoading(false);
+      if (!analyticsRes.ok || !ordersRes.ok) {
+        throw new Error("Failed to load dashboard data");
       }
-    })();
+
+      const analyticsJson = await analyticsRes.json();
+      const ordersJson = await ordersRes.json();
+
+      setAnalytics(analyticsJson);
+      setRecentOrders(ordersJson.orders ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchData();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // ── Loading State ─────────────────────────────────────────────────────────

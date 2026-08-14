@@ -50,21 +50,26 @@ export function TagsManager() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const fetchTags = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/tags");
+      if (!res.ok) throw new Error("Failed to fetch tags");
+      const data = await res.json();
+      setTags(data.tags || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load tags");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/admin/tags");
-        if (!res.ok) throw new Error("Failed to fetch tags");
-        const data = await res.json();
-        setTags(data.tags || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load tags");
-      } finally {
-        setIsLoading(false);
-      }
-    })();
+    const timer = setTimeout(() => {
+      fetchTags();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleAdd = async () => {

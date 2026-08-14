@@ -63,21 +63,26 @@ export function CategoriesManager() {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const fetchCategories = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/categories");
+      if (!res.ok) throw new Error("Failed to fetch categories");
+      const data = await res.json();
+      setCategories(data.categories || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load categories");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/admin/categories");
-        if (!res.ok) throw new Error("Failed to fetch categories");
-        const data = await res.json();
-        setCategories(data.categories || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load categories");
-      } finally {
-        setIsLoading(false);
-      }
-    })();
+    const timer = setTimeout(() => {
+      fetchCategories();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleAdd = async () => {

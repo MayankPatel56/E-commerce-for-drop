@@ -241,7 +241,7 @@ export function OrdersTable({ onViewOrder, onRefresh }: OrdersTableProps) {
       return `No orders matching "${search}" found.`;
     }
     return "No orders yet. Orders will appear here once customers place them.";
-  });
+  })();
 
   // ── Mobile Card ──────────────────────────────────────────────────────────
 
