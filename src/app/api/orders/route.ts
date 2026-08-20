@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { sendTelegramNotification } from "@/lib/telegram";
 
 // Plan: §Phase 4 — Order Creation Transaction with Row-Level Locks
 // Uses DIRECT_URL (non-PgBouncer) for FOR UPDATE support in transactions
@@ -301,6 +302,19 @@ export async function POST(request: NextRequest) {
 
       return newOrder;
     });
+
+   // ... order create hone ke baad, response se pehle:
+
+   await sendTelegramNotification(
+    `🛍️ <b>Naya Order!</b>\n\n` +
+    `Order #: ${order.orderNumber}\n` +
+    `Amount: ₹${order.cartTotal}\n\n` +
+    `Name: ${name}\n` +
+    `Phone: ${phone}\n` +
+    `Email: ${email}\n\n` +
+    `Address: ${address.street}, ${address.city}, ${address.state} - ${address.pincode}\n\n` +
+    `Items: ${cart.length}`
+     );
 
     // NOTE: No email notification sent (Resolution #1). Admin monitors dashboard manually.
 
