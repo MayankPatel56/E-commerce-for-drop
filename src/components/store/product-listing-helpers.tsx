@@ -64,6 +64,41 @@ export function SkeletonGrid() {
   );
 }
 
+export function ProductListingSkeleton() {
+  return (
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <aside className="hidden lg:block w-64 shrink-0">
+        <div className="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto custom-scrollbar rounded-lg border bg-card p-4 space-y-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-9 w-full" />
+            ))}
+          </div>
+          <Separator />
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-8 w-full" />
+            ))}
+          </div>
+          <Separator />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-11 w-full" />
+            <Skeleton className="h-11 w-full" />
+          </div>
+        </div>
+      </aside>
+      <main className="flex-1 min-w-0">
+        <SkeletonGrid />
+      </main>
+    </div>
+  );
+}
+
 interface FilterSidebarContentProps {
   searchInput: string;
   onSearchInputChange: (value: string) => void;

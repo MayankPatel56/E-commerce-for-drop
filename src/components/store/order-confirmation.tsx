@@ -4,11 +4,19 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, ShoppingBag, Package, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { trackPurchase } from "@/lib/tracking";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface OrderConfirmationProps {
   orderNumber: string;
+  orderTotal?: number;
+  orderItems?: Array<{
+    variantId: number;
+    productName: string;
+    quantity: number;
+    price: number;
+  }>;
   onNavigate: (view: string, data?: Record<string, unknown>) => void;
 }
 
@@ -16,6 +24,8 @@ interface OrderConfirmationProps {
 
 export function OrderConfirmation({
   orderNumber,
+  orderTotal = 0,
+  orderItems = [],
   onNavigate,
 }: OrderConfirmationProps) {
   const [visible, setVisible] = useState(false);
@@ -25,6 +35,22 @@ export function OrderConfirmation({
     const frame = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(frame);
   }, []);
+
+  // Track Purchase event on mount
+  useEffect(() => {
+    if (orderTotal > 0 && orderItems.length > 0) {
+      const eventId = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+      trackPurchase({
+        content_ids: orderItems.map((item) => String(item.variantId)),
+        content_type: "product",
+        content_name: orderItems.map((item) => item.productName).join(", "),
+        value: orderTotal,
+        currency: "INR",
+        num_items: orderItems.reduce((sum, item) => sum + item.quantity, 0),
+        event_id: eventId,
+      });
+    }
+  }, [orderNumber, orderTotal, orderItems]);
 
   return (
     <div className="mx-auto max-w-md px-4 py-16">

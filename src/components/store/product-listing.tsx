@@ -28,7 +28,7 @@ import {
   Filter,
 } from "lucide-react";
 import Image from "next/image";
-import { StarRating, SkeletonGrid, FilterSidebarContent } from "./product-listing-helpers";
+import { StarRating, SkeletonGrid, FilterSidebarContent, ProductListingSkeleton } from "./product-listing-helpers";
 
 // --- Interfaces ---
 
@@ -67,6 +67,12 @@ interface Pagination {
 
 interface ProductListingProps {
   initialCategory?: string;
+  initialData?: {
+    products: Product[];
+    categories: Category[];
+    tags: Tag[];
+    pagination: Pagination;
+  };
   onNavigate: (view: string, data?: Record<string, unknown>) => void;
 }
 
@@ -80,8 +86,10 @@ const SORT_OPTIONS = [
 
 // --- Component ---
 
+export { ProductListingSkeleton } from "./product-listing-helpers";
 export function ProductListing({
   initialCategory,
+  initialData,
   onNavigate,
 }: ProductListingProps) {
   // Filter state
@@ -95,21 +103,27 @@ export function ProductListing({
   const [maxPrice, setMaxPrice] = useState("");
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sort, setSort] = useState("newest");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initialData?.pagination.page ?? 1);
   const limit = 20;
 
-  // Data state
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [pagination, setPagination] = useState<Pagination>({
-    page: 1,
-    limit,
-    total: 0,
-    totalPages: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFiltersLoading, setIsFiltersLoading] = useState(true);
+  // Data state — seeded from server-provided initialData when present
+  const [products, setProducts] = useState<Product[]>(
+    initialData?.products ?? []
+  );
+  const [categories, setCategories] = useState<Category[]>(
+    initialData?.categories ?? []
+  );
+  const [tags, setTags] = useState<Tag[]>(initialData?.tags ?? []);
+  const [pagination, setPagination] = useState<Pagination>(
+    initialData?.pagination ?? {
+      page: 1,
+      limit,
+      total: 0,
+      totalPages: 0,
+    }
+  );
+  const [isLoading, setIsLoading] = useState(!initialData);
+  const [isFiltersLoading, setIsFiltersLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
 
   // Mobile sheet
@@ -126,8 +140,9 @@ export function ProductListing({
     }
   }, [initialCategory]);
 
-  // --- Fetch categories & tags ---
+  // --- Fetch categories & tags (only if not seeded) ---
   useEffect(() => {
+    if (initialData) return;
     const fetchFilters = async () => {
       setIsFiltersLoading(true);
       try {
@@ -150,7 +165,7 @@ export function ProductListing({
       }
     };
     fetchFilters();
-  }, []);
+  }, [initialData]);
 
   // --- Debounced search (400ms) ---
   useEffect(() => {

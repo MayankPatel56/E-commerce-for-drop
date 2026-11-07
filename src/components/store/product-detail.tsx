@@ -169,7 +169,7 @@ function getInitials(name: string): string {
 
 // ─── Loading Skeleton ──────────────────────────────────────────────────────
 
-function ProductDetailSkeleton() {
+export function ProductDetailSkeleton() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4 sm:space-y-6 px-3 sm:px-4 py-4 sm:py-6">
       <Skeleton className="h-5 w-28 sm:w-32" />

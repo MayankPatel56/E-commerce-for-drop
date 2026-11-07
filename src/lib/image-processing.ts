@@ -2,8 +2,14 @@ import sharp from "sharp";
 import { generateImageFilename } from "@/lib/slug";
 import { createClient } from "@supabase/supabase-js";
 
+// Safe fallback so a missing NEXT_PUBLIC_SUPABASE_URL never produces an
+// undefined URL at runtime (which would crash the Supabase client).
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ??
+  "https://gefenowenqvlhbrfnibl.supabase.co";
+
 const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 

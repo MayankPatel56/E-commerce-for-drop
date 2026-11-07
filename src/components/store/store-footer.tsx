@@ -3,13 +3,14 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Instagram, 
-  Facebook, 
-  Twitter, 
-  Youtube, 
-  Mail, 
-  Phone, 
+import { useRouter } from "next/navigation";
+import {
+  Instagram,
+  Facebook,
+  Twitter,
+  Youtube,
+  Mail,
+  Phone,
   MapPin,
   ArrowUpRight,
   ShieldCheck,
@@ -31,7 +32,6 @@ interface StoreFooterProps {
     };
     copyright_text?: string;
   } | null;
-  onNavigate: (view: string, data?: Record<string, unknown>) => void;
 }
 
 const QUICK_LINKS = [
@@ -56,7 +56,30 @@ const TRUST_BADGES = [
   { icon: CreditCard, label: "COD Available", description: "Pay on delivery" },
 ];
 
-export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
+export function StoreFooter({ footer }: StoreFooterProps) {
+  const router = useRouter();
+
+  const handleNavigate = (view: string) => {
+    if (view === "shop") {
+      router.push("/shop");
+    } else if (view === "track-order") {
+      router.push("/track-order");
+    } else if (view === "faq") {
+      router.push("/faq");
+    } else if (view === "about") {
+      router.push("/about");
+    } else if (view === "contact") {
+      router.push("/contact");
+    } else if (view === "privacy") {
+      router.push("/privacy");
+    } else if (view === "terms") {
+      router.push("/terms");
+    } else if (view === "returns") {
+      router.push("/returns");
+    } else if (view === "home") {
+      router.push("/");
+    }
+  };
   const contactText = footer?.contact_text ?? "";
   const copyrightText =
     footer?.copyright_text ?? `© ${new Date().getFullYear()} Indicore Originals. All rights reserved.`;
@@ -123,7 +146,7 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
                   <li key={link.id}>
                     <button
                       type="button"
-                      onClick={() => onNavigate(link.id)}
+                      onClick={() => handleNavigate(link.id)}
                       className="group flex items-center gap-2 text-sm text-white/50 hover:text-orange-400 transition-all duration-200 min-h-[44px] w-full text-left rounded-lg px-2 hover:bg-white/5"
                     >
                       <span className="text-base">{link.icon}</span>
@@ -152,7 +175,7 @@ export function StoreFooter({ footer, onNavigate }: StoreFooterProps) {
                   <li key={link.id}>
                     <button
                       type="button"
-                      onClick={() => onNavigate(link.id)}
+                      onClick={() => handleNavigate(link.id)}
                       className="group flex items-center gap-2 text-sm text-white/50 hover:text-orange-400 transition-all duration-200 min-h-[44px] w-full text-left rounded-lg px-2 hover:bg-white/5"
                     >
                       <span>{link.label}</span>

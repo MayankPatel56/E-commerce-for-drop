@@ -91,8 +91,15 @@ const CustomersTable = dynamic(
 
 import { StoreHeader } from "@/components/store/store-header";
 import StorefrontHomepage from "@/components/store/storefront-homepage";
-import { ProductListing } from "@/components/store/product-listing";
-import ProductDetail from "@/components/store/product-detail";
+import { ShopClient } from "@/components/store/shop-client";
+const ProductListing = dynamic(
+  () => import("@/components/store/product-listing").then((mod) => ({ default: mod.ProductListing })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
+const ProductDetail = dynamic(
+  () => import("@/components/store/product-interactive-view").then((mod) => ({ default: mod.ProductInteractiveView })),
+  { ssr: false, loading: () => <Skeleton className="h-96 w-full" /> }
+);
 import { CartDrawer } from "@/components/store/cart-drawer";
 import { CheckoutPage } from "@/components/store/checkout-page";
 import { OrderConfirmation } from "@/components/store/order-confirmation";
@@ -187,59 +194,63 @@ function HomePageContent({
 
   // Navigation state
   const [appView, setAppView] = useState<AppView>(initialView);
+  const handlePathnameChange = useCallback((path: string) => {
+    switch (path) {
+      case "/":
+        setAppView("home");
+        break;
+
+      case "/shop":
+        setAppView("shop");
+        break;
+
+      case "/search":
+        setAppView("search");
+        router.push("/search");
+        break;
+
+      case "/track-order":
+        setAppView("track-order");
+        router.push("/track-order");
+        break;
+
+      case "/checkout":
+        setAppView("checkout");
+        break;
+
+      case "/about":
+        setAppView("about");
+        router.push("/about");
+        break;
+
+      case "/contact":
+        setAppView("contact");
+        router.push("/contact");
+        break;
+
+      case "/faq":
+        setAppView("faq");
+        router.push("/faq");
+        break;
+
+      case "/privacy":
+        setAppView("privacy");
+        break;
+
+      case "/terms":
+        setAppView("terms");
+        break;
+
+      case "/returns":
+        setAppView("returns");
+        router.push("/returns");
+        break;
+    }
+  }, [router]);
+
   useEffect(() => {
-  switch (pathname) {
-    case "/":
-      setAppView("home");
-      break;
-
-    case "/shop":
-      setAppView("shop");
-      break;
-
-    case "/search":
-      setAppView("search");
-      router.push("/search");
-      break;
-
-    case "/track-order":
-      setAppView("track-order");
-      router.push("/track-order");
-      break;
-
-    case "/checkout":
-      setAppView("checkout");
-      break;
-
-    case "/about":
-      setAppView("about");
-      router.push("/about");
-      break;
-
-    case "/contact":
-      setAppView("contact");
-      router.push("/contact");
-      break;
-
-    case "/faq":
-      setAppView("faq");
-      router.push("/faq");
-      break;
-
-    case "/privacy":
-      setAppView("privacy");
-      break;
-
-    case "/terms":
-      setAppView("terms");
-      break;
-
-    case "/returns":
-      setAppView("returns");
-      router.push("/returns");
-      break;
-  }
-}, [pathname]);
+    handlePathnameChange(pathname);
+  }, [pathname, handlePathnameChange]);
   const [productSlug, setProductSlug] = useState(initialProductSlug ?? "");
   const [initialCategory, setInitialCategory] = useState<string | undefined>();
 
@@ -253,6 +264,13 @@ function HomePageContent({
 
   // Checkout state
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [orderTotal, setOrderTotal] = useState<number>(0);
+  const [orderItems, setOrderItems] = useState<Array<{
+    variantId: number;
+    productName: string;
+    quantity: number;
+    price: number;
+  }>>([]);
 
   // Admin state
   const [adminPanel, setAdminPanel] = useState<AdminPanel>("dashboard");
@@ -278,15 +296,7 @@ function HomePageContent({
   const [lockoutInfo, setLockoutInfo] = useState<{ locked: boolean; remainingMinutes: number } | null>(null);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
-  // Check session on mount
-  useEffect(() => {
-    checkSession();
-    if (errorParam === "access_denied") {
-      setGeneralError("You do not have permission to access that page.");
-    }
-  }, [errorParam]);
-
-  const checkSession = async () => {
+  const checkSession = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/session");
       const data = await res.json();
@@ -299,7 +309,18 @@ function HomePageContent({
     } catch {
       // Not authenticated
     }
-  };
+  }, []);
+
+  // Check session on mount
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
+
+  useEffect(() => {
+    if (errorParam === "access_denied") {
+      setGeneralError("You do not have permission to access that page.");
+    }
+  }, [errorParam]);
 
   // ─── Navigation Handler ─────────────────────────────────────────────────
 
@@ -343,6 +364,8 @@ function HomePageContent({
     }
     if (view === "checkout") {
       setOrderNumber(null);
+      setOrderTotal(0);
+      setOrderItems([]);
       setAppView("checkout");
       return;
     }
@@ -533,8 +556,10 @@ function HomePageContent({
 
   // ─── Checkout Handlers ────────────────────────────────────────────────────
 
-  const handleOrderSuccess = useCallback((successOrderNumber: string) => {
+  const handleOrderSuccess = useCallback((successOrderNumber: string, orderDetails: { total: number; items: Array<{ variantId: number; productName: string; quantity: number; price: number; }> }) => {
     setOrderNumber(successOrderNumber);
+    setOrderTotal(orderDetails.total);
+    setOrderItems(orderDetails.items);
     setAppView("order-confirmation");
   }, []);
 
@@ -702,6 +727,8 @@ function HomePageContent({
           <div className="pt-4">
             <OrderConfirmation
               orderNumber={orderNumber}
+              orderTotal={orderTotal}
+              orderItems={orderItems}
               onNavigate={handleNavigate}
             />
           </div>

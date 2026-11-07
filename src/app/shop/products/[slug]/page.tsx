@@ -1,16 +1,86 @@
-﻿import { Suspense } from "react";
-import HomePageClient from "@/app/HomePageClient";
+﻿import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { fetchProduct } from "@/components/store/product-view";
+import { ProductInteractiveView } from "@/components/store/product-interactive-view";
+import { ProductDetailSkeleton } from "@/components/store/product-detail";
+import { ProductJsonLd } from "@/components/store/product-json-ld";
 
-export default async function ProductPage({
-  params,
-}: {
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  "https://www.indicoreoriginals.me";
+
+interface ProductPageProps {
   params: Promise<{ slug: string }>;
-}) {
+}
+
+export async function generateMetadata({
+  params,
+}: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
+  const product = await fetchProduct(slug);
+
+  if (!product) {
+    return {
+      title: "Product Not Found — Indicore Originals",
+      description: "The product you are looking for does not exist or has been removed.",
+    };
+  }
+
+  const title = product.seoTitle
+    ? `${product.seoTitle} — Indicore Originals`
+    : `${product.name} — Indicore Originals`;
+
+  const description =
+    product.seoDescription ||
+    product.description ||
+    `Shop ${product.name} at Indicore Originals. COD available, free delivery.`;
+
+  const ogImage = product.primaryImage
+    ? product.primaryImage.startsWith("http")
+      ? product.primaryImage
+      : `${SITE_URL}${product.primaryImage}`
+    : `${SITE_URL}/loko.png`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${SITE_URL}/shop/products/${product.slug}`,
+      siteName: "Indicore Originals",
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 1200,
+          alt: product.name,
+        },
+      ],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
+  };
+}
+
+export default async function ProductPage({ params }: ProductPageProps) {
+  const { slug } = await params;
+  const product = await fetchProduct(slug);
+
+  if (!product) {
+    notFound();
+  }
 
   return (
-    <Suspense fallback={null}>
-      <HomePageClient initialView="product" initialProductSlug={slug} />
+    <Suspense fallback={<ProductDetailSkeleton />}>
+      <ProductJsonLd product={product} siteUrl={SITE_URL} />
+      <ProductInteractiveView product={product} />
     </Suspense>
   );
 }

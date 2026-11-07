@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+// Safe fallback so a missing NEXTAUTH_URL never produces an undefined URL
+// when building absolute redirect URLs (e.g. during Vercel builds).
+const AUTH_BASE_URL =
+  process.env.NEXTAUTH_URL ??
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  "https://www.indicoreoriginals.me";
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -15,14 +22,14 @@ export async function proxy(req: NextRequest) {
 
     // 1. Agar token nahi milta
     if (!token) {
-      const loginUrl = new URL("/login", req.url); // Direct /login par bhejo, home page par nahi
+      const loginUrl = new URL("/login", req.url || AUTH_BASE_URL); // Direct /login par bhejo, home page par nahi
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
 
     // 2. Agar user role admin nahi hai
     if (token.role !== "admin" && token.role !== "ADMIN") {
-      const homeUrl = new URL("/shop", req.url);
+      const homeUrl = new URL("/shop", req.url || AUTH_BASE_URL);
       homeUrl.searchParams.set("error", "access_denied");
       return NextResponse.redirect(homeUrl);
     }
@@ -37,7 +44,7 @@ export async function proxy(req: NextRequest) {
     });
 
     if (!token) {
-      const loginUrl = new URL("/login", req.url);
+      const loginUrl = new URL("/login", req.url || AUTH_BASE_URL);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }

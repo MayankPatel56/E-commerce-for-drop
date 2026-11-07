@@ -41,6 +41,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { useCart } from "@/context/cart-context";
 import Image from "next/image";
+import { trackInitiateCheckout } from "@/lib/tracking";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -146,6 +147,22 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
   const [codSettings, setCodSettings] = useState<CodSettings | null>(null);
   const [codLoading, setCodLoading] = useState(true);
   const [codFetchError, setCodFetchError] = useState<string | null>(null);
+
+  // Track InitiateCheckout when page loads
+  useEffect(() => {
+    if (items.length > 0) {
+      const eventId = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+      trackInitiateCheckout({
+        content_ids: items.map((item) => String(item.variantId)),
+        content_type: "product",
+        content_name: items.map((item) => item.productName).join(", "),
+        value: cartTotal,
+        currency: "INR",
+        num_items: totalItems,
+        event_id: eventId,
+      });
+    }
+  }, [items, cartTotal, totalItems]);
 
   // Form state
   const [formData, setFormData] = useState<FormData>({
@@ -365,8 +382,19 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
           return;
         }
 
+        // Prepare order details for tracking
+        const orderDetails = {
+          total: cartTotal,
+          items: items.map((item) => ({
+            variantId: item.variantId,
+            productName: item.productName,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        };
+
         clearCart();
-        onOrderSuccess(data.orderNumber);
+        onOrderSuccess(data.orderNumber, orderDetails);
       } catch {
         setSubmitError("Network error. Please check your connection and try again.");
       } finally {
@@ -458,7 +486,7 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
         </motion.div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-4 sm:gap-6 md:gap-8 lg:gap-10 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-4 sm:gap-6 lg:gap-8 lg:gap-10 items-start">
         {/* ── Left Column: Order Summary ── */}
         <div className="lg:sticky lg:top-6">
           <Card className="border-2 shadow-sm">
@@ -526,7 +554,7 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
               </div>
 
               <Separator className="my-4" />
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-medium">{formatPrice(subtotal)}</span>
@@ -596,7 +624,7 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6 px-2 sm:px-0">
               <AnimatePresence>
                 {!codLoading && codOutOfRange && (
                   <motion.div
@@ -644,8 +672,8 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                   <Skeleton className="h-12 w-full mt-4 rounded-xl" />
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} noValidate className="space-y-5">
-                  <div className="space-y-2">
+                <form onSubmit={handleSubmit} noValidate className="space-y-3 sm:space-y-4">
+                  <div className="space-y-1.5">
                     <Label htmlFor="name" className="flex items-center gap-2 text-sm font-medium">
                       <User className="size-3.5 text-muted-foreground" />
                       Full Name <span className="text-destructive">*</span>
@@ -683,7 +711,7 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                     )}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
                       <Phone className="size-3.5 text-muted-foreground" />
                       Phone Number <span className="text-destructive">*</span>
@@ -725,7 +753,7 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                     )}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="street" className="flex items-center gap-2 text-sm font-medium">
                       <Home className="size-3.5 text-muted-foreground" />
                       Street Address <span className="text-destructive">*</span>
@@ -757,8 +785,8 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3 xs:gap-3.5 sm:gap-4">
-                    <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-1.5">
                       <Label htmlFor="city" className="flex items-center gap-2 text-sm font-medium">
                         <Building2 className="size-3.5 text-muted-foreground" />
                         City <span className="text-destructive">*</span>
@@ -790,7 +818,7 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                       )}
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <Label htmlFor="state" className="flex items-center gap-2 text-sm font-medium">
                         <MapPinIcon className="size-3.5 text-muted-foreground" />
                         State <span className="text-destructive">*</span>
@@ -823,7 +851,7 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="pincode" className="flex items-center gap-2 text-sm font-medium">
                       <IndianRupee className="size-3.5 text-muted-foreground" />
                       Pincode <span className="text-destructive">*</span>
@@ -865,7 +893,7 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                     )}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="email" className="flex items-center gap-2 text-sm font-medium">
                       <Mail className="size-3.5 text-muted-foreground" />
                       Email Address <span className="text-destructive">*</span>
@@ -926,7 +954,7 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                     <Button
                       type="submit"
                       disabled={!canSubmit}
-                      className="w-full min-h-[52px] text-base font-semibold rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl transition-all"
+                      className="w-full min-h-[52px] sm:min-h-[56px] text-base sm:text-lg font-semibold rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl transition-all"
                       size="lg"
                     >
                       {submitting ? (
@@ -943,17 +971,17 @@ export function CheckoutPage({ onOrderSuccess, onNavigate }: CheckoutPageProps) 
                       )}
                     </Button>
 
-                    <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Truck className="size-3.5" />
                         Free Delivery
                       </span>
-                      <span className="text-muted-foreground/30">|</span>
+                      <span className="text-muted-foreground/30 sm:inline hidden">|</span>
                       <span className="flex items-center gap-1">
                         <ShieldCheck className="size-3.5" />
                         COD Only
                       </span>
-                      <span className="text-muted-foreground/30">|</span>
+                      <span className="text-muted-foreground/30 sm:inline hidden">|</span>
                       <span className="flex items-center gap-1">
                         <CreditCard className="size-3.5" />
                         No Online Payment

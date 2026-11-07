@@ -53,6 +53,20 @@ function generateOrderNumber(): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Idempotency check: prevent duplicate orders from double clicks
+    const idempotencyKey = request.headers.get("x-idempotency-key");
+    if (idempotencyKey) {
+      const existingOrder = await db.order.findUnique({
+        where: { orderNumber: idempotencyKey },
+      });
+      if (existingOrder) {
+        return NextResponse.json(
+          { success: true, orderNumber: existingOrder.orderNumber, duplicate: true },
+          { status: 200 }
+        );
+      }
+    }
+
     // 1. Parse and validate request body
     const body = await request.json();
     const parsed = createOrderSchema.safeParse(body);
@@ -303,18 +317,23 @@ export async function POST(request: NextRequest) {
       return newOrder;
     });
 
-   // ... order create hone ke baad, response se pehle:
-
-   await sendTelegramNotification(
-    `🛍️ <b>Naya Order!</b>\n\n` +
-    `Order #: ${order.orderNumber}\n` +
-    `Amount: ₹${order.cartTotal}\n\n` +
-    `Name: ${name}\n` +
-    `Phone: ${phone}\n` +
-    `Email: ${email}\n\n` +
-    `Address: ${address.street}, ${address.city}, ${address.state} - ${address.pincode}\n\n` +
-    `Items: ${cart.length}`
-     );
+    // ... order create hone ke baad, response se pehle:
+    // Wrap Telegram notification in try/catch so order saves even if notification fails
+    try {
+      await sendTelegramNotification(
+        `🛍️ <b>Naya Order!</b>\n\n` +
+        `Order #: ${order.orderNumber}\n` +
+        `Amount: ₹${order.cartTotal}\n\n` +
+        `Name: ${name}\n` +
+        `Phone: ${phone}\n` +
+        `Email: ${email}\n\n` +
+        `Address: ${address.street}, ${address.city}, ${address.state} - ${address.pincode}\n\n` +
+        `Items: ${cart.length}`
+      );
+    } catch (telegramError) {
+      console.error("Telegram notification failed:", telegramError);
+      // Order is already saved, we just log the error and continue
+    }
 
     // NOTE: No email notification sent (Resolution #1). Admin monitors dashboard manually.
 
