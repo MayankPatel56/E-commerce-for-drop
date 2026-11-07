@@ -8,14 +8,25 @@ const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL ??
   "https://gefenowenqvlhbrfnibl.supabase.co";
 
-const supabaseAdmin = createClient(
-  SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 const BUCKET_NAME = "product-images";
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+
+// Lazy-initialized Supabase client — created on first use so missing env vars
+// don't crash the build (module load time). This avoids "Failed to collect page data"
+// errors during static generation when SUPABASE_SERVICE_ROLE_KEY is not set.
+let supabaseAdmin: ReturnType<typeof createClient> | null = null;
+
+function getSupabaseAdmin() {
+  if (!supabaseAdmin) {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+    }
+    supabaseAdmin = createClient(SUPABASE_URL, serviceRoleKey);
+  }
+  return supabaseAdmin;
+}
 
 interface ProcessedImage {
   galleryUrl: string;
@@ -41,7 +52,7 @@ export async function processUploadedImage(file: File): Promise<ProcessedImage> 
     .toBuffer();
   const galleryFilename = `${baseName}-gallery.webp`;
 
-  const { error: galleryError } = await supabaseAdmin.storage
+  const { error: galleryError } = await getSupabaseAdmin().storage
     .from(BUCKET_NAME)
     .upload(galleryFilename, galleryBuffer, {
       contentType: "image/webp",
@@ -56,7 +67,7 @@ export async function processUploadedImage(file: File): Promise<ProcessedImage> 
     .toBuffer();
   const thumbnailFilename = `${baseName}-thumb.webp`;
 
-  const { error: thumbError } = await supabaseAdmin.storage
+  const { error: thumbError } = await getSupabaseAdmin().storage
     .from(BUCKET_NAME)
     .upload(thumbnailFilename, thumbnailBuffer, {
       contentType: "image/webp",
@@ -64,10 +75,10 @@ export async function processUploadedImage(file: File): Promise<ProcessedImage> 
     });
   if (thumbError) throw new Error(`Thumbnail upload failed: ${thumbError.message}`);
 
-  const { data: galleryUrlData } = supabaseAdmin.storage
+  const { data: galleryUrlData } = getSupabaseAdmin().storage
     .from(BUCKET_NAME)
     .getPublicUrl(galleryFilename);
-  const { data: thumbUrlData } = supabaseAdmin.storage
+  const { data: thumbUrlData } = getSupabaseAdmin().storage
     .from(BUCKET_NAME)
     .getPublicUrl(thumbnailFilename);
 
