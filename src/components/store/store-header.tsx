@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useStoreNavigate } from "@/hooks/useStoreNavigate";
 import {
   Search,
   ShoppingCart,
@@ -45,7 +46,6 @@ interface Category {
 }
 
 interface StoreHeaderProps {
-  onNavigate: (view: string, data?: Record<string, unknown>) => void;
   onOpenCart: () => void;
   cartCount: number;
   onOpenLogin: () => void;
@@ -84,7 +84,6 @@ const CUSTOMER_NAV_LINKS = [
 ] as const;
 
 function MobileNav({
-  onNavigate,
   onOpenCart,
   cartCount,
   onOpenLogin,
@@ -93,9 +92,10 @@ function MobileNav({
   userName,
   userRole,
   onClose,
-}: StoreHeaderProps & { onClose: () => void }) {
+}: Omit<StoreHeaderProps, 'onNavigate'> & { onClose: () => void }) {
+  const navigate = useStoreNavigate();
   const handleNav = (view: string) => {
-    onNavigate(view);
+    navigate(view);
     onClose();
   };
   const handleCart = () => {
@@ -241,7 +241,6 @@ function MobileNav({
 }
 
 export function StoreHeader({
-  onNavigate,
   onOpenCart,
   cartCount,
   onOpenLogin,
@@ -251,6 +250,7 @@ export function StoreHeader({
   userRole,
   currentView,
 }: StoreHeaderProps) {
+  const navigate = useStoreNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -342,7 +342,7 @@ export function StoreHeader({
         {/* Left: Logo */}
         <button
           type="button"
-          onClick={() => onNavigate("home")}
+          onClick={() => navigate("home")}
           className="flex items-center shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 rounded-sm"
         >
           <Image
@@ -361,7 +361,7 @@ export function StoreHeader({
             <button
               key={link.id}
               type="button"
-              onClick={() => onNavigate(link.id)}
+              onClick={() => navigate(link.id)}
               className={linkClass(link.id)}
             >
               <span className="flex items-center gap-1.5">
@@ -394,7 +394,7 @@ export function StoreHeader({
               ) : categories.length > 0 ? (
                 <>
                   <DropdownMenuItem
-                    onClick={() => onNavigate("shop")}
+                    onClick={() => navigate("shop")}
                     className="cursor-pointer focus:bg-white/10 focus:text-orange-400 font-medium rounded-lg sm:rounded-xl m-1"
                   >
                     <span className="flex items-center gap-2">
@@ -404,7 +404,7 @@ export function StoreHeader({
                   {categories.map((cat) => (
                     <DropdownMenuItem
                       key={cat.id}
-                      onClick={() => onNavigate("shop", { category: cat.slug })}
+                      onClick={() => navigate("shop", { category: cat.slug })}
                       className="cursor-pointer focus:bg-white/10 focus:text-orange-400 rounded-lg sm:rounded-xl m-1"
                     >
                       {cat.name}
@@ -413,7 +413,7 @@ export function StoreHeader({
                 </>
               ) : (
                 <DropdownMenuItem
-                  onClick={() => onNavigate("shop")}
+                  onClick={() => navigate("shop")}
                   className="cursor-pointer focus:bg-white/10 focus:text-orange-400 rounded-lg sm:rounded-xl m-1"
                 >
                   Browse all products
@@ -426,7 +426,7 @@ export function StoreHeader({
             <button
               key={link.id}
               type="button"
-              onClick={() => onNavigate(link.id)}
+              onClick={() => navigate(link.id)}
               className={linkClass(link.id)}
             >
               {link.label}
@@ -440,7 +440,7 @@ export function StoreHeader({
             variant="ghost"
             size="sm"
             className="hidden md:inline-flex min-h-[40px] sm:min-h-11 min-w-[40px] sm:min-w-11 p-2 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-colors duration-200"
-            onClick={() => onNavigate("search")}
+            onClick={() => navigate("search")}
             aria-label="Search products"
           >
             <Search className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -454,7 +454,7 @@ export function StoreHeader({
                     variant="ghost"
                     size="sm"
                     className="min-h-[40px] sm:min-h-11 gap-1 sm:gap-1.5 px-2 sm:px-3 text-white/70 hover:text-orange-400 hover:bg-white/5 rounded-full transition-colors duration-200"
-                    onClick={() => onNavigate("admin")}
+                    onClick={() => navigate("admin")}
                   >
                     <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     <span className="text-[10px] sm:text-xs font-medium hidden xl:inline">Admin</span>
@@ -485,7 +485,7 @@ export function StoreHeader({
                       return (
                         <DropdownMenuItem
                           key={link.id}
-                          onClick={() => onNavigate(link.id)}
+                          onClick={() => navigate(link.id)}
                           className="cursor-pointer focus:bg-white/10 focus:text-orange-400 rounded-lg sm:rounded-xl m-1 gap-2 text-sm"
                         >
                           <Icon className="h-4 w-4" />
@@ -546,7 +546,6 @@ export function StoreHeader({
             </SheetTrigger>
             <SheetContent side="right" className="w-[85%] sm:w-80 p-0 border-l border-white/10">
               <MobileNav
-                onNavigate={onNavigate}
                 onOpenCart={onOpenCart}
                 cartCount={cartCount}
                 onOpenLogin={onOpenLogin}

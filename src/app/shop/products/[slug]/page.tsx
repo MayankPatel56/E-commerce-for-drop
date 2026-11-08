@@ -14,11 +14,19 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
+// Force dynamic rendering so build doesn't require DB connection
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = await fetchProduct(slug);
+  let product = null;
+  try {
+    product = await fetchProduct(slug);
+  } catch {
+    // DB not available at build time
+  }
 
   if (!product) {
     return {
@@ -71,7 +79,12 @@ export async function generateMetadata({
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const product = await fetchProduct(slug);
+  let product = null;
+  try {
+    product = await fetchProduct(slug);
+  } catch {
+    // DB not available at build time
+  }
 
   if (!product) {
     notFound();

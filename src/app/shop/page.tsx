@@ -6,7 +6,8 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
   "https://www.indicoreoriginals.me";
 
-export const revalidate = 3600;
+// Force dynamic rendering so build doesn't require DB connection
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const title = "Shop All Products — Indicore Originals";
@@ -32,7 +33,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ShopPage() {
-  const products = await fetchShopProducts();
+  let products: Awaited<ReturnType<typeof fetchShopProducts>> = [];
+  try {
+    products = await fetchShopProducts();
+  } catch {
+    // DB not available at build time — show empty state
+  }
 
   if (!products.length) {
     return (
