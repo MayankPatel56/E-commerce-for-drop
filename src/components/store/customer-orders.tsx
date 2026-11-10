@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 interface CustomerOrdersProps {
-  onNavigate: (view: string, data?: Record<string, unknown>) => void;
+  onNavigate?: (view: string, data?: Record<string, unknown>) => void;
 }
 
 interface OrderItem {

@@ -10,8 +10,23 @@ const SITE_URL =
 // Force dynamic rendering so build doesn't require DB connection
 export const dynamic = "force-dynamic";
 
+interface JsonValue {
+  [key: string]: JsonValue | string | number | boolean | null | JsonValue[];
+}
+
+interface HomepageContent {
+  id: number;
+  updatedAt: Date;
+  heroBanner: JsonValue;
+  featuredProductIds: JsonValue;
+  categoriesSection: JsonValue;
+  whyChooseUs: JsonValue;
+  customerReviews: JsonValue;
+  footer: JsonValue;
+}
+
 export async function generateMetadata(): Promise<Metadata> {
-  let homepageContent = null;
+  let homepageContent: any = null;
   try {
     const db = await import("@/lib/db");
     homepageContent = await db.db.homepageContent.findUnique({
@@ -21,14 +36,16 @@ export async function generateMetadata(): Promise<Metadata> {
     // DB not available at build time — use fallback
   }
 
-  const title = (homepageContent?.heroBanner?.text ?? "Curated Unique Products") + " — Indicore Originals";
+  const heroBanner = homepageContent?.heroBanner as JsonValue | undefined;
+  const title = (heroBanner?.text as string ?? "Curated Unique Products") + " — Indicore Originals";
   const description =
     "Shop curated unique products from Indicore Originals. Modern, mobile-first e-commerce with COD payment and free delivery across India.";
 
-  const ogImage = homepageContent?.heroBanner?.image_url
-    ? homepageContent.heroBanner.image_url.startsWith("http")
-      ? homepageContent.heroBanner.image_url
-      : `${SITE_URL}${homepageContent.heroBanner.image_url}`
+  const ogImageUrl = heroBanner?.image_url as string | undefined;
+  const ogImage = ogImageUrl
+    ? ogImageUrl.startsWith("http")
+      ? ogImageUrl
+      : `${SITE_URL}${ogImageUrl}`
     : `${SITE_URL}/loko.png`;
 
   return {
@@ -82,6 +99,7 @@ interface SimpleCategory {
   id: number;
   name: string;
   slug: string;
+  productCount: number;
 }
 
 interface SimpleWhyChooseUs {
@@ -141,7 +159,9 @@ async function fetchSimpleHomepageData(): Promise<SimpleHomepageData> {
     });
     const settingsMap: Record<string, { value: string }> = {};
     for (const s of storeSettings) {
-      settingsMap[s.key] = { value: String(s.value?.value ?? s.value ?? "") };
+      // Prisma setting model has value as JsonValue
+      const val = s.value as unknown as { value?: string } | string;
+      settingsMap[s.key] = { value: typeof val === "object" && val !== null ? (val.value ?? "") : String(val) };
     }
 
     const getSetting = (key: string): string => {
@@ -161,28 +181,36 @@ async function fetchSimpleHomepageData(): Promise<SimpleHomepageData> {
       category: p.category ?? { name: "", slug: "" },
     });
 
+    // Extract JSON data from homepageContent
+    const heroBanner = homepageContent.heroBanner as JsonValue | undefined;
+    const featuredProducts = homepageContent.featuredProductIds as JsonValue | undefined;
+    const categories = homepageContent.categoriesSection as JsonValue | undefined;
+    const whyChooseUs = homepageContent.whyChooseUs as JsonValue | undefined;
+    const footer = homepageContent.footer as JsonValue | undefined;
+
     return {
       heroBanner: {
-        image_url: homepageContent.heroBanner?.image_url ?? "",
-        text: homepageContent.heroBanner?.text ?? "Curated Unique Products",
-        cta_text: homepageContent.heroBanner?.cta_text ?? "Shop Now",
-        cta_link: homepageContent.heroBanner?.cta_link ?? "/shop",
+        image_url: (heroBanner?.image_url as string) ?? "",
+        text: (heroBanner?.text as string) ?? "Curated Unique Products",
+        cta_text: (heroBanner?.cta_text as string) ?? "Shop Now",
+        cta_link: (heroBanner?.cta_link as string) ?? "/shop",
       },
-      featuredProducts: (homepageContent.featuredProducts ?? []).map(simpleProduct),
-      categories: (homepageContent.categories ?? []).map((c: any) => ({
-        id: c.id ?? 0,
-        name: c.name ?? "",
-        slug: c.slug ?? "",
+      featuredProducts: ((featuredProducts as unknown as JsonValue[]) ?? []).map(simpleProduct),
+      categories: ((categories as unknown as JsonValue[]) ?? []).map((c: JsonValue) => ({
+        id: (c.id as number) ?? 0,
+        name: (c.name as string) ?? "",
+        slug: (c.slug as string) ?? "",
+        productCount: (c.productCount as number) ?? 0,
       })),
-      whyChooseUs: (homepageContent.whyChooseUs ?? []).map((f: any) => ({
-        icon: f.icon ?? "ShieldCheck",
-        title: f.title ?? "",
-        description: f.description ?? "",
+      whyChooseUs: ((whyChooseUs as unknown as JsonValue[]) ?? []).map((f: JsonValue) => ({
+        icon: (f.icon as string) ?? "ShieldCheck",
+        title: (f.title as string) ?? "",
+        description: (f.description as string) ?? "",
       })),
       footer: {
-        contact_text: homepageContent.footer?.contact_text ?? "Get in touch",
-        social_links: homepageContent.footer?.social_links ?? {},
-        copyright_text: homepageContent.footer?.copyright_text ?? "",
+        contact_text: (footer?.contact_text as string) ?? "Get in touch",
+        social_links: (footer?.social_links as Record<string, string>) ?? {},
+        copyright_text: (footer?.copyright_text as string) ?? "",
       },
     };
   } catch {

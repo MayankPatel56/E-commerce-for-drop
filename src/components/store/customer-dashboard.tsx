@@ -32,7 +32,7 @@ import {
 /* ------------------------------------------------------------------ */
 
 interface CustomerDashboardProps {
-  onNavigate: (view: string, data?: Record<string, unknown>) => void;
+  onNavigate?: (view: string, data?: Record<string, unknown>) => void;
   onViewOrder?: (orderId: number) => void;
 }
 
@@ -235,11 +235,11 @@ export function CustomerDashboard({
   }
 
   function handleViewAllWishlist() {
-    onNavigate("customer-wishlist");
+    onNavigate?.("customer-wishlist");
   }
 
   function handleWishlistItemClick(slug: string) {
-    onNavigate("product", { slug });
+    onNavigate?.("product", { slug });
   }
 
   function handleBrowseShop() {

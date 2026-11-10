@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { CheckoutPage } from "@/components/store/checkout-page";
+import { CheckoutPageWrapper } from "@/components/store/checkout-page-wrapper";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
@@ -18,5 +18,5 @@ export const metadata: Metadata = {
 };
 
 export default async function CheckoutPageRoute() {
-  return <CheckoutPage />;
+  return <CheckoutPageWrapper />;
 }

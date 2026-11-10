@@ -21,7 +21,7 @@ export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  let product = null;
+  let product: Awaited<ReturnType<typeof fetchProduct>> = null;
   try {
     product = await fetchProduct(slug);
   } catch {
@@ -79,7 +79,7 @@ export async function generateMetadata({
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  let product = null;
+  let product: Awaited<ReturnType<typeof fetchProduct>> = null;
   try {
     product = await fetchProduct(slug);
   } catch {
@@ -90,10 +90,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
+  // Product is guaranteed to exist here since we checked above
+  const safeProduct = product as NonNullable<typeof product>;
+
   return (
     <Suspense fallback={<ProductDetailSkeleton />}>
-      <ProductJsonLd product={product} siteUrl={SITE_URL} />
-      <ProductInteractiveView product={product} />
+      <ProductJsonLd product={safeProduct} siteUrl={SITE_URL} />
+      <ProductInteractiveView product={safeProduct} />
     </Suspense>
   );
 }

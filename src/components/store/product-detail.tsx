@@ -500,8 +500,10 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
   // ── Fetch product with immediate state reset ──
   useEffect(() => {
     let cancelled = false;
+    let activeRequestId = 0;
 
     async function fetchProduct() {
+      const requestId = ++activeRequestId;
       setLoading(true);
       setError(false);
       setNotFound(false);
@@ -515,7 +517,7 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
       try {
         const res = await fetch(`/api/products/${slug}`);
         if (res.status === 404) {
-          if (!cancelled) {
+          if (!cancelled && activeRequestId === requestId) {
             setNotFound(true);
             setLoading(false);
           }
@@ -526,13 +528,13 @@ export default function ProductDetail({ slug, onNavigate, isAuthenticated }: Pro
         }
 
         const data: Product = await res.json();
-        if (!cancelled) {
+        if (!cancelled && activeRequestId === requestId) {
           setProduct(data);
           setMainImage(data.primaryImage || "");
           setLoading(false);
         }
       } catch {
-        if (!cancelled) {
+        if (!cancelled && activeRequestId === requestId) {
           setError(true);
           setLoading(false);
         }

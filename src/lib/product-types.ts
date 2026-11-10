@@ -83,4 +83,5 @@ export interface Product {
   averageRating: number;
   reviewCount: number;
   createdAt: string;
+  inStock: boolean;
 }

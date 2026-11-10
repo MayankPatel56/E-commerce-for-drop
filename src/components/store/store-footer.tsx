@@ -51,7 +51,7 @@ const LEGAL_LINKS = [
 
 const TRUST_BADGES = [
   { icon: Truck, label: "Free Delivery", description: "On orders above ₹499" },
-  { icon: ShieldCheck, label: "Secure Payment", description: "100% safe checkout" },
+  { icon: ShieldCheck, label: "Secure Payment", description: "Safe checkout process" },
   { icon: RefreshCw, label: "Easy Returns", description: "7-day return policy" },
   { icon: CreditCard, label: "COD Available", description: "Pay on delivery" },
 ];
@@ -104,7 +104,7 @@ export function StoreFooter({ footer }: StoreFooterProps) {
             </p>
             <div className="flex items-center gap-3 pt-2">
               <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs text-white/40">100% Authentic Products</span>
+              <span className="text-xs text-white/40">Curated with care</span>
             </div>
           </motion.div>
 

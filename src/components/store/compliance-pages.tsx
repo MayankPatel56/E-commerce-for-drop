@@ -20,12 +20,9 @@ import {
   Phone,
   HelpCircle,
 } from "lucide-react";
+import { useStoreNavigate } from "@/hooks/useStoreNavigate";
 
 // ── Shared Types ─────────────────────────────────────────────────────────────
-
-interface CompliancePageProps {
-  onNavigate: (view: string, data?: Record<string, unknown>) => void;
-}
 
 interface FaqItem {
   id: number;
@@ -38,11 +35,10 @@ interface FaqItem {
 
 function PageHeader({
   title,
-  onNavigate,
 }: {
   title: string;
-  onNavigate: (view: string) => void;
 }) {
+  const navigate = useStoreNavigate();
   return (
     <header className="sticky top-0 z-40 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="mx-auto flex h-14 max-w-4xl items-center gap-3 px-4 sm:px-6 lg:px-8">
@@ -50,7 +46,7 @@ function PageHeader({
           variant="ghost"
           size="sm"
           className="min-h-[44px] min-w-[44px] gap-1.5"
-          onClick={() => onNavigate("home")}
+          onClick={() => navigate("home")}
           aria-label="Back to Home"
         >
           <ArrowLeft className="size-4" />
@@ -64,10 +60,10 @@ function PageHeader({
 
 // ── Privacy Policy Page ──────────────────────────────────────────────────────
 
-export function PrivacyPolicyPage({ onNavigate }: CompliancePageProps) {
+export function PrivacyPolicyPage() {
   return (
     <div className="bg-white">
-      <PageHeader title="Privacy Policy" onNavigate={onNavigate} />
+      <PageHeader title="Privacy Policy" />
       <main className="min-h-[calc(100vh-3.5rem)]">
         <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
           <p className="mb-8 text-sm text-muted-foreground">
@@ -248,10 +244,10 @@ export function PrivacyPolicyPage({ onNavigate }: CompliancePageProps) {
 
 // ── Terms & Conditions Page ──────────────────────────────────────────────────
 
-export function TermsPage({ onNavigate }: CompliancePageProps) {
+export function TermsPage() {
   return (
     <div className="bg-white">
-      <PageHeader title="Terms & Conditions" onNavigate={onNavigate} />
+      <PageHeader title="Terms & Conditions" />
       <main className="min-h-[calc(100vh-3.5rem)]">
         <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
           <p className="mb-8 text-sm text-muted-foreground">
@@ -423,10 +419,10 @@ export function TermsPage({ onNavigate }: CompliancePageProps) {
 
 // ── Return Policy Page ───────────────────────────────────────────────────────
 
-export function ReturnPolicyPage({ onNavigate }: CompliancePageProps) {
+export function ReturnPolicyPage() {
   return (
     <div className="bg-white">
-      <PageHeader title="Return & Refund Policy" onNavigate={onNavigate} />
+      <PageHeader title="Return & Refund Policy" />
       <main className="min-h-[calc(100vh-3.5rem)]">
         <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
           <p className="mb-8 text-sm text-muted-foreground">
@@ -551,10 +547,10 @@ export function ReturnPolicyPage({ onNavigate }: CompliancePageProps) {
 
 // ── About Us Page ────────────────────────────────────────────────────────────
 
-export function AboutPage({ onNavigate }: CompliancePageProps) {
+export function AboutPage() {
   return (
     <div className="bg-white">
-      <PageHeader title="About Us" onNavigate={onNavigate} />
+      <PageHeader title="About Us" />
       <main className="min-h-[calc(100vh-3.5rem)]">
         <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
           <section className="space-y-10">
@@ -689,10 +685,10 @@ export function AboutPage({ onNavigate }: CompliancePageProps) {
 
 // ── Contact Page ─────────────────────────────────────────────────────────────
 
-export function ContactPage({ onNavigate }: CompliancePageProps) {
+export function ContactPage() {
   return (
     <div className="bg-white">
-      <PageHeader title="Contact Us" onNavigate={onNavigate} />
+      <PageHeader title="Contact Us" />
       <main className="min-h-[calc(100vh-3.5rem)]">
         <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
           <section className="space-y-10">
@@ -795,7 +791,7 @@ export function ContactPage({ onNavigate }: CompliancePageProps) {
 
 // ── FAQ Page ─────────────────────────────────────────────────────────────────
 
-export function FaqPage({ onNavigate }: CompliancePageProps) {
+export function FaqPage() {
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -826,7 +822,7 @@ export function FaqPage({ onNavigate }: CompliancePageProps) {
 
   return (
     <div className="bg-white">
-      <PageHeader title="Frequently Asked Questions" onNavigate={onNavigate} />
+      <PageHeader title="Frequently Asked Questions" />
       <main className="min-h-[calc(100vh-3.5rem)]">
         <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
           {/* Loading state */}

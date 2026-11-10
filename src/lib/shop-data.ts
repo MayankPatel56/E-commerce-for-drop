@@ -21,8 +21,8 @@ interface FetchProductsOptions {
 
 interface ProductListingData {
   products: Product[];
-  categories: ProductCategory[];
-  tags: ProductTag[];
+  categories: (ProductCategory & { productCount: number })[];
+  tags: (ProductTag & { productCount: number })[];
   pagination: {
     page: number;
     limit: number;
@@ -81,8 +81,8 @@ export async function fetchProductListingData(
 
   const skip = (page - 1) * limit;
 
-  // Fetch data in parallel
-  const [totalProducts, productsData, categoriesData, tagsData, ratingAggregates] = await Promise.all([
+  // Fetch data in parallel (first pass)
+  const [totalProducts, productsData, categoriesData, tagsData] = await Promise.all([
     db.product.count({ where: productWhere }),
     db.product.findMany({
       where: productWhere,
@@ -94,6 +94,7 @@ export async function fetchProductListingData(
         variants: {
           select: {
             id: true,
+            sku: true,
             variantType: true,
             variantValue: true,
             colorHex: true,
@@ -118,13 +119,15 @@ export async function fetchProductListingData(
       select: { id: true, name: true, _count: { select: { productTags: { where: { product: { isPublished: true } } } } } },
       orderBy: { name: "asc" },
     }),
-    db.review.groupBy({
-      by: ["productId"],
-      where: { productId: { in: productsData.map(p => p.id) }, status: "approved" },
-      _avg: { rating: true },
-      _count: { rating: true },
-    }),
   ]);
+
+  // Fetch rating aggregates in a second step (productsData is now available)
+  const ratingAggregates = await db.review.groupBy({
+    by: ["productId"],
+    where: { productId: { in: productsData.map(p => p.id) }, status: "approved" },
+    _avg: { rating: true },
+    _count: { rating: true },
+  });
 
   const ratingMap = new Map<number, { avg: number; count: number }>();
   for (const ra of ratingAggregates) {
@@ -180,13 +183,17 @@ export async function fetchProductListingData(
       seoTitle: p.seoTitle,
       seoDescription: p.seoDescription,
       category: p.category,
-      variants: p.variants,
+      variants: p.variants.map(v => ({
+        ...v,
+        sku: v.sku ?? "",
+      })),
       variantTypes,
       tags: p.productTags.map((pt) => pt.tag),
       reviews: [], // Reviews are not fetched in listing for performance
       averageRating: rating.avg,
       reviewCount: rating.count,
       createdAt: p.createdAt.toISOString(),
+      inStock: p.variants.some(v => !v.isOutOfStock && v.stockQuantity > 0),
     };
   });
 

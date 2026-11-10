@@ -38,6 +38,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { StoreFooter } from "@/components/store/store-footer";
+import { useStoreNavigate } from "@/hooks/useStoreNavigate";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface SimpleHeroBanner {
@@ -62,6 +63,7 @@ interface SimpleCategory {
   id: number;
   name: string;
   slug: string;
+  productCount: number;
 }
 
 interface SimpleWhyChooseUs {
@@ -110,24 +112,11 @@ export default function StorefrontHomepage({
 }: StorefrontHomepageProps) {
   const [heroImageError, setHeroImageError] = useState(false);
   const router = useRouter();
+  const navigate = useStoreNavigate();
 
   const { heroBanner, featuredProducts, categories, whyChooseUs, footer } = data;
 
   const storeName = footer.contact_text ?? "Indicore Originals";
-
-  const handleNavigate = (view: string, params?: Record<string, unknown>) => {
-    if (view === "shop") {
-      if (params?.category) {
-        router.push(`/shop?category=${params.category}`);
-      } else {
-        router.push("/shop");
-      }
-    } else if (view === "product" && params?.slug) {
-      router.push(`/shop/products/${params.slug}`);
-    } else if (view === "home") {
-      router.push("/");
-    }
-  };
 
   return (
     <motion.div
@@ -196,7 +185,7 @@ export default function StorefrontHomepage({
                   <Button
                     size="lg"
                     className="min-h-12 xs:min-h-14 gap-2 bg-gradient-to-r from-orange-500 to-orange-400 px-6 xs:px-8 text-sm xs:text-base font-semibold text-black shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all rounded-lg xs:rounded-xl"
-                    onClick={() => handleNavigate("shop")}
+                    onClick={() => navigate("shop")}
                   >
                     {heroBanner.cta_text}
                     <ArrowRight className="size-4" />
@@ -211,7 +200,7 @@ export default function StorefrontHomepage({
                   size="lg"
                   variant="outline"
                   className="min-h-[48px] border-white/30 bg-transparent px-8 text-base font-semibold text-white hover:bg-white/10 hover:border-white/50 transition-all"
-                  onClick={() => handleNavigate("shop")}
+                  onClick={() => navigate("shop")}
                 >
                   Explore Categories
                 </Button>
@@ -242,7 +231,7 @@ export default function StorefrontHomepage({
             <Button
               variant="ghost"
               className="hidden gap-1 text-sm sm:inline-flex group hover:text-orange-500"
-              onClick={() => handleNavigate("shop")}
+              onClick={() => navigate("shop")}
             >
               Shop All
               <ChevronRight className="size-4 group-hover:translate-x-1 transition-transform" />
@@ -256,7 +245,7 @@ export default function StorefrontHomepage({
                   <ProductCard
                     key={product.id}
                     product={product}
-                    handleNavigate={handleNavigate}
+                    navigate={navigate}
                     index={index}
                   />
                 ))}
@@ -267,7 +256,7 @@ export default function StorefrontHomepage({
                   <ProductCard
                     key={product.id}
                     product={product}
-                    handleNavigate={handleNavigate}
+                    navigate={navigate}
                     index={index}
                   />
                 ))}
@@ -277,7 +266,7 @@ export default function StorefrontHomepage({
                 <Button
                   variant="outline"
                   className="gap-1"
-                  onClick={() => handleNavigate("shop")}
+                  onClick={() => navigate("shop")}
                 >
                   Shop All <ArrowRight className="size-4" />
                 </Button>
@@ -320,7 +309,7 @@ export default function StorefrontHomepage({
                 >
                   <Card
                     className="cursor-pointer rounded-2xl transition-all duration-300 hover:shadow-xl hover:border-orange-200"
-                    onClick={() => handleNavigate("shop", { category: cat.slug })}
+                    onClick={() => navigate("shop", { category: cat.slug })}
                   >
                     <CardContent className="flex items-center justify-between p-5 md:p-6">
                       <div>
@@ -445,7 +434,7 @@ export default function StorefrontHomepage({
       )}
 
       {/* ── Section 6: Footer ──────────────────────────────────────────── */}
-      <StoreFooter footer={footer} handleNavigate={handleNavigate} />
+      <StoreFooter footer={footer} />
     </motion.div>
   );
 }
@@ -454,11 +443,11 @@ export default function StorefrontHomepage({
 
 function ProductCard({
   product,
-  handleNavigate,
+  navigate,
   index,
 }: {
   product: SimpleFeaturedProduct;
-  handleNavigate: (view: string, data?: Record<string, unknown>) => void;
+  navigate: (view: string, data?: Record<string, unknown>) => void;
   index: number;
 }) {
   const discountPercent = product.compareAtPrice
@@ -524,7 +513,7 @@ function ProductCard({
               className="rounded-full shadow-lg bg-white/90 hover:bg-white text-black"
               onClick={(e) => {
                 e.stopPropagation();
-                handleNavigate("product", { slug: product.slug });
+                navigate("product", { slug: product.slug });
               }}
             >
               Quick View

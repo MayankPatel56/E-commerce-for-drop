@@ -2,19 +2,46 @@
 
 import { useRouter } from "next/navigation";
 import { ProductListing } from "./product-listing";
-import type { Product, ProductCategory, ProductTag } from "@/lib/product-types";
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  productCount: number;
+}
+
+interface Tag {
+  id: number;
+  name: string;
+  productCount: number;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  price: number;
+  primaryImage: string | null;
+  category: { name: string; slug: string } | null;
+  inStock: boolean;
+  reviewCount: number;
+  averageRating: number;
+  tags: { id: number; name: string }[];
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
 interface ShopClientProps {
   initialData: {
     products: Product[];
-    categories: (ProductCategory & { productCount: number })[];
-    tags: (ProductTag & { productCount: number })[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+    categories: Category[];
+    tags: Tag[];
+    pagination: Pagination;
   };
   initialCategory?: string;
 }

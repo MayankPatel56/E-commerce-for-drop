@@ -21,7 +21,7 @@ import {
 import { useCart } from "@/context/cart-context";
 
 interface CustomerWishlistProps {
-  onNavigate: (view: string, data?: Record<string, unknown>) => void;
+  onNavigate?: (view: string, data?: Record<string, unknown>) => void;
 }
 
 interface WishlistProduct {

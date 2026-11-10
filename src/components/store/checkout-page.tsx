@@ -46,7 +46,7 @@ import { trackInitiateCheckout } from "@/lib/tracking";
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface CheckoutPageProps {
-  onOrderSuccess: (orderNumber: string) => void;
+  onOrderSuccess: (orderNumber: string, orderDetails: { total: number; items: Array<{ variantId: number; productName: string; quantity: number; price: number; } > }) => void;
   onNavigate: (view: string, data?: Record<string, unknown>) => void;
 }
 

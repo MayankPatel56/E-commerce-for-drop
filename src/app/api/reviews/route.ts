@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
                 id: true,
                 name: true,
                 email: true,
-                avatar: true, // Include avatar field
+                // avatar field removed - not in Prisma schema
               },
             },
             product: {
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               name: true,
-              avatar: true, // Include avatar field - can be null for fallback
+              // avatar field removed - not in Prisma schema - can be null for fallback
             },
           },
         },
@@ -110,18 +110,8 @@ export async function GET(request: NextRequest) {
       db.review.count({ where }),
     ]);
 
-    // Transform reviews to ensure avatar handling
-    const transformedReviews = reviews.map((review) => ({
-      ...review,
-      customer: {
-        ...review.customer,
-        // If avatar is null or empty string, the UI will use initials fallback
-        avatar: review.customer?.avatar || null,
-      },
-    }));
-
     return NextResponse.json({
-      reviews: transformedReviews,
+      reviews,
       pagination: {
         page,
         limit,
@@ -230,7 +220,6 @@ export async function POST(request: NextRequest) {
             id: true,
             name: true,
             email: true,
-            avatar: true, // Include avatar to return to client
           },
         },
       },
@@ -252,13 +241,14 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { error } = await requireAdmin();
   if (error) return error;
 
   try {
-    const reviewId = parseInt(params.id, 10);
+    const { id } = await params;
+    const reviewId = parseInt(id, 10);
     if (isNaN(reviewId)) {
       return NextResponse.json(
         { error: "Invalid review ID" },
@@ -304,7 +294,6 @@ export async function PUT(
             id: true,
             name: true,
             email: true,
-            avatar: true,
           },
         },
         product: {
@@ -332,13 +321,14 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { error } = await requireAdmin();
   if (error) return error;
 
   try {
-    const reviewId = parseInt(params.id, 10);
+    const { id } = await params;
+    const reviewId = parseInt(id, 10);
     if (isNaN(reviewId)) {
       return NextResponse.json(
         { error: "Invalid review ID" },

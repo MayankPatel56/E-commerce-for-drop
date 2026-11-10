@@ -1,10 +1,13 @@
 ﻿import { Suspense } from "react";
-import HomePageClient from "../HomePageClient";
+import AdminLayout from "./layout";
+import AdminDashboard from "./dashboard/page";
 
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <HomePageClient initialView="admin" />
+      <AdminLayout>
+        <AdminDashboard />
+      </AdminLayout>
     </Suspense>
   );
 }

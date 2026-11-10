@@ -28,7 +28,7 @@ import {
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface CustomerReviewsProps {
-  onNavigate: (view: string, data?: Record<string, unknown>) => void;
+  onNavigate?: (view: string, data?: Record<string, unknown>) => void;
 }
 
 interface ReviewProduct {

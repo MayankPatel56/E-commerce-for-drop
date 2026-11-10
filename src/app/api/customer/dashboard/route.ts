@@ -13,7 +13,7 @@ export async function GET() {
   try {
     // Fetch recent orders (last 5)
     const recentOrders = await db.order.findMany({
-      where: { customerId: customer.id },
+      where: { customerId: customer.userId },
       orderBy: { createdAt: "desc" },
       take: 5,
       select: {
@@ -27,7 +27,7 @@ export async function GET() {
 
     // Fetch wishlist preview (last 4)
     const wishlistPreview = await db.wishlist.findMany({
-      where: { customerId: customer.id },
+      where: { customerId: customer.userId },
       include: {
         product: {
           select: {
@@ -46,19 +46,19 @@ export async function GET() {
     // Count pending reviews
     const pendingReviewCount = await db.review.count({
       where: {
-        customerId: customer.id,
+        customerId: customer.userId,
         status: "pending",
       },
     });
 
     // Total orders count
     const totalOrders = await db.order.count({
-      where: { customerId: customer.id },
+      where: { customerId: customer.userId },
     });
 
     // Wishlist total count
     const wishlistCount = await db.wishlist.count({
-      where: { customerId: customer.id },
+      where: { customerId: customer.userId },
     });
 
     return NextResponse.json({

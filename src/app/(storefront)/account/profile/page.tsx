@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { CustomerProfile } from "@/components/store/customer-profile";
+import { CompliancePageWrapper } from "@/components/store/compliance-page-wrapper";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
@@ -18,5 +19,9 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfilePage() {
-  return <CustomerProfile />;
+  return (
+    <CompliancePageWrapper>
+      {(navigate) => <CustomerProfile onNavigate={navigate} />}
+    </CompliancePageWrapper>
+  );
 }

@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { TermsPage } from "@/components/store/compliance-pages";
+import { CompliancePageWrapper } from "@/components/store/compliance-page-wrapper";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
@@ -18,5 +19,9 @@ export const metadata: Metadata = {
 };
 
 export default async function TermsPageRoute() {
-  return <TermsPage />;
+  return (
+    <CompliancePageWrapper>
+      {(navigate) => <TermsPage onNavigate={navigate} />}
+    </CompliancePageWrapper>
+  );
 }

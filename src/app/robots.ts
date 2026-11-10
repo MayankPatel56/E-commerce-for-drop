@@ -11,7 +11,5 @@ export default function robots(): MetadataRoute.Robots {
       disallow: ["/admin/", "/cart/", "/checkout/", "/customer/"],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
-    // Crawl-delay for politeness
-    crawlDelay: 1,
   };
 }

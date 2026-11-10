@@ -49,6 +49,7 @@ interface StoreHeaderProps {
   onOpenCart: () => void;
   cartCount: number;
   onOpenLogin: () => void;
+  onNavigate?: (view: string, data?: Record<string, unknown>) => void;
   onLogout: () => void;
   isAuthenticated: boolean;
   userName?: string;
@@ -244,6 +245,7 @@ export function StoreHeader({
   onOpenCart,
   cartCount,
   onOpenLogin,
+  onNavigate,
   onLogout,
   isAuthenticated,
   userName,

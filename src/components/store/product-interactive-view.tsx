@@ -48,6 +48,7 @@ import { trackViewContent, trackAddToCart } from "@/lib/tracking";
 interface ProductInteractiveViewProps {
   product: Product;
   isAuthenticated?: boolean;
+  onNavigate?: (view: string, data?: Record<string, unknown>) => void;
 }
 
 const TRUST_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -295,6 +296,29 @@ export function ProductInteractiveView({ product, isAuthenticated }: ProductInte
 
   const { addItem } = useCart();
 
+  // ── Derived variant state (must be before hooks that reference them) ──
+  const variantTypeKeys = Object.keys(product.variantTypes);
+  const allVariantTypesSelected =
+    variantTypeKeys.length > 0 &&
+    variantTypeKeys.every((key) => selectedVariants[key] !== undefined);
+
+  const selectedOptionIds = useMemo(
+    () => Object.values(selectedVariants).map((v) => v.variantId),
+    [selectedVariants]
+  );
+
+  const currentVariant = useMemo(() => {
+    if (!allVariantTypesSelected) return null;
+    const matched = product.variants.find((v) =>
+      selectedOptionIds.includes(v.id)
+    );
+    return matched || null;
+  }, [product, allVariantTypesSelected, selectedOptionIds]);
+
+  const isCurrentVariantOutOfStock = currentVariant?.isOutOfStock ?? false;
+  const isVariantDisabled = !allVariantTypesSelected || isCurrentVariantOutOfStock;
+  const noVariantsAvailable = product.variants.length === 0;
+
   // Track ViewContent on mount
   useEffect(() => {
     const eventId = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
@@ -324,28 +348,6 @@ export function ProductInteractiveView({ product, isAuthenticated }: ProductInte
       event_id: eventId,
     });
   }, [product, currentVariant, quantity]);
-
-  const variantTypeKeys = Object.keys(product.variantTypes);
-  const allVariantTypesSelected =
-    variantTypeKeys.length > 0 &&
-    variantTypeKeys.every((key) => selectedVariants[key] !== undefined);
-
-  const selectedOptionIds = useMemo(
-    () => Object.values(selectedVariants).map((v) => v.variantId),
-    [selectedVariants]
-  );
-
-  const currentVariant = useMemo(() => {
-    if (!allVariantTypesSelected) return null;
-    const matched = product.variants.find((v) =>
-      selectedOptionIds.includes(v.id)
-    );
-    return matched || null;
-  }, [product, allVariantTypesSelected, selectedOptionIds]);
-
-  const isCurrentVariantOutOfStock = currentVariant?.isOutOfStock ?? false;
-  const isVariantDisabled = !allVariantTypesSelected || isCurrentVariantOutOfStock;
-  const noVariantsAvailable = product.variants.length === 0;
 
   const handleVariantSelect = useCallback(
     (type: string, option: { value: string; variantId: number; colorHex: string | null; price: number | null; stockQuantity: number; isOutOfStock: boolean }) => {

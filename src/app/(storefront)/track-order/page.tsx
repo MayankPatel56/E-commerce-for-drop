@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { TrackOrderPage } from "@/components/store/track-order-page";
+import { CompliancePageWrapper } from "@/components/store/compliance-page-wrapper";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
@@ -18,5 +19,9 @@ export const metadata: Metadata = {
 };
 
 export default async function TrackOrderPageRoute() {
-  return <TrackOrderPage />;
+  return (
+    <CompliancePageWrapper>
+      {(navigate) => <TrackOrderPage onNavigate={navigate} />}
+    </CompliancePageWrapper>
+  );
 }

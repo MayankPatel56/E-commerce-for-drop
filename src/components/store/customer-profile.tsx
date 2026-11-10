@@ -36,6 +36,7 @@ interface CustomerProfileData {
 
 interface CustomerProfileProps {
   onProfileUpdated?: () => void;
+  onNavigate?: (view: string, data?: Record<string, unknown>) => void;
 }
 
 interface FormErrors {

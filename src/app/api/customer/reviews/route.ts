@@ -13,7 +13,7 @@ export async function GET() {
   try {
     const reviews = await db.review.findMany({
       where: {
-        customerId: customer.id, // ✅ Sirf logged-in customer ke reviews dikhein
+        customerId: customer.userId, // ✅ Sirf logged-in customer ke reviews dikhein
       },
       select: {
         id: true,

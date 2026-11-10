@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import type { Product } from "@/lib/product-types";
+import type { Product, ProductFeature, ProductBundleOffer } from "@/lib/product-types";
 
 /**
  * Fetch a single published product by slug directly from Prisma.
@@ -81,7 +81,7 @@ export async function fetchProduct(slug: string): Promise<Product | null> {
     badgeText: product.badgeText,
     soldLabel: product.soldLabel,
     videoUrl: product.videoUrl,
-    features: (product.features as ProductFeature[] | null) ?? [],
+    features: (product.features as (ProductFeature | { icon: string; label: string })[] | null) ?? [],
     bundleOffers: (product.bundleOffers as ProductBundleOffer[] | null) ?? [],
     primaryImage: product.primaryImage,
     galleryImages,
@@ -112,5 +112,6 @@ export async function fetchProduct(slug: string): Promise<Product | null> {
     averageRating: avgRating,
     reviewCount: approvedReviews.length,
     createdAt: product.createdAt.toISOString(),
+    inStock: product.variants.some(v => !v.isOutOfStock && v.stockQuantity > 0),
   };
 }

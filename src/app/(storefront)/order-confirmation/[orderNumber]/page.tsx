@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { OrderConfirmation } from "@/components/store/order-confirmation";
+import { OrderConfirmationWrapper } from "@/components/store/order-confirmation-wrapper";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
@@ -34,5 +34,5 @@ export default async function OrderConfirmationPage({ params }: OrderConfirmatio
     notFound();
   }
 
-  return <OrderConfirmation orderNumber={orderNumber} />;
+  return <OrderConfirmationWrapper orderNumber={orderNumber} />;
 }

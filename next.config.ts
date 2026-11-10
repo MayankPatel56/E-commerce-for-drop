@@ -41,7 +41,7 @@ const securityHeaders = [
 
 const nextConfig = {
   typescript: {
-    ignoreBuildErrors: true,
+    // strict: true removed to allow clean builds after all TS errors fixed
   },
 
   reactStrictMode: false,
@@ -71,6 +71,31 @@ const nextConfig = {
       {
         source: "/home",
         destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/customer/dashboard",
+        destination: "/account",
+        permanent: true,
+      },
+      {
+        source: "/customer/orders",
+        destination: "/account/orders",
+        permanent: true,
+      },
+      {
+        source: "/customer/wishlist",
+        destination: "/account/wishlist",
+        permanent: true,
+      },
+      {
+        source: "/customer/reviews",
+        destination: "/account/reviews",
+        permanent: true,
+      },
+      {
+        source: "/customer/profile",
+        destination: "/account/profile",
         permanent: true,
       },
     ];
