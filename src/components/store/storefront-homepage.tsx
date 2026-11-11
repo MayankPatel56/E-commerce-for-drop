@@ -463,7 +463,7 @@ function ProductCard({
     >
       <Card
         className="w-64 shrink-0 cursor-pointer snap-start rounded-2xl transition-all duration-300 hover:shadow-xl hover:border-orange-200 sm:w-auto group"
-        onClick={() => handleNavigate("product", { slug: product.slug })}
+        onClick={() => navigate("product", { slug: product.slug })}
       >
         <div className="relative aspect-square w-full overflow-hidden rounded-t-2xl bg-neutral-100">
           {product.primaryImage ? (

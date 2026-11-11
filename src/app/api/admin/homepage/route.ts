@@ -17,8 +17,8 @@ const updateHomepageSchema = z.object({
 // ─── GET: Fetch homepage content (singleton id=1) ────────────────────────────
 
 export async function GET() {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const content = await db.homepageContent.findUnique({ where: { id: 1 } });
@@ -43,8 +43,8 @@ export async function GET() {
 // ─── PUT: Update homepage content (singleton id=1) ───────────────────────────
 
 export async function PUT(request: NextRequest) {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const body = await request.json();

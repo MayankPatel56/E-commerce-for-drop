@@ -1,15 +1,13 @@
 import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
+import { redirect } from "next/navigation";
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useStoreNavigate } from "@/hooks/useStoreNavigate";
 
 async function getAdminDashboard() {
   const admin = await requireAdmin();
-  if (admin.error) return null;
-
-  const navigate = useStoreNavigate();
+  if (!admin) redirect("/login");
 
   // Fetch products count
   const productsCount = await db.product.count({ where: { isPublished: true } });

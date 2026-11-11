@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { FaqPage } from "@/components/store/compliance-pages";
 import { CompliancePageWrapper } from "@/components/store/compliance-page-wrapper";
 
 const SITE_URL =
@@ -20,8 +19,6 @@ export const metadata: Metadata = {
 
 export default async function FaqPageRoute() {
   return (
-    <CompliancePageWrapper>
-      {(navigate) => <FaqPage onNavigate={navigate} />}
-    </CompliancePageWrapper>
+    <CompliancePageWrapper page="faq" />
   );
 }

@@ -13,8 +13,8 @@ const upsertSettingSchema = z.object({
 // ─── GET: Return all settings as key-value pairs ──────────────────────────────
 
 export async function GET() {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const settings = await db.setting.findMany();
@@ -36,8 +36,8 @@ export async function GET() {
 // ─── PUT: Upsert a single setting ─────────────────────────────────────────────
 
 export async function PUT(request: NextRequest) {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const body = await request.json();

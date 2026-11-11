@@ -15,8 +15,8 @@ const createFaqSchema = z.object({
 // ─── GET: List all FAQs with optional search ──────────────────────────────────
 
 export async function GET(request: NextRequest) {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const { searchParams } = new URL(request.url);
@@ -48,8 +48,8 @@ export async function GET(request: NextRequest) {
 // ─── POST: Create a new FAQ ──────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const body = await request.json();

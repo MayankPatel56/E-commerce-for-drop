@@ -1,13 +1,13 @@
 import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
+import { redirect } from "next/navigation";
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useStoreNavigate } from "@/hooks/useStoreNavigate";
 
 export default async function AdminOrders() {
   const admin = await requireAdmin();
-  if (!admin) return null; // Layout will redirect
+  if (!admin) redirect("/login");
 
   // Fetch all orders
   const orders = await db.order.findMany({

@@ -5,39 +5,38 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { requireAdmin } from "@/lib/admin-auth";
 import { CartDrawer } from "@/components/store/cart-drawer";
 import { StoreHeader } from "@/components/store/store-header";
 import { StoreFooter } from "@/components/store/store-footer";
 import { useStoreNavigate } from "@/hooks/useStoreNavigate";
 
-export default async function AdminLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
   const navigate = useStoreNavigate();
-  const [admin, setAdmin] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   // Check admin auth on mount
   useEffect(() => {
     const checkAdmin = async () => {
-      const { error } = await requireAdmin();
-      if (error) {
+      const res = await fetch("/api/admin/auth-check");
+      if (!res.ok) {
         router.push("/login");
         return;
       }
-      setAdmin(true);
+      setIsAdmin(true);
     };
     checkAdmin();
-  }, [router, requireAdmin]);
+  }, [router]);
 
-  if (admin === null) {
+  if (isAdmin === null) {
     return null; // Loading state
   }
 
-  if (!admin) {
+  if (!isAdmin) {
     return null; // Not authorized
   }
 

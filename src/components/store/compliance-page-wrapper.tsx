@@ -1,25 +1,36 @@
 "use client";
 
 import { useStoreNavigate } from "@/hooks/useStoreNavigate";
+import { CustomerProfile } from "@/components/store/customer-profile";
+import { ContactPage } from "@/components/store/compliance-pages";
+import { FaqPage } from "@/components/store/compliance-pages";
+import { PrivacyPolicyPage } from "@/components/store/compliance-pages";
+import { ReturnPolicyPage } from "@/components/store/compliance-pages";
+import { TermsPage } from "@/components/store/compliance-pages";
+import { TrackOrderPage } from "@/components/store/track-order-page";
+
+export type CompliancePageKey = "profile" | "contact" | "faq" | "privacy" | "returns" | "terms" | "track-order";
 
 /**
- * Client wrapper that wires up a real navigation callback for compliance pages.
- * Compliance pages are server-rendered but their inner components expect an
- * `onNavigate` prop. This wrapper provides one backed by `useStoreNavigate()`
- * so clicks actually route to real pages instead of being no-ops.
- *
- * Usage:
- *   <CompliancePageWrapper>
- *     {(navigate) => <AboutPage onNavigate={navigate} />}
- *   </CompliancePageWrapper>
+ * Client wrapper. Server pages pass only a plain string key (serializable);
+ * the navigation callback is created here, on the client.
  */
-export function CompliancePageWrapper({
-  children,
-}: {
-  children: (
-    navigate: (view: string, data?: Record<string, unknown>) => void,
-  ) => React.ReactNode;
-}) {
+export function CompliancePageWrapper({ page }: { page: CompliancePageKey }) {
   const navigate = useStoreNavigate();
-  return <>{children(navigate)}</>;
+  switch (page) {
+    case "profile":
+      return <CustomerProfile onNavigate={navigate} />;
+    case "contact":
+      return <ContactPage onNavigate={navigate} />;
+    case "faq":
+      return <FaqPage onNavigate={navigate} />;
+    case "privacy":
+      return <PrivacyPolicyPage onNavigate={navigate} />;
+    case "returns":
+      return <ReturnPolicyPage onNavigate={navigate} />;
+    case "terms":
+      return <TermsPage onNavigate={navigate} />;
+    case "track-order":
+      return <TrackOrderPage onNavigate={navigate} />;
+  }
 }

@@ -3,8 +3,8 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { processUploadedImage } from "@/lib/image-processing";
 
 export async function POST(request: NextRequest) {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const formData = await request.formData();

@@ -1,6 +1,5 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { NextResponse } from "next/server";
 import { z } from "zod";
 
 /**
@@ -37,12 +36,10 @@ export async function getAdminSession(): Promise<{
 }
 
 /**
- * Helper: return 401 if not admin. Call at the top of every admin API route.
+ * Helper: return admin session or null. Call at the top of admin pages/handlers.
+ * The caller (page component) should redirect if null.
  */
 export async function requireAdmin() {
   const admin = await getAdminSession();
-  if (!admin) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }), admin: null };
-  }
-  return { error: null, admin };
+  return admin ?? null;
 }

@@ -70,8 +70,8 @@ async function generateUniqueSlug(name: string, preferredSlug?: string | null): 
 
 export async function GET(request: NextRequest) {
   try {
-    const { error } = await requireAdmin();
-    if (error) return error;
+    const admin = await requireAdmin();
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = request.nextUrl;
     const categoryId = searchParams.get("category");
@@ -162,8 +162,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { error } = await requireAdmin();
-    if (error) return error;
+    const admin = await requireAdmin();
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
     const parsed = createProductSchema.safeParse(body);

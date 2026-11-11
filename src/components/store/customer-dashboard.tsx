@@ -243,7 +243,7 @@ export function CustomerDashboard({
   }
 
   function handleBrowseShop() {
-    onNavigate("shop");
+    onNavigate?.("shop");
   }
 
   // Calculate member tier based on total orders
@@ -315,7 +315,7 @@ export function CustomerDashboard({
         <Button
           variant="outline"
           className="min-h-[44px] rounded-full"
-          onClick={() => onNavigate("customer-profile")}
+          onClick={() => onNavigate?.("customer-profile")}
         >
           <Eye className="h-4 w-4 mr-2" />
           View Profile
@@ -457,7 +457,7 @@ export function CustomerDashboard({
           label="Orders"
           title="Recent Orders"
           actionLabel="View All"
-          onAction={() => onNavigate("customer-orders")}
+          onAction={() => onNavigate?.("customer-orders")}
         />
 
         {/* Desktop table */}

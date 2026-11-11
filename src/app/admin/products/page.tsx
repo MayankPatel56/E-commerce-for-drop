@@ -1,16 +1,14 @@
 import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
+import { redirect } from "next/navigation";
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useStoreNavigate } from "@/hooks/useStoreNavigate";
 import { Product } from "@/lib/product-types";
 
 export default async function AdminProducts() {
-  const { error } = await requireAdmin();
-  if (error) return error;
-
-  const navigate = useStoreNavigate();
+  const admin = await requireAdmin();
+  if (!admin) redirect("/login");
 
   // Fetch all products
   const products = await db.product.findMany({

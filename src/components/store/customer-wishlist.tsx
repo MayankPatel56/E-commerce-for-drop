@@ -96,7 +96,7 @@ export function CustomerWishlist({ onNavigate }: CustomerWishlistProps) {
   };
 
   const handleViewProduct = (slug: string) => {
-    onNavigate("product", { slug });
+    onNavigate?.("product", { slug });
   };
 
   // ── Loading skeleton ──────────────────────────────────────────────
@@ -160,7 +160,7 @@ export function CustomerWishlist({ onNavigate }: CustomerWishlistProps) {
             <p className="text-sm text-muted-foreground">
               Save items you love to your wishlist. Review them anytime.
             </p>
-            <Button onClick={() => onNavigate("shop")} className="mt-2 min-h-[44px]">
+            <Button onClick={() => onNavigate?.("shop")} className="mt-2 min-h-[44px]">
               Browse Products
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -277,7 +277,7 @@ export function CustomerWishlist({ onNavigate }: CustomerWishlistProps) {
                         imageUrl: item.product.primaryImage ?? "",
                         stockAvailable: 99,
                       });
-                      onNavigate("product", { slug: item.product.slug });
+                      onNavigate?.("product", { slug: item.product.slug });
                     }}
                   >
                     <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />

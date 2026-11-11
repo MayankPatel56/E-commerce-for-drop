@@ -34,8 +34,7 @@ async function generateUniqueCategorySlug(name: string): Promise<string> {
 
 export async function GET() {
   try {
-    const { error } = await requireAdmin();
-    if (error) return error;
+    const admin = await requireAdmin(); if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const categories = await db.category.findMany({
       orderBy: { name: "asc" },
@@ -66,8 +65,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { error } = await requireAdmin();
-    if (error) return error;
+    const admin = await requireAdmin(); if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
     const parsed = createCategorySchema.safeParse(body);

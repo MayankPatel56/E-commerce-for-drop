@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { CustomerProfile } from "@/components/store/customer-profile";
 import { CompliancePageWrapper } from "@/components/store/compliance-page-wrapper";
 
 const SITE_URL =
@@ -20,8 +19,6 @@ export const metadata: Metadata = {
 
 export default async function ProfilePage() {
   return (
-    <CompliancePageWrapper>
-      {(navigate) => <CustomerProfile onNavigate={navigate} />}
-    </CompliancePageWrapper>
+    <CompliancePageWrapper page="profile" />
   );
 }

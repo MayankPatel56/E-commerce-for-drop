@@ -162,7 +162,7 @@ export function CustomerOrders({ onNavigate }: CustomerOrdersProps) {
             <p className="text-sm text-muted-foreground">
               When you place orders, they will appear here.
             </p>
-            <Button onClick={() => onNavigate("shop")} className="mt-2 min-h-[44px]">
+            <Button onClick={() => onNavigate?.("shop")} className="mt-2 min-h-[44px]">
               Start Shopping
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

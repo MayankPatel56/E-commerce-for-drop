@@ -60,7 +60,11 @@ function PageHeader({
 
 // ── Privacy Policy Page ──────────────────────────────────────────────────────
 
-export function PrivacyPolicyPage() {
+export function PrivacyPolicyPage({ onNavigate }: { onNavigate?: (view: string, data?: Record<string, unknown>) => void }) {
+  const navigate = useStoreNavigate();
+  const handleNavigate = (view: string, data?: Record<string, unknown>) => {
+    onNavigate?.(view, data);
+  };
   return (
     <div className="bg-white">
       <PageHeader title="Privacy Policy" />
@@ -244,7 +248,11 @@ export function PrivacyPolicyPage() {
 
 // ── Terms & Conditions Page ──────────────────────────────────────────────────
 
-export function TermsPage() {
+export function TermsPage({ onNavigate }: { onNavigate?: (view: string, data?: Record<string, unknown>) => void }) {
+  const navigate = useStoreNavigate();
+  const handleNavigate = (view: string, data?: Record<string, unknown>) => {
+    onNavigate?.(view, data);
+  };
   return (
     <div className="bg-white">
       <PageHeader title="Terms & Conditions" />
@@ -419,7 +427,11 @@ export function TermsPage() {
 
 // ── Return Policy Page ───────────────────────────────────────────────────────
 
-export function ReturnPolicyPage() {
+export function ReturnPolicyPage({ onNavigate }: { onNavigate?: (view: string, data?: Record<string, unknown>) => void }) {
+  const navigate = useStoreNavigate();
+  const handleNavigate = (view: string, data?: Record<string, unknown>) => {
+    onNavigate?.(view, data);
+  };
   return (
     <div className="bg-white">
       <PageHeader title="Return & Refund Policy" />
@@ -547,7 +559,11 @@ export function ReturnPolicyPage() {
 
 // ── About Us Page ────────────────────────────────────────────────────────────
 
-export function AboutPage() {
+export function AboutPage({ onNavigate }: { onNavigate?: (view: string, data?: Record<string, unknown>) => void }) {
+  const navigate = useStoreNavigate();
+  const handleNavigate = (view: string, data?: Record<string, unknown>) => {
+    onNavigate?.(view, data);
+  };
   return (
     <div className="bg-white">
       <PageHeader title="About Us" />
@@ -671,7 +687,7 @@ export function AboutPage() {
               <Button
                 size="lg"
                 className="min-h-[44px] font-semibold"
-                onClick={() => onNavigate("shop")}
+                onClick={() => navigate("shop")}
               >
                 Shop Now
               </Button>
@@ -685,7 +701,12 @@ export function AboutPage() {
 
 // ── Contact Page ─────────────────────────────────────────────────────────────
 
-export function ContactPage() {
+export function ContactPage({ onNavigate }: { onNavigate?: (view: string, data?: Record<string, unknown>) => void }) {
+  const navigate = useStoreNavigate();
+  const handleNavigate = (view: string, data?: Record<string, unknown>) => {
+    onNavigate?.(view, data);
+  };
+
   return (
     <div className="bg-white">
       <PageHeader title="Contact Us" />
@@ -712,7 +733,7 @@ export function ContactPage() {
                 variant="outline"
                 size="sm"
                 className="mt-3 min-h-[44px] gap-1.5 border-amber-300 text-amber-900 hover:bg-amber-100"
-                onClick={() => onNavigate("track-order")}
+                onClick={() => navigate("track-order")}
               >
                 Track Your Order
               </Button>
@@ -791,7 +812,11 @@ export function ContactPage() {
 
 // ── FAQ Page ─────────────────────────────────────────────────────────────────
 
-export function FaqPage() {
+export function FaqPage({ onNavigate }: { onNavigate?: (view: string, data?: Record<string, unknown>) => void }) {
+  const navigate = useStoreNavigate();
+  const handleNavigate = (view: string, data?: Record<string, unknown>) => {
+    onNavigate?.(view, data);
+  };
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -851,7 +876,7 @@ export function FaqPage() {
               <Button
                 variant="outline"
                 className="mt-4 min-h-[44px]"
-                onClick={() => onNavigate("contact")}
+                onClick={() => navigate("contact")}
               >
                 Contact Us Instead
               </Button>
@@ -908,7 +933,7 @@ export function FaqPage() {
                 <Button
                   size="lg"
                   className="min-h-[44px] font-semibold"
-                  onClick={() => onNavigate("contact")}
+                  onClick={() => navigate("contact")}
                 >
                   Contact Us
                 </Button>

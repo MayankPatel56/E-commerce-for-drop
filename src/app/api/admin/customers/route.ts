@@ -5,8 +5,8 @@ import { requireAdmin } from "@/lib/admin-auth";
 // ─── GET: List customers with pagination and search ──────────────────────────
 
 export async function GET(request: NextRequest) {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const { searchParams } = new URL(request.url);

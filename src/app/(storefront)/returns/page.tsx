@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { ReturnPolicyPage } from "@/components/store/compliance-pages";
 import { CompliancePageWrapper } from "@/components/store/compliance-page-wrapper";
 
 const SITE_URL =
@@ -20,8 +19,6 @@ export const metadata: Metadata = {
 
 export default async function ReturnsPageRoute() {
   return (
-    <CompliancePageWrapper>
-      {(navigate) => <ReturnPolicyPage onNavigate={navigate} />}
-    </CompliancePageWrapper>
+    <CompliancePageWrapper page="returns" />
   );
 }

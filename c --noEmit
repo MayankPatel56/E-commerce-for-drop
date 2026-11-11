@@ -1,0 +1,47 @@
+warning: in the working copy of 'src/app/admin/dashboard/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/admin/layout.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/admin/orders/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/admin/products/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/api/admin/analytics/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/api/admin/categories/[id]/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/api/admin/categories/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/store/customer-dashboard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/store/customer-orders.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/store/customer-reviews.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/store/customer-wishlist.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/store/storefront-homepage.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/admin-auth.ts', LF will be replaced by CRLF the next time Git touches it
+ src/app/admin/dashboard/page.tsx                   |  6 [32m+[m[31m--[m
+ src/app/admin/layout.tsx                           | 17 [32m++++[m[31m----[m
+ src/app/admin/orders/page.tsx                      |  4 [32m+[m[31m-[m
+ src/app/admin/products/page.tsx                    |  6 [32m+[m[31m--[m
+ src/app/api/admin/analytics/route.ts               |  6 [32m++[m[31m-[m
+ src/app/api/admin/categories/[id]/route.ts         |  8 [32m++[m[31m--[m
+ src/app/api/admin/categories/route.ts              |  6 [32m+[m[31m--[m
+ src/app/api/admin/customers/route.ts               |  4 [32m+[m[31m-[m
+ src/app/api/admin/faq/[id]/route.ts                |  8 [32m++[m[31m--[m
+ src/app/api/admin/faq/route.ts                     |  8 [32m++[m[31m--[m
+ src/app/api/admin/homepage/route.ts                |  8 [32m++[m[31m--[m
+ src/app/api/admin/orders/[id]/return/route.ts      |  4 [32m+[m[31m-[m
+ src/app/api/admin/orders/[id]/route.ts             |  4 [32m+[m[31m-[m
+ src/app/api/admin/orders/[id]/status/route.ts      |  4 [32m+[m[31m-[m
+ src/app/api/admin/orders/[id]/verify-cod/route.ts  |  4 [32m+[m[31m-[m
+ src/app/api/admin/orders/route.ts                  |  4 [32m+[m[31m-[m
+ src/app/api/admin/products/[id]/route.ts           | 12 [32m+++[m[31m---[m
+ .../admin/products/[id]/variants/[vid]/route.ts    |  8 [32m++[m[31m--[m
+ src/app/api/admin/products/[id]/variants/route.ts  |  4 [32m+[m[31m-[m
+ src/app/api/admin/products/route.ts                |  8 [32m++[m[31m--[m
+ src/app/api/admin/reviews/[id]/moderate/route.ts   |  4 [32m+[m[31m-[m
+ src/app/api/admin/reviews/route.ts                 |  8 [32m++[m[31m--[m
+ src/app/api/admin/settings/route.ts                |  8 [32m++[m[31m--[m
+ src/app/api/admin/tags/[id]/route.ts               |  8 [32m++[m[31m--[m
+ src/app/api/admin/tags/route.ts                    |  8 [32m++[m[31m--[m
+ src/app/api/admin/upload/image/route.ts            |  4 [32m+[m[31m-[m
+ src/components/store/compliance-pages.tsx          | 45 [32m+++++++++++++++++[m[31m-----[m
+ src/components/store/customer-dashboard.tsx        |  6 [32m+[m[31m--[m
+ src/components/store/customer-orders.tsx           |  2 [32m+[m[31m-[m
+ src/components/store/customer-reviews.tsx          |  4 [32m+[m[31m-[m
+ src/components/store/customer-wishlist.tsx         |  6 [32m+[m[31m--[m
+ src/components/store/storefront-homepage.tsx       |  2 [32m+[m[31m-[m
+ src/lib/admin-auth.ts                              |  9 [32m++[m[31m---[m
+ 33 files changed, 129 insertions(+), 118 deletions(-)

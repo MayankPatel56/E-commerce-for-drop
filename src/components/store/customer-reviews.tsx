@@ -408,7 +408,7 @@ export function CustomerReviews({ onNavigate }: CustomerReviewsProps) {
               </p>
             </div>
             <Button
-              onClick={() => onNavigate("shop")}
+              onClick={() => onNavigate?.("shop")}
               className="min-h-[44px] mt-2"
             >
               Browse Products
@@ -430,7 +430,7 @@ export function CustomerReviews({ onNavigate }: CustomerReviewsProps) {
                       <button
                         type="button"
                         onClick={() =>
-                          onNavigate("product", {
+                          onNavigate?.("product", {
                             slug: review.product.slug,
                           })
                         }

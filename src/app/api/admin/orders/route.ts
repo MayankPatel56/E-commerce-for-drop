@@ -7,8 +7,8 @@ import { requireAdmin } from "@/lib/admin-auth";
  * Admin order list with filters, search, and pending count
  */
 export async function GET(request: NextRequest) {
-  const { error: authError } = await requireAdmin();
-  if (authError) return authError;
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const { searchParams } = new URL(request.url);

@@ -48,8 +48,10 @@ function getDateRange(range: string, start?: string, end?: string) {
 // ─── GET: Analytics dashboard data ────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  const admin = await requireAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const { searchParams } = new URL(request.url);
